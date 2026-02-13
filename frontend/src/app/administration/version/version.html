@@ -1,0 +1,17 @@
+<div class="grid grid-cols-12 gap-4">
+	<div class="col-span-12">
+		<div class="card">
+			<div class="font-semibold text-xl mb-4">Version de l'application</div>
+			<p-timeline [value]="commits" align="alternate">
+				<ng-template #content let-commit>
+					<div class="mb-3 border-b pb-2">
+						<code>{{ commit.hash }}</code>
+						- <strong>{{ commit.message }}</strong><br />
+						<small>par {{ commit.author }} le {{ commit.date | date: 'dd/MM/yyyy HH:mm:ss' }}</small>
+					</div>
+				</ng-template>
+			</p-timeline>
+
+		</div>
+	</div>
+</div>

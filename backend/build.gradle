@@ -1,0 +1,173 @@
+buildscript {
+	ext {
+		springBootVersion = "3.2.3"
+		hibernateVersion = "6.4.4.Final"
+		postgresqlVersion = '42.6.1'
+		flywaydbVersion = '9.22.3'
+		jjwtVersion = '0.11.5'
+		openApiVersion = '2.2.20'
+		springSecurityVersion = '6.2.2'
+		springVersion = '6.1.4'
+		generatedSourcesDir = file("src/main/generated")
+		sonarVersion = '5.0.0.4638'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion")
+		classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:$sonarVersion"
+	}
+}
+
+plugins {
+	id 'java'
+	id 'war'
+	id 'jacoco'
+	id 'org.sonarqube' version "$sonarVersion"
+	id 'org.springframework.boot' version '3.2.3'
+	id 'io.spring.dependency-management' version '1.1.4'
+	id "at.comm_unity.gradle.plugins.jpamodelgen" version "1.1.4"
+}
+
+group = 'com.backend'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'com.opencsv:opencsv:5.8'
+	implementation 'org.apache.poi:poi:5.2.5'
+	implementation 'org.apache.poi:poi-ooxml:5.2.5'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.security:spring-security-config'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation "org.flywaydb:flyway-core:$flywaydbVersion"
+
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
+	implementation 'org.javatuples:javatuples:1.2'
+
+	// Websocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.webjars:webjars-locator-core'
+	implementation 'org.webjars:sockjs-client:1.0.2'
+	implementation 'org.webjars:stomp-websocket:2.3.3'
+
+	implementation group: 'javax.validation', name: 'validation-api', version: '1.0.0.GA'
+
+	implementation 'org.apache.commons:commons-collections4:4.4'
+
+	implementation "org.apache.commons:commons-lang3:3.0"
+
+	implementation "io.jsonwebtoken:jjwt-api:$jjwtVersion"
+	implementation "io.jsonwebtoken:jjwt-impl:$jjwtVersion"
+	implementation "io.jsonwebtoken:jjwt-jackson:$jjwtVersion"
+
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
+	runtimeOnly "org.postgresql:postgresql:$postgresqlVersion"
+
+	// Developpement
+	developmentOnly "org.springframework.boot:spring-boot-devtools:$springBootVersion"
+
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation group: 'org.mockito', name: 'mockito-core', version: '5.11.0'
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+//	testImplementation 'org.mockito:junit-jupiter-api:5.10.2'
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir "src/main/java"
+			srcDir "src/main/generated/java"
+		}
+	}
+
+}
+
+jpaModelgen {
+	library = "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
+	jpaModelgenSourcesDir = "src/main/generated/java"
+}
+
+compileJpaModelgen {
+	options.annotationProcessorPath = configurations.jpaModelgen
+}
+
+task removeGeneratedMetamodel(type: Delete) {
+	generatedSourcesDir.deleteDir()
+}
+
+compileJava {
+	doFirst {
+		generatedSourcesDir.mkdirs()
+	}
+	dependsOn(removeGeneratedMetamodel)
+	options.compilerArgs += ['-s', generatedSourcesDir]
+}
+
+clean.dependsOn(removeGeneratedMetamodel)
+
+clean.doLast {
+	project.file('src/main/generated').deleteDir()
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+task updateAppProperties(dependsOn: processResources) {
+	doLast {
+		def cmd = "git rev-parse HEAD"
+		def proc = cmd.execute()
+		ant.replace(file: "build/resources/main/application.properties", token: "[app.version]", value: version)
+		ant.replace(file: "build/resources/main/application.properties", token: "[app.git.sha1]", value: proc.text.trim())
+	}
+}
+classes.dependsOn updateAppProperties
+
+test {
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		xml.destination file("${buildDir}/reports/jacoco.xml")
+	}
+}
+
+sonar {
+	properties {
+		property 'sonar.projectKey', 'airp-backend'
+		property 'sonar.login', 'sqp_2c0e36691de1ed469ef82f8a638b064d357361b8'
+		property 'sonar.host.url', 'http://51.68.188.201:9000/'
+		property 'sonar.core.codeCoveragePlugin', 'jacoco'
+		property 'sonar.coverage.jacoco.xmlReportPaths', "${buildDir}/reports/jacoco.xml"
+	}
+}
+
+bootWar {
+	archiveFileName = 'mondjassa.war'
+}

@@ -1,0 +1,14 @@
+<div class="layout-container" [ngClass]="containerClass()">
+	<div app-topbar></div>
+	<div app-right-menu></div>
+	<div app-sidebar></div>
+	<div class="layout-content-wrapper">
+		<div app-breadcrumb></div>
+		<div class="layout-content">
+			<router-outlet></router-outlet>
+		</div>
+		<div app-footer></div>
+	</div>
+</div>
+<!--<app-configurator />-->
+<p-toast />

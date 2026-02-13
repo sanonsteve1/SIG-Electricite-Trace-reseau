@@ -1,0 +1,38 @@
+<div class="h-screen flex w-full bg-surface-50 dark:bg-surface-950">
+	<div style="height: 400px; border-radius: 30px" class="flex w-50 m-auto shadow-lg shadow-black">
+		<div class="flex flex-1 flex-col bg-surface-50 dark:bg-surface-950 items-center justify-center">
+			<div class="w-11/12 sm:w-[30rem]">
+				<div class="flex flex-col">
+					<div class="mt-1">
+						<h1 class="m-0 text-primary font-semibold text-4xl">Authentification</h1>
+						<span class="block text-surface-700 dark:text-surface-100">Renseignez le formulaire d'authentification</span>
+					</div>
+				</div>
+				<div class="flex flex-col gap-4 mt-12">
+					<p-input-group>
+						<p-inputgroup-addon>
+							<i class="pi pi-lock"></i>
+						</p-inputgroup-addon>
+						<input pInputText type="text" [(ngModel)]="login" placeholder="Nom d'utilisateur" />
+					</p-input-group>
+					<p-input-group>
+						<p-inputgroup-addon>
+							<i class="pi pi-key"></i>
+						</p-inputgroup-addon>
+						<input pInputText type="password" [(ngModel)]="password" placeholder="Mot de passe" />
+					</p-input-group>
+					<div>
+						<button pButton pRipple [routerLink]="['/']" class="w-full" label="Se connecter"></button>
+					</div>
+					<div>
+						<button pButton pRipple class="w-full text-primary-500" text label="Mot de passe oublié ?"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div [style]="{ backgroundColor: '#F8FAFC' }" class="hidden lg:flex flex-1 items-center justify-center bg-cover">
+			<p-image src="/images/app/login.png" alt="" width="650" />
+		</div>
+	</div>
+</div>
+<!--<app-configurator simple />-->
