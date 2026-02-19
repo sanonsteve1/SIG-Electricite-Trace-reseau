@@ -169,5 +169,5 @@ sonar {
 }
 
 bootWar {
-	archiveFileName = 'mondjassa.war'
+	archiveFileName = 'abstock.war'
 }
