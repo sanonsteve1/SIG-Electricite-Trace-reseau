@@ -5,8 +5,7 @@ import {JwtHelperService} from '@auth0/angular-jwt';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {Utilisateur} from "../models/utilisateur.model";
 import {LoginPassword} from "../models/login-password.model";
-import {AST} from "eslint";
-import Token = AST.Token;
+import {Token} from "../models/token.model";
 
 
 @Injectable({
