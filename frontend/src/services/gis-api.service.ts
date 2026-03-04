@@ -35,6 +35,16 @@ export interface SuggestPlacementResponse {
 	message?: string;
 }
 
+export interface OcrProcessResponse {
+	success: boolean;
+	text?: string;
+	confidence?: number;
+	language?: string;
+	processing_time?: number;
+	timestamp?: string;
+	error?: string;
+}
+
 /**
  * Service pour l'API GIS (script_bd - FastAPI).
  * Base URL : environment.gisApiUrl (ex. http://localhost:8000)
@@ -42,6 +52,7 @@ export interface SuggestPlacementResponse {
 @Injectable({ providedIn: 'root' })
 export class GisApiService {
 	private readonly baseUrl = environment.gisApiUrl;
+	private readonly ocrApiUrl = (environment as { ocrApiUrl?: string }).ocrApiUrl ?? '';
 
 	constructor(private http: HttpClient) {}
 
@@ -180,6 +191,19 @@ export class GisApiService {
 	runCalculation(params: ModelisationParams): Observable<ModelisationCalculateResponse> {
 		const url = `${this.baseUrl}/gis/modelisation/calculate`;
 		return this.http.post<ModelisationCalculateResponse>(url, params);
+	}
+
+	/** OCR: extraire du texte depuis une image pour pré-remplir un formulaire. */
+	processOcr(file: File, options?: { language?: string; engine?: 'tesseract' | 'easyocr' }): Observable<OcrProcessResponse> {
+		const base = (this.ocrApiUrl || '').trim();
+		if (!base) {
+			return of({ success: false, error: "ocr_api_url_missing" });
+		}
+		const formData = new FormData();
+		formData.append('file', file, file.name || 'image.jpg');
+		if (options?.language) formData.append('language', options.language);
+		if (options?.engine) formData.append('engine', options.engine);
+		return this.http.post<OcrProcessResponse>(`${base}/ocr`, formData);
 	}
 }
 

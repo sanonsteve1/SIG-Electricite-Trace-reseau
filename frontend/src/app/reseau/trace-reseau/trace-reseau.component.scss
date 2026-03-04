@@ -549,7 +549,8 @@ $header-height: 56px;
 
 .trace-reseau-resume-float,
 .trace-reseau-legend-float,
-.trace-reseau-layers-float {
+.trace-reseau-layers-float,
+.trace-reseau-insights-float {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -596,6 +597,11 @@ $header-height: 56px;
 	border-color: $primary-hover;
 }
 
+.trace-reseau-legend-toggle:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
 .trace-reseau-legend-panel {
 	background: #fff;
 	border: 1px solid #e5e7eb;
@@ -629,6 +635,168 @@ $header-height: 56px;
 
 .trace-reseau-resume-panel .trace-reseau-stat-value {
 	font-size: 1.1rem;
+}
+
+.trace-reseau-insights-panel {
+	min-width: 480px;
+	max-width: min(56vw, 760px);
+	max-height: min(80vh, 640px);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.trace-reseau-insights-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	color: #1f2937;
+}
+
+.trace-reseau-insights-chart {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.trace-reseau-insights-row {
+	display: grid;
+	grid-template-columns: 130px 1fr;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.82rem;
+	color: #374151;
+}
+
+.trace-reseau-insights-bar {
+	height: 10px;
+	border-radius: 999px;
+	background: #e5e7eb;
+	overflow: hidden;
+}
+
+.trace-reseau-insights-bar-fill {
+	height: 100%;
+	border-radius: 999px;
+}
+
+.trace-reseau-insights-bar-fill--line {
+	background: #ef4444;
+}
+
+.trace-reseau-insights-bar-fill--point {
+	background: #3b82f6;
+}
+
+.trace-reseau-insights-bar-fill--other {
+	background: #6b7280;
+}
+
+.trace-reseau-insights-type-chart {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	max-height: 140px;
+	overflow-y: auto;
+	padding-right: 0.25rem;
+}
+
+.trace-reseau-insights-type-row {
+	display: grid;
+	grid-template-columns: minmax(120px, 180px) 1fr 32px;
+	gap: 0.45rem;
+	align-items: center;
+	font-size: 0.78rem;
+	color: #374151;
+}
+
+.trace-reseau-insights-type-row > span {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.trace-reseau-insights-type-bar {
+	height: 8px;
+	border-radius: 999px;
+	background: #edf2f7;
+	overflow: hidden;
+}
+
+.trace-reseau-insights-type-fill {
+	height: 100%;
+	border-radius: 999px;
+}
+
+.trace-reseau-insights-analysis {
+	padding: 0.5rem 0.6rem;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+}
+
+.trace-reseau-insights-analysis p {
+	margin: 0;
+	font-size: 0.8rem;
+	color: #334155;
+}
+
+.trace-reseau-insights-analysis p + p {
+	margin-top: 0.2rem;
+}
+
+.trace-reseau-insights-table-wrap {
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	overflow: auto;
+	max-height: 250px;
+}
+
+.trace-reseau-insights-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.78rem;
+	background: #fff;
+}
+
+.trace-reseau-insights-table th,
+.trace-reseau-insights-table td {
+	padding: 0.45rem 0.55rem;
+	border-bottom: 1px solid #f1f5f9;
+	text-align: left;
+	vertical-align: top;
+}
+
+.trace-reseau-insights-table th {
+	position: sticky;
+	top: 0;
+	background: #f8fafc;
+	z-index: 1;
+	font-weight: 600;
+	color: #475569;
+}
+
+.trace-reseau-insights-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	margin-right: 0.4rem;
+	vertical-align: middle;
+}
+
+.trace-reseau-insights-row-clickable {
+	cursor: pointer;
+}
+
+.trace-reseau-insights-row-clickable:hover td {
+	background: #f8fafc;
+}
+
+.trace-reseau-insights-row-clickable--active td {
+	background: rgba($primary, 0.12);
 }
 
 // Override PrimeNG dans ce composant
@@ -667,6 +835,26 @@ $header-height: 56px;
 
 ::ng-deep .trace-reseau .trace-marker--end span {
 	background: #ef4444;
+}
+
+::ng-deep .trace-reseau .trace-point-cluster-icon {
+	background: transparent !important;
+	border: none !important;
+}
+
+::ng-deep .trace-reseau .trace-point-cluster-icon span {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: #0f172a;
+	color: #fff;
+	font-size: 0.75rem;
+	font-weight: 700;
+	border: 2px solid #fbbf24;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 // Popup ouvrages (Leaflet) – modale améliorée

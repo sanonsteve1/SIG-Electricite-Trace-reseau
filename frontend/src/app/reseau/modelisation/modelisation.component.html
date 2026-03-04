@@ -167,7 +167,11 @@
 											@for (key of section.keys; track key) {
 												<div class="modelisation-dialog-view-row">
 													<span class="modelisation-dialog-view-label">{{ formatOuvrageLabel(key) }}</span>
-													<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+													@if (isImageKey(key) && getImagePreviewFromValue(ouvrageForm[key]); as imgSrc) {
+														<img [src]="imgSrc" alt="Image ouvrage" class="modelisation-dialog-view-image" (click)="openImageViewer(imgSrc, 'Image ouvrage')" />
+													} @else {
+														<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+													}
 												</div>
 											}
 										</div>
@@ -246,6 +250,28 @@
 												<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
 												@if (isGeomKey(key)) {
 													<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="'panel_' + key" rows="2" class="modelisation-dialog-input" readonly></textarea>
+												} @else if (isImageKey(key)) {
+													<div class="modelisation-image-picker">
+														<input #panelImageInput type="file" accept="image/*" capture="environment" class="modelisation-image-picker__native" (change)="onImageFileSelected($event, key)" />
+														<div class="modelisation-image-picker__actions">
+															<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="panelImageInput.click()"><i class="fa fa-camera"></i> Sélectionner / Capturer</button>
+															@if (ouvrageForm[key]) {
+																<button type="button" class="modelisation-btn modelisation-btn--secondary" (click)="clearImageField(key)"><i class="fa fa-trash"></i> Retirer</button>
+															}
+														</div>
+														@if (getImagePreviewSrc(key); as imgSrc) {
+															<img [src]="imgSrc" alt="Aperçu image" class="modelisation-image-picker__preview" (click)="openImageViewer(imgSrc, 'Image ouvrage')" />
+														} @else if (ouvrageForm[key]) {
+															<p class="modelisation-image-picker__value">{{ getImageDisplayValue(key) }}</p>
+														} @else {
+															<p class="modelisation-image-picker__hint">Aucune image sélectionnée.</p>
+														}
+														@if (ocrLoading) {
+															<p class="modelisation-image-picker__ocr modelisation-image-picker__ocr--loading"><i class="fa fa-spinner fa-spin"></i> Analyse OCR en cours…</p>
+														} @else if (ocrMessage) {
+															<p class="modelisation-image-picker__ocr">{{ ocrMessage }}</p>
+														}
+													</div>
 												} @else {
 													<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="'panel_' + key" class="modelisation-dialog-input" />
 												}
@@ -274,6 +300,28 @@
 												<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
 												@if (isGeomKey(key)) {
 													<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="'edit_panel_' + key" rows="2" class="modelisation-dialog-input"></textarea>
+												} @else if (isImageKey(key)) {
+													<div class="modelisation-image-picker">
+														<input #editPanelImageInput type="file" accept="image/*" capture="environment" class="modelisation-image-picker__native" (change)="onImageFileSelected($event, key)" />
+														<div class="modelisation-image-picker__actions">
+															<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="editPanelImageInput.click()"><i class="fa fa-camera"></i> Sélectionner / Capturer</button>
+															@if (ouvrageForm[key]) {
+																<button type="button" class="modelisation-btn modelisation-btn--secondary" (click)="clearImageField(key)"><i class="fa fa-trash"></i> Retirer</button>
+															}
+														</div>
+														@if (getImagePreviewSrc(key); as imgSrc) {
+															<img [src]="imgSrc" alt="Aperçu image" class="modelisation-image-picker__preview" (click)="openImageViewer(imgSrc, 'Image ouvrage')" />
+														} @else if (ouvrageForm[key]) {
+															<p class="modelisation-image-picker__value">{{ getImageDisplayValue(key) }}</p>
+														} @else {
+															<p class="modelisation-image-picker__hint">Aucune image sélectionnée.</p>
+														}
+														@if (ocrLoading) {
+															<p class="modelisation-image-picker__ocr modelisation-image-picker__ocr--loading"><i class="fa fa-spinner fa-spin"></i> Analyse OCR en cours…</p>
+														} @else if (ocrMessage) {
+															<p class="modelisation-image-picker__ocr">{{ ocrMessage }}</p>
+														}
+													</div>
 												} @else {
 													<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="'edit_panel_' + key" class="modelisation-dialog-input" />
 												}
@@ -346,7 +394,11 @@
 							@for (key of section.keys; track key) {
 								<div class="modelisation-dialog-view-row">
 									<span class="modelisation-dialog-view-label">{{ formatOuvrageLabel(key) }}</span>
-									<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+									@if (isImageKey(key) && getImagePreviewFromValue(ouvrageForm[key]); as imgSrc) {
+										<img [src]="imgSrc" alt="Image ouvrage" class="modelisation-dialog-view-image" (click)="openImageViewer(imgSrc, 'Image ouvrage')" />
+									} @else {
+										<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+									}
 								</div>
 							}
 						</div>
@@ -369,6 +421,28 @@
 								<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
 								@if (isGeomKey(key)) {
 									<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="key" rows="3" class="modelisation-dialog-input"></textarea>
+								} @else if (isImageKey(key)) {
+									<div class="modelisation-image-picker">
+										<input #modalImageInput type="file" accept="image/*" capture="environment" class="modelisation-image-picker__native" (change)="onImageFileSelected($event, key)" />
+										<div class="modelisation-image-picker__actions">
+											<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="modalImageInput.click()"><i class="fa fa-camera"></i> Sélectionner / Capturer</button>
+											@if (ouvrageForm[key]) {
+												<button type="button" class="modelisation-btn modelisation-btn--secondary" (click)="clearImageField(key)"><i class="fa fa-trash"></i> Retirer</button>
+											}
+										</div>
+										@if (getImagePreviewSrc(key); as imgSrc) {
+											<img [src]="imgSrc" alt="Aperçu image" class="modelisation-image-picker__preview" (click)="openImageViewer(imgSrc, 'Image ouvrage')" />
+										} @else if (ouvrageForm[key]) {
+											<p class="modelisation-image-picker__value">{{ getImageDisplayValue(key) }}</p>
+										} @else {
+											<p class="modelisation-image-picker__hint">Aucune image sélectionnée.</p>
+										}
+										@if (ocrLoading) {
+											<p class="modelisation-image-picker__ocr modelisation-image-picker__ocr--loading"><i class="fa fa-spinner fa-spin"></i> Analyse OCR en cours…</p>
+										} @else if (ocrMessage) {
+											<p class="modelisation-image-picker__ocr">{{ ocrMessage }}</p>
+										}
+									</div>
 								} @else {
 									<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="key" class="modelisation-dialog-input" />
 								}
@@ -386,6 +460,24 @@
 				<button pButton label="Annuler" (click)="closeOuvrageModal()" class="p-button-text"></button>
 				<button pButton label="{{ ouvrageModalMode === 'create' ? 'Créer' : 'Enregistrer' }}" icon="pi pi-check" (click)="saveOuvrage()" [loading]="crudLoading" [disabled]="crudLoading"></button>
 			}
+		</ng-template>
+	</p-dialog>
+
+	<p-dialog
+		[(visible)]="imageViewerVisible"
+		header="{{ imageViewerTitle }}"
+		[modal]="true"
+		[closable]="true"
+		[style]="{ width: 'min(95vw, 980px)' }"
+		styleClass="modelisation-dialog"
+	>
+		<div class="modelisation-image-viewer">
+			@if (imageViewerSrc) {
+				<img [src]="imageViewerSrc" alt="Image agrandie" class="modelisation-image-viewer__img" />
+			}
+		</div>
+		<ng-template pTemplate="footer">
+			<button pButton label="Fermer" (click)="imageViewerVisible = false"></button>
 		</ng-template>
 	</p-dialog>
 
@@ -408,6 +500,48 @@
 		<ng-template pTemplate="footer">
 			<button pButton label="Annuler" class="p-button-text" (click)="closeDeleteConfirm()"></button>
 			<button pButton label="Supprimer" icon="pi pi-trash" class="p-button-danger" (click)="confirmDeleteOuvrage()" [loading]="crudLoading" [disabled]="crudLoading"></button>
+		</ng-template>
+	</p-dialog>
+
+	<p-dialog
+		[(visible)]="popupOcrVisible"
+		header="{{ popupOcrTitle }}"
+		[modal]="true"
+		[closable]="true"
+		[style]="{ width: 'min(90vw, 720px)' }"
+		styleClass="modelisation-dialog"
+	>
+		<div class="modelisation-ocr-result">
+			@if (popupOcrLoading) {
+				<p class="modelisation-ocr-result__loading"><i class="fa fa-spinner fa-spin"></i> Extraction OCR en cours…</p>
+			} @else {
+				@if (popupOcrMappings.length > 0) {
+					<div class="modelisation-ocr-mapping">
+						<p class="modelisation-ocr-mapping__hint">Associe chaque texte OCR au champ du formulaire à remplir.</p>
+						<div class="modelisation-ocr-mapping__rows">
+							@for (item of popupOcrMappings; track $index) {
+								<div class="modelisation-ocr-mapping__row">
+									<div class="modelisation-ocr-mapping__text">{{ item.text }}</div>
+									<select class="modelisation-ocr-mapping__select" [(ngModel)]="item.field" [ngModelOptions]="{ standalone: true }">
+										<option value="">-- Sélectionner un champ --</option>
+										@for (opt of popupOcrFieldOptions; track opt.key) {
+											<option [value]="opt.key">{{ opt.label }} ({{ opt.key }})</option>
+										}
+									</select>
+								</div>
+							}
+						</div>
+					</div>
+				} @else {
+					<pre class="modelisation-ocr-result__text">{{ popupOcrText || 'Aucun texte OCR.' }}</pre>
+				}
+			}
+		</div>
+		<ng-template pTemplate="footer">
+			@if (!popupOcrLoading && popupOcrMappings.length > 0) {
+				<button pButton label="Appliquer au formulaire" icon="pi pi-check" (click)="applyPopupOcrMappings()"></button>
+			}
+			<button pButton label="Fermer" (click)="popupOcrVisible = false"></button>
 		</ng-template>
 	</p-dialog>
 

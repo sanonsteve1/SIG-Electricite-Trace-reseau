@@ -143,6 +143,78 @@
 						</div>
 					}
 				</div>
+				<div class="trace-reseau-insights-float">
+					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="traceInsightsOpen" (click)="traceInsightsOpen = !traceInsightsOpen" [disabled]="resumeOuvrages === 0" [attr.aria-expanded]="traceInsightsOpen" [title]="traceInsightsOpen ? 'Masquer l’analyse' : 'Afficher l’analyse du tracé'">
+						<i class="fa fa-table"></i>
+						<span>Analyse du tracé</span>
+					</button>
+					@if (traceInsightsOpen) {
+						<div class="trace-reseau-legend-panel trace-reseau-insights-panel">
+							<div class="trace-reseau-insights-title">
+								<i class="fa fa-line-chart"></i>
+								<span>Ouvrages impliqués: {{ resumeOuvrages }}</span>
+							</div>
+							<div class="trace-reseau-insights-chart">
+								<div class="trace-reseau-insights-row">
+									<span>Lignes ({{ traceLinePercent }}%)</span>
+									<div class="trace-reseau-insights-bar">
+										<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--line" [style.width.%]="traceLinePercent"></div>
+									</div>
+								</div>
+								<div class="trace-reseau-insights-row">
+									<span>Points ({{ tracePointPercent }}%)</span>
+									<div class="trace-reseau-insights-bar">
+										<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--point" [style.width.%]="tracePointPercent"></div>
+									</div>
+								</div>
+								@if (traceOtherCount > 0) {
+									<div class="trace-reseau-insights-row">
+										<span>Autres ({{ traceOtherPercent }}%)</span>
+										<div class="trace-reseau-insights-bar">
+											<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--other" [style.width.%]="traceOtherPercent"></div>
+										</div>
+									</div>
+								}
+							</div>
+							<div class="trace-reseau-insights-type-chart">
+								@for (item of traceTypeCounts; track item.slug) {
+									<div class="trace-reseau-insights-type-row">
+										<span>{{ item.slug }}</span>
+										<div class="trace-reseau-insights-type-bar">
+											<div class="trace-reseau-insights-type-fill" [style.background]="item.color" [style.width.%]="getTypeBarPercent(item.count)"></div>
+										</div>
+										<strong>{{ item.count }}</strong>
+									</div>
+								}
+							</div>
+							<div class="trace-reseau-insights-analysis">
+								@for (line of traceAnalysisLines; track line) {
+									<p>{{ line }}</p>
+								}
+							</div>
+							<div class="trace-reseau-insights-table-wrap">
+								<table class="trace-reseau-insights-table">
+									<thead>
+										<tr>
+											<th>Couche</th>
+											<th>ID</th>
+											<th>Type</th>
+										</tr>
+									</thead>
+									<tbody>
+										@for (item of traceDetails; track item.slug + ':' + item.id) {
+											<tr class="trace-reseau-insights-row-clickable" [class.trace-reseau-insights-row-clickable--active]="isTraceRowSelected(item)" (click)="onTraceRowClick(item)">
+												<td><span class="trace-reseau-insights-dot" [style.background]="item.color"></span>{{ item.slug }}</td>
+												<td>{{ item.id }}</td>
+												<td>{{ item.kind }}</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					}
+				</div>
 				<div class="trace-reseau-legend-float">
 				<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="legendOpen" (click)="legendOpen = !legendOpen" [attr.aria-expanded]="legendOpen" [title]="legendOpen ? 'Masquer la légende' : 'Afficher la légende'">
 					<i class="fa fa-info-circle"></i>

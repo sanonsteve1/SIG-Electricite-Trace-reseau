@@ -58,6 +58,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	resumeLongueurKm = 0;
 	resumePoteaux = 0;
 	resumeOuvrages = 0;
+	traceInsightsOpen = false;
+	lastTraceDirection: 'amont' | 'aval' | null = null;
+	traceDetails: { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] = [];
+	traceTypeCounts: { slug: string; count: number; color: string }[] = [];
 
 	canUndo = false;
 	canRedo = false;
@@ -72,11 +76,21 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private initialBounds: unknown = null;
 	private slugToLayerGroups = new Map<string, unknown>();
 	/** Pour clignoter sur la carte : (slug + ':' + id) -> layer Leaflet */
-	private slugIdToLayer = new Map<string, { getBounds?: () => { getCenter?: () => unknown }; getLatLng?: () => { lat: number; lng: number } }>();
+	private slugIdToLayer = new Map<string, {
+		getBounds?: () => { getCenter?: () => unknown };
+		getLatLng?: () => { lat: number; lng: number };
+		setStyle?: (s: object) => void;
+		bringToFront?: () => void;
+	}>();
 	/** Groupe Leaflet pour le cercle de clignotement */
 	private highlightLayerGroup: { addLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
+	private traceClusterLayerGroup: { addLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
 	private blinkCircle: unknown = null;
 	private blinkInterval: ReturnType<typeof setInterval> | null = null;
+	private flowAnimationInterval: ReturnType<typeof setInterval> | null = null;
+	private flowDashOffset = 0;
+	private pointPulsePhase = false;
+	selectedTraceRowKey: string | null = null;
 
 	constructor(
 		private gisApi: GisApiService,
@@ -93,6 +107,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	ngOnDestroy(): void {
 		this.stopBlink();
+		this.stopFlowAnimation();
+		this.clearTracePointClusters();
 		if (this.map && typeof (this.map as { remove?: () => void }).remove === 'function') {
 			(this.map as { remove: () => void }).remove();
 			this.map = null;
@@ -245,6 +261,17 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		}
 	}
 
+	private stopFlowAnimation(): void {
+		if (this.flowAnimationInterval) {
+			clearInterval(this.flowAnimationInterval);
+			this.flowAnimationInterval = null;
+		}
+	}
+
+	private clearTracePointClusters(): void {
+		if (this.traceClusterLayerGroup) this.traceClusterLayerGroup.clearLayers();
+	}
+
 	/** Centre la carte sur l’élément sélectionné et fait clignoter un cercle. */
 	private highlightSelectionOnMap(): void {
 		const slug = this.getSlugForCurrentType();
@@ -332,9 +359,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				setView?: (center: [number, number] | unknown, zoom?: number, opts?: object) => void;
 			};
 			if (m?.fitBounds && b) {
-				m.fitBounds(b, { padding: [80, 80], maxZoom: 18 });
+				m.fitBounds(b, { padding: [70, 70], maxZoom: 20 });
 			} else if (m?.setView && latLng) {
-				m.setView(latLng, 18, { animate: true });
+				m.setView(latLng, 20, { animate: true });
 			}
 		});
 	}
@@ -401,7 +428,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		).subscribe({
 			next: (res) => {
 				this.mapLoading = false;
-				this.applyTraceResult(res.ouvrage_ids || []);
+				this.applyTraceResult(res.ouvrage_ids || [], direction);
 				this.cdr.markForCheck();
 			},
 			error: () => {
@@ -412,15 +439,272 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	/** Affiche sur la carte uniquement les ouvrages du tracé (ou tous si liste vide). */
-	private applyTraceResult(ouvrageIds: { slug: string; id: string }[]): void {
+	private applyTraceResult(ouvrageIds: { slug: string; id: string }[], direction: 'amont' | 'aval'): void {
 		// Pour l’instant : si le backend renvoie des IDs, on pourrait masquer les couches non concernées ou surligner.
 		// Ici on garde l’affichage actuel ; à étendre quand le backend renverra les géométries ou IDs.
 		this.traceOuvrageIds = new Set(ouvrageIds.map((o) => `${o.slug}:${o.id}`));
+		this.lastTraceDirection = direction;
+		this.flowDashOffset = 0;
 		this.resumeOuvrages = ouvrageIds.length;
 		this.resumePoteaux = ouvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
 		this.resumeLongueurKm = 0;
+		this.buildTraceInsights(ouvrageIds);
+		this.traceInsightsOpen = ouvrageIds.length > 0;
 		this.applyTraceStyleToMap();
+		this.updateTracePointClusters();
+		this.startFlowAnimation();
 		this.cdr.markForCheck();
+	}
+
+	private buildTraceInsights(ouvrageIds: { slug: string; id: string }[]): void {
+		const details = ouvrageIds.map((o) => {
+			const kind: 'ligne' | 'point' | 'autre' = this.isLineSlug(o.slug) ? 'ligne' : this.isPointSlug(o.slug) ? 'point' : 'autre';
+			return { slug: o.slug, id: o.id, kind, color: this.getColorForSlug(o.slug) };
+		});
+		details.sort((a, b) => (a.slug === b.slug ? a.id.localeCompare(b.id) : a.slug.localeCompare(b.slug)));
+		this.traceDetails = details;
+
+		const grouped = new Map<string, { slug: string; count: number; color: string }>();
+		for (const d of details) {
+			const e = grouped.get(d.slug) ?? { slug: d.slug, count: 0, color: d.color };
+			e.count += 1;
+			grouped.set(d.slug, e);
+		}
+		this.traceTypeCounts = Array.from(grouped.values()).sort((a, b) => b.count - a.count);
+	}
+
+	private getColorForSlug(slug: string): string {
+		const couche = this.couchesReseau.find((c) => c.id === slug);
+		if (couche) return couche.color;
+		let hash = 0;
+		for (let i = 0; i < slug.length; i += 1) hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
+		return MAP_COLORS[hash % MAP_COLORS.length];
+	}
+
+	private isLineSlug(slug: string): boolean {
+		return /ligne|electricline/.test((slug || '').toLowerCase());
+	}
+
+	get traceLineCount(): number {
+		return this.traceDetails.filter((d) => d.kind === 'ligne').length;
+	}
+
+	get tracePointCount(): number {
+		return this.traceDetails.filter((d) => d.kind === 'point').length;
+	}
+
+	get traceOtherCount(): number {
+		return this.traceDetails.filter((d) => d.kind === 'autre').length;
+	}
+
+	get traceLinePercent(): number {
+		return this.resumeOuvrages > 0 ? Math.round((this.traceLineCount / this.resumeOuvrages) * 100) : 0;
+	}
+
+	get tracePointPercent(): number {
+		return this.resumeOuvrages > 0 ? Math.round((this.tracePointCount / this.resumeOuvrages) * 100) : 0;
+	}
+
+	get traceOtherPercent(): number {
+		return this.resumeOuvrages > 0 ? Math.max(0, 100 - this.traceLinePercent - this.tracePointPercent) : 0;
+	}
+
+	get maxTraceTypeCount(): number {
+		return this.traceTypeCounts.length > 0 ? Math.max(...this.traceTypeCounts.map((x) => x.count)) : 1;
+	}
+
+	getTypeBarPercent(count: number): number {
+		if (this.maxTraceTypeCount <= 0) return 0;
+		return Math.max(6, Math.round((count / this.maxTraceTypeCount) * 100));
+	}
+
+	get traceAnalysisLines(): string[] {
+		if (this.resumeOuvrages === 0) return ['Aucun ouvrage dans le tracé courant.'];
+		const top = this.traceTypeCounts[0];
+		const lines: string[] = [];
+		if (this.lastTraceDirection) {
+			lines.push(`Sens demandé: ${this.lastTraceDirection === 'amont' ? 'amont' : 'aval'}.`);
+		}
+		lines.push(`${this.traceLineCount} lignes, ${this.tracePointCount} points, ${this.traceOtherCount} autres ouvrages.`);
+		if (top) lines.push(`Couche dominante: ${this.formatOuvrageLabel(top.slug)} (${top.count} ouvrage(s)).`);
+		if (this.traceLinePercent >= 75) lines.push('Tracé majoritairement linéaire (forte part de conducteurs).');
+		else if (this.tracePointPercent >= 60) lines.push('Tracé fortement concentré sur les nœuds/équipements.');
+		else lines.push('Tracé mixte avec équilibre lignes / équipements.');
+		return lines;
+	}
+
+	onTraceRowClick(item: { slug: string; id: string }): void {
+		this.selectedTraceRowKey = `${item.slug}:${item.id}`;
+		this.focusTraceItemOnMap(item.slug, item.id);
+	}
+
+	private normalizeId(v: unknown): string {
+		return String(v ?? '').replace(/^\{|\}$/g, '').trim().toLowerCase();
+	}
+
+	isTraceRowSelected(item: { slug: string; id: string }): boolean {
+		if (!this.selectedTraceRowKey) return false;
+		const idx = this.selectedTraceRowKey.indexOf(':');
+		if (idx < 0) return false;
+		const selSlug = this.selectedTraceRowKey.slice(0, idx);
+		const selId = this.selectedTraceRowKey.slice(idx + 1);
+		return selSlug.toLowerCase() === item.slug.toLowerCase() && this.normalizeId(selId) === this.normalizeId(item.id);
+	}
+
+	private findTraceLayer(slug: string, id: string): {
+		getBounds?: () => { getCenter?: () => unknown };
+		getLatLng?: () => { lat: number; lng: number };
+		setStyle?: (s: object) => void;
+		bringToFront?: () => void;
+	} | null {
+		const idNorm = String(id).replace(/^\{|\}$/g, '');
+		const idCanonical = this.normalizeId(id);
+		const idNum = Number(id);
+		let layer =
+			this.slugIdToLayer.get(`${slug}:${id}`) ??
+			this.slugIdToLayer.get(`${slug}:${idNorm}`) ??
+			this.slugIdToLayer.get(`${slug}:{${idNorm}}`) ??
+			this.slugIdToLayer.get(`${slug}:${idNorm.toLowerCase()}`) ??
+			(!Number.isNaN(idNum) ? this.slugIdToLayer.get(`${slug}:${idNum}`) : null);
+		if (!layer) {
+			for (const [key, l] of this.slugIdToLayer) {
+				const colon = key.indexOf(':');
+				if (colon < 0) continue;
+				const keySlug = key.slice(0, colon);
+				const keyId = key.slice(colon + 1);
+				if (keySlug.toLowerCase() !== slug.toLowerCase()) continue;
+				const keyCanonical = this.normalizeId(keyId);
+				if (keyCanonical === idCanonical || (keyId === String(idNum) && !Number.isNaN(idNum))) {
+					layer = l;
+					break;
+				}
+			}
+		}
+		return layer ?? null;
+	}
+
+	private getLayerCenter(layer: {
+		getBounds?: () => { getCenter?: () => unknown };
+		getLatLng?: () => { lat: number; lng: number };
+	}): [number, number] | null {
+		const b = typeof layer.getBounds === 'function' ? layer.getBounds() : null;
+		const center =
+			b && typeof (b as { getCenter?: () => unknown }).getCenter === 'function'
+				? (b as { getCenter: () => unknown }).getCenter()
+				: typeof layer.getLatLng === 'function'
+					? layer.getLatLng()
+					: null;
+		if (!center) return null;
+		return Array.isArray(center) ? [center[0], center[1]] : [(center as { lat: number }).lat, (center as { lng: number }).lng];
+	}
+
+	private updateTracePointClusters(): void {
+		this.clearTracePointClusters();
+		if (!this.traceClusterLayerGroup) return;
+		const pointItems = this.traceDetails.filter((d) => d.kind === 'point');
+		if (pointItems.length === 0) return;
+		const groups = new Map<string, { lat: number; lng: number; count: number }>();
+		for (const item of pointItems) {
+			const layer = this.findTraceLayer(item.slug, item.id);
+			if (!layer) continue;
+			const center = this.getLayerCenter(layer);
+			if (!center) continue;
+			const lat = Number(center[0].toFixed(6));
+			const lng = Number(center[1].toFixed(6));
+			const key = `${lat}:${lng}`;
+			const g = groups.get(key) ?? { lat, lng, count: 0 };
+			g.count += 1;
+			groups.set(key, g);
+		}
+		const overlap = Array.from(groups.values()).filter((g) => g.count > 1);
+		if (overlap.length === 0) return;
+		import('leaflet').then((LMod) => {
+			const L = (LMod as { default: unknown }).default as {
+				divIcon: (opts: { className: string; html: string; iconSize: [number, number]; iconAnchor: [number, number] }) => unknown;
+				marker: (latlng: [number, number], opts: { icon: unknown }) => unknown;
+			};
+			for (const g of overlap) {
+				const icon = L.divIcon({
+					className: 'trace-point-cluster-icon',
+					html: `<span>${g.count}</span>`,
+					iconSize: [28, 28],
+					iconAnchor: [14, 14]
+				});
+				const m = L.marker([g.lat, g.lng], { icon });
+				this.traceClusterLayerGroup!.addLayer(m);
+			}
+		});
+	}
+
+	private applySelectedTraceRowStyle(): void {
+		if (!this.selectedTraceRowKey) return;
+		const idx = this.selectedTraceRowKey.indexOf(':');
+		if (idx < 0) return;
+		const slug = this.selectedTraceRowKey.slice(0, idx);
+		const id = this.selectedTraceRowKey.slice(idx + 1);
+		const layer = this.findTraceLayer(slug, id);
+		if (!layer) return;
+		if (layer.setStyle) {
+			layer.setStyle({
+				color: '#f59e0b',
+				weight: 8,
+				opacity: 1,
+				fillColor: '#f59e0b',
+				fillOpacity: 0.85
+			});
+		}
+		if (layer.bringToFront) layer.bringToFront();
+	}
+
+	private focusTraceItemOnMap(slug: string, id: string): void {
+		const layer = this.findTraceLayer(slug, id);
+		if (!layer || !this.map) return;
+		// Reposer d'abord le style global du tracé, puis renforcer la sélection courante.
+		this.applyTraceStyleToMap();
+		this.applySelectedTraceRowStyle();
+		const b = typeof layer.getBounds === 'function' ? layer.getBounds() : null;
+		const center =
+			b && typeof (b as { getCenter?: () => unknown }).getCenter === 'function'
+				? (b as { getCenter: () => unknown }).getCenter()
+				: typeof layer.getLatLng === 'function'
+					? layer.getLatLng()
+					: null;
+		if (!center) return;
+		const latLng = Array.isArray(center) ? center : [(center as { lat: number }).lat, (center as { lng: number }).lng];
+		const m = this.map as {
+			fitBounds?: (b: unknown, o?: object) => void;
+			setView?: (center: [number, number] | unknown, zoom?: number, opts?: object) => void;
+		};
+		if (m?.fitBounds && b) m.fitBounds(b, { padding: [80, 80], maxZoom: 20 });
+		else if (m?.setView) m.setView(latLng, 20, { animate: true });
+		this.stopBlink();
+		import('leaflet').then((LMod) => {
+			const L = (LMod as { default: unknown }).default as {
+				circleMarker: (latlng: unknown, opts: object) => { setStyle: (s: object) => void; setRadius: (n: number) => void; bringToFront: () => void };
+			};
+			if (!this.highlightLayerGroup) return;
+			const marker = L.circleMarker(latLng, {
+				radius: 24,
+				color: '#f59e0b',
+				weight: 4,
+				fillColor: '#f59e0b',
+				fillOpacity: 0.45
+			});
+			this.highlightLayerGroup.addLayer(marker);
+			marker.bringToFront();
+			this.blinkCircle = marker;
+			let radius = 24;
+			let growing = true;
+			this.blinkInterval = setInterval(() => {
+				if (!this.blinkCircle) return;
+				radius = growing ? radius + 3 : radius - 3;
+				if (radius >= 34) growing = false;
+				if (radius <= 16) growing = true;
+				marker.setRadius(radius);
+				marker.setStyle({ fillOpacity: growing ? 0.55 : 0.25, weight: growing ? 5 : 2 });
+			}, 150);
+			setTimeout(() => this.stopBlink(), 3200);
+		});
 	}
 
 	private isPointSlug(slug: string): boolean {
@@ -429,14 +713,63 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	private applyTraceStyleToMap(): void {
-		const highlight = { opacity: 1, fillOpacity: 0.7, weight: 6 };
-		const dimmed = { opacity: 0.2, fillOpacity: 0.15, weight: 2 };
+		const dimmed: Record<string, unknown> = { opacity: 0.2, fillOpacity: 0.15, weight: 2, dashArray: null };
+		const layerFlags = new Map<unknown, boolean>();
+		const layerSlug = new Map<unknown, string>();
 		this.slugIdToLayer.forEach((layer, key) => {
-			const setStyle = (layer as { setStyle?: (s: object) => void }).setStyle;
-			if (setStyle) {
-				setStyle.call(layer, this.traceOuvrageIds.size === 0 || this.traceOuvrageIds.has(key) ? highlight : dimmed);
+			if (!layerFlags.has(layer)) layerFlags.set(layer, this.traceOuvrageIds.size === 0);
+			if (!layerSlug.has(layer)) layerSlug.set(layer, this.getSlugFromLayerKey(key));
+			if (this.traceOuvrageIds.size > 0 && this.traceOuvrageIds.has(key)) {
+				layerFlags.set(layer, true);
 			}
 		});
+		layerFlags.forEach((isHighlighted, layer) => {
+			const setStyle = (layer as { setStyle?: (s: object) => void }).setStyle;
+			if (!setStyle) return;
+			if (!isHighlighted) {
+				setStyle.call(layer, dimmed);
+				return;
+			}
+			const slug = layerSlug.get(layer) ?? '';
+			const isLine = this.isLineSlug(slug);
+			const isPoint = this.isPointSlug(slug);
+			const highlight: Record<string, unknown> = { opacity: 1, fillOpacity: 0.7, weight: 6 };
+			if (isLine && this.traceOuvrageIds.size > 0 && this.lastTraceDirection) {
+				highlight['color'] = '#fde047';
+				highlight['fillColor'] = '#fde047';
+				highlight['weight'] = 7;
+				highlight['dashArray'] = '14 10';
+				highlight['dashOffset'] = String(this.flowDashOffset);
+			} else if (isPoint && this.traceOuvrageIds.size > 0) {
+				// Pulsation des points impactés pour visualiser les nœuds du tracé.
+				highlight['dashArray'] = null;
+				highlight['weight'] = this.pointPulsePhase ? 7 : 4;
+				highlight['fillOpacity'] = this.pointPulsePhase ? 0.95 : 0.45;
+				highlight['opacity'] = 1;
+			} else {
+				highlight['dashArray'] = null;
+			}
+			setStyle.call(layer, highlight);
+		});
+		this.applySelectedTraceRowStyle();
+	}
+
+	private getSlugFromLayerKey(key: string): string {
+		const idx = key.indexOf(':');
+		return idx >= 0 ? key.slice(0, idx) : key;
+	}
+
+	private startFlowAnimation(): void {
+		this.stopFlowAnimation();
+		if (this.traceOuvrageIds.size === 0) return;
+		this.flowAnimationInterval = setInterval(() => {
+			if (this.lastTraceDirection === 'amont' || this.lastTraceDirection === 'aval') {
+				const step = this.lastTraceDirection === 'aval' ? -3 : 3;
+				this.flowDashOffset += step;
+			}
+			this.pointPulsePhase = !this.pointPulsePhase;
+			this.applyTraceStyleToMap();
+		}, 140);
 	}
 
 	toggleCouche(layer: { id: string; label: string; color: string; visible: boolean }): void {
@@ -468,6 +801,15 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.resumeOuvrages = 0;
 		this.resumePoteaux = 0;
 		this.resumeLongueurKm = 0;
+		this.lastTraceDirection = null;
+		this.traceInsightsOpen = false;
+		this.traceDetails = [];
+		this.traceTypeCounts = [];
+		this.selectedTraceRowKey = null;
+		this.flowDashOffset = 0;
+		this.pointPulsePhase = false;
+		this.stopFlowAnimation();
+		this.clearTracePointClusters();
 		this.applyTraceStyleToMap();
 		this.cdr.markForCheck();
 	}
@@ -590,6 +932,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			Lx.control.zoom({ position: 'topleft' }).addTo(this.map);
 			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void };
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
+			this.traceClusterLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			setTimeout(() => this.loadGeometries(), 150);
 		});
 	}
@@ -602,7 +945,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				if (tables.length === 0) return of([]);
 				return forkJoin(
 					tables.map((t, i) =>
-						this.gisApi.getList(t.slug, 500, 0).pipe(
+						// Charger un volume plus large pour éviter que des ouvrages du tracé
+						// (ex. poteaux) ne soient absents de la carte à cause de la pagination.
+						this.gisApi.getList(t.slug, 2000, 0).pipe(
 							map((rows: Record<string, unknown>[]) => ({
 								slug: t.slug,
 								table: t.table,

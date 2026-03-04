@@ -24,10 +24,13 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 	};
 
 
-	// Requêtes vers l'API GIS (script_bd) : ne pas envoyer credentials pour éviter CORS avec *
+	// Requêtes vers les APIs externes (GIS / OCR) :
+	// ne pas envoyer credentials pour éviter les conflits CORS (origins "*").
 	const gisApiUrl = (environment as { gisApiUrl?: string }).gisApiUrl;
+	const ocrApiUrl = (environment as { ocrApiUrl?: string }).ocrApiUrl;
 	const isGisApi = gisApiUrl && typeof req.url === 'string' && req.url.startsWith(gisApiUrl);
-	const withCreds = !isGisApi;
+	const isOcrApi = ocrApiUrl && typeof req.url === 'string' && req.url.startsWith(ocrApiUrl);
+	const withCreds = !(isGisApi || isOcrApi);
 
 	const authReq = req.clone({
 		url: preparerUrl(req.url),

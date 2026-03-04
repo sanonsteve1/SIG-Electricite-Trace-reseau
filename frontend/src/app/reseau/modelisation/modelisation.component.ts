@@ -94,7 +94,24 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	ouvrageModalVisible = false;
 	ouvrageModalMode: 'view' | 'edit' | 'create' = 'view';
 	ouvrageForm: Record<string, unknown> = {};
+	/** Cible CRUD mémorisée pendant l'édition (utile pour couches synthétiques points*). */
+	private editTargetSlug: string | null = null;
+	private editTargetPk = '';
 	crudLoading = false;
+	ocrLoading = false;
+	ocrMessage = '';
+	imageViewerVisible = false;
+	imageViewerSrc = '';
+	imageViewerTitle = 'Image';
+	popupOcrVisible = false;
+	popupOcrLoading = false;
+	popupOcrTitle = 'Résultat OCR';
+	popupOcrText = '';
+	popupOcrTargetSlug: string | null = null;
+	popupOcrTargetPk = '';
+	popupOcrSourceRow: Record<string, unknown> | null = null;
+	popupOcrFieldOptions: Array<{ key: string; label: string }> = [];
+	popupOcrMappings: Array<{ text: string; field: string }> = [];
 	/** Modale de confirmation de suppression */
 	deleteConfirmVisible = false;
 	ouvrageToDelete: Record<string, unknown> | null = null;
@@ -119,6 +136,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Clé ouvrage (slug:pk) → layer + style par défaut (pour mise en évidence au consulter) */
 	private ouvrageIdToLayer = new Map<string, { layer: { setStyle: (s: object) => void; getBounds?: () => unknown; bringToFront?: () => void }; defaultColor: string; isLine: boolean }>();
 	private highlightedOuvrageKey: string | null = null;
+	/** Détails chargés au clic popup (incluant image) pour éviter des appels répétés. */
+	private popupDetailsCache = new Map<string, Record<string, unknown>>();
 
 	/** Création : phase dessin sur la carte */
 	createDrawingMode = false;
@@ -257,7 +276,6 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	}
 
 	toggleCouche(couche: { id: string; label: string; color: string; included: boolean }): void {
-		couche.included = !couche.included;
 		const mainGroup = this.layerGroup as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void } | null;
 		if (!mainGroup) {
 			this.cdr.markForCheck();
@@ -325,6 +343,31 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		return first ? String(ouvrage[first]) : '';
 	}
 
+	private isSyntheticPointLayer(slug: string | null): boolean {
+		const s = (slug ?? '').toLowerCase();
+		return s === 'points' || s === 'point-connecte' || s === 'point-non-connecte' || s === 'point-connecte-topologie';
+	}
+
+	private normalizeSlugFromType(typeValue: unknown): string | null {
+		if (typeof typeValue !== 'string' || !typeValue.trim()) return null;
+		return typeValue.trim().toLowerCase().replace(/_/g, '-');
+	}
+
+	private resolveCrudTarget(
+		defaultSlug: string | null,
+		payload: Record<string, unknown>
+	): { slug: string | null; pk: string } {
+		const fallbackPk = this.getPkValue(payload);
+		if (!defaultSlug) return { slug: null, pk: fallbackPk };
+		if (!this.isSyntheticPointLayer(defaultSlug)) return { slug: defaultSlug, pk: fallbackPk };
+		const targetSlug = this.normalizeSlugFromType(payload['t']);
+		const gid = payload['gid'];
+		if (targetSlug && gid != null && String(gid).trim().length > 0) {
+			return { slug: targetSlug, pk: String(gid) };
+		}
+		return { slug: defaultSlug, pk: fallbackPk };
+	}
+
 	/** Retourne le nom de la clé primaire (pour le popup data-pk-key) */
 	private getPkKey(props: Record<string, unknown>): string {
 		for (const k of PK_KEYS) {
@@ -363,7 +406,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.ouvragesLoading = true;
 		this.cdr.markForCheck();
 		const showAllLayersOnMap = this.selectedMapPanelAction === 'modify' || this.selectedMapPanelAction === 'delete' || this.selectedMapPanelAction === 'create';
-		this.gisApi.getList(slug, 500, 0).pipe(
+		this.gisApi.getList(slug, 2000, 0).pipe(
 			catchError(() => of([]))
 		).subscribe((list) => {
 			this.ouvragesList = list;
@@ -389,8 +432,9 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 
 	/** Ouvre la consultation : dans le panneau flottant si une couche est sélectionnée, sinon en modale */
 	openView(ouvrage: Record<string, unknown>): void {
-		const slug = this.selectedLayerSlug;
-		const pk = this.getPkValue(ouvrage);
+		const target = this.resolveCrudTarget(this.selectedLayerSlug, ouvrage);
+		const slug = target.slug;
+		const pk = target.pk;
 		this.ouvrageModalMode = 'view';
 		if (slug && this.gisApi) {
 			this.gisApi.getById(slug, pk).pipe(
@@ -413,31 +457,48 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	}
 
 	/** Ouvre l'édition : dans le panneau flottant si on est en mode Modifier, sinon en modale */
-	openEdit(ouvrage: Record<string, unknown>): void {
-		this.ouvrageForm = { ...ouvrage };
+	openEdit(ouvrage: Record<string, unknown>, forcedTarget?: { slug: string | null; pk: string }): void {
+		const target = forcedTarget ?? this.resolveCrudTarget(this.selectedLayerSlug, ouvrage);
+		const slug = target.slug;
+		const pk = target.pk;
+		this.editTargetSlug = slug;
+		this.editTargetPk = pk;
 		this.ouvrageModalMode = 'edit';
-		if (this.selectedMapPanelAction === 'modify') {
-			this.editFormInPanel = true;
-			this.ouvrageModalVisible = false;
-			this.mapPanelCollapsed = false;
-		} else {
-			this.editFormInPanel = false;
-			this.ouvrageModalVisible = true;
+		const openPanel = this.selectedMapPanelAction === 'modify';
+		const applyForm = (row: Record<string, unknown>): void => {
+			this.ouvrageForm = { ...row };
+			if (openPanel) {
+				this.editFormInPanel = true;
+				this.ouvrageModalVisible = false;
+				this.mapPanelCollapsed = false;
+			} else {
+				this.editFormInPanel = false;
+				this.ouvrageModalVisible = true;
+			}
+			this.cdr.markForCheck();
+		};
+		// Toujours recharger la ligne complète (incluant image) pour éviter les
+		// écarts entre la liste allégée et la fiche d'édition.
+		if (slug && pk && this.gisApi) {
+			this.gisApi.getById(slug, pk).pipe(
+				catchError(() => of(ouvrage))
+			).subscribe((full) => applyForm((full ?? ouvrage) as Record<string, unknown>));
+			return;
 		}
-		this.cdr.markForCheck();
+		applyForm(ouvrage);
 	}
 
 	/** En mode Modifier : clic sur un ouvrage sur la carte → charger l'ouvrage complet et ouvrir le formulaire de modification */
 	openEditFromMapClick(slug: string, props: Record<string, unknown>): void {
-		const pk = this.getPkValue(props);
-		if (!slug || !pk || !this.gisApi) return;
-		this.gisApi.getById(slug, pk).pipe(
+		const target = this.resolveCrudTarget(slug, props);
+		if (!target.slug || !target.pk || !this.gisApi) return;
+		this.gisApi.getById(target.slug, target.pk).pipe(
 			catchError(() => of(null))
 		).subscribe((ouvrage) => {
 			if (ouvrage) {
 				this.selectedLayerSlug = slug;
 				this.selectedLayerLabel = this.couchesModele.find((c) => c.id === slug)?.label ?? slug;
-				this.openEdit(ouvrage);
+				this.openEdit(ouvrage, target);
 				this.cdr.markForCheck();
 			}
 		});
@@ -905,6 +966,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.createGeometryWkt = null;
 		this.createDrawingPoints = [];
 		this.ouvrageForm = {};
+		this.editTargetSlug = null;
+		this.editTargetPk = '';
 		this.suggestedConnectionLabel = '';
 		this.selectedMapPanelAction = null;
 		this.clearDrawLayer();
@@ -917,6 +980,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	closeEditFormInPanel(): void {
 		this.editFormInPanel = false;
 		this.ouvrageForm = {};
+		this.editTargetSlug = null;
+		this.editTargetPk = '';
 		this.loadOuvragesForLayer();
 		if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
 		this.cdr.markForCheck();
@@ -950,6 +1015,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.ouvrageModalVisible = false;
 		this.viewFormInPanel = false;
 		this.ouvrageForm = {};
+		this.editTargetSlug = null;
+		this.editTargetPk = '';
 		this.highlightOuvrageOnMap(null);
 		this.cdr.markForCheck();
 	}
@@ -958,6 +1025,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	closeViewFormInPanel(): void {
 		this.viewFormInPanel = false;
 		this.ouvrageForm = {};
+		this.editTargetSlug = null;
+		this.editTargetPk = '';
 		this.highlightOuvrageOnMap(null);
 		this.cdr.markForCheck();
 	}
@@ -1046,6 +1115,125 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		return /^geom$/i.test(key);
 	}
 
+	isImageKey(key: string): boolean {
+		return /^image($|_)/i.test(key);
+	}
+
+	onImageFileSelected(event: Event, key: string): void {
+		const input = event.target as HTMLInputElement | null;
+		const file = input?.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			this.ouvrageForm[key] = typeof reader.result === 'string' ? reader.result : '';
+			this.runOcrAutofillFromImage(file, key);
+			if (input) input.value = '';
+			this.cdr.markForCheck();
+		};
+		reader.readAsDataURL(file);
+	}
+
+	private runOcrAutofillFromImage(file: File, imageKey: string): void {
+		if (!this.gisApi) return;
+		this.ocrLoading = true;
+		this.ocrMessage = "Analyse OCR en cours...";
+		this.cdr.markForCheck();
+		this.gisApi.processOcr(file, { language: 'fra+eng', engine: 'tesseract' }).pipe(
+			catchError(() => of({ success: false, error: "api_ocr_indisponible", text: '' }))
+		).subscribe((res) => {
+			this.ocrLoading = false;
+			const text = (res?.text ?? '').trim();
+			if (!res?.success || !text) {
+				this.ocrMessage = "Aucun texte exploitable détecté par l'OCR.";
+				this.cdr.markForCheck();
+				return;
+			}
+			const filled = this.fillEmptyFieldsFromOcrText(text, imageKey);
+			this.ocrMessage = filled > 0
+				? `OCR terminé: ${filled} champ(s) vide(s) pré-rempli(s).`
+				: "OCR terminé: aucun champ vide correspondant trouvé.";
+			this.cdr.markForCheck();
+		});
+	}
+
+	private fillEmptyFieldsFromOcrText(text: string, imageKey: string): number {
+		const entries = this.parseOcrTextToEntries(text);
+		if (entries.length === 0) return 0;
+		let filled = 0;
+		for (const key of Object.keys(this.ouvrageForm)) {
+			if (key === imageKey || this.isImageKey(key) || this.isGeomKey(key)) continue;
+			const current = this.ouvrageForm[key];
+			if (!(current == null || String(current).trim() === '')) continue;
+			const value = this.findBestOcrValueForField(key, entries);
+			if (!value) continue;
+			this.ouvrageForm[key] = value;
+			filled += 1;
+		}
+		return filled;
+	}
+
+	private parseOcrTextToEntries(text: string): Array<{ key: string; value: string }> {
+		const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+		const out: Array<{ key: string; value: string }> = [];
+		for (const line of lines) {
+			let m = line.match(/^([^:=\-]{2,80})\s*[:=\-]\s*(.{1,200})$/);
+			if (m) {
+				out.push({ key: this.normalizeSearchText(m[1]), value: m[2].trim() });
+				continue;
+			}
+			m = line.match(/^([A-Za-z0-9_À-ÿ\s]{3,80})\s{2,}(.{1,200})$/);
+			if (m) {
+				out.push({ key: this.normalizeSearchText(m[1]), value: m[2].trim() });
+			}
+		}
+		return out;
+	}
+
+	private findBestOcrValueForField(fieldKey: string, entries: Array<{ key: string; value: string }>): string | null {
+		const normKey = this.normalizeSearchText(fieldKey);
+		const normLabel = this.normalizeSearchText(this.formatOuvrageLabel(fieldKey));
+		for (const e of entries) {
+			if (e.key === normKey || e.key === normLabel) return e.value;
+		}
+		for (const e of entries) {
+			if (e.key.includes(normKey) || normKey.includes(e.key)) return e.value;
+			if (e.key.includes(normLabel) || normLabel.includes(e.key)) return e.value;
+		}
+		return null;
+	}
+
+	private normalizeSearchText(value: string): string {
+		return value
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, ' ')
+			.trim();
+	}
+
+	clearImageField(key: string): void {
+		this.ouvrageForm[key] = '';
+		this.cdr.markForCheck();
+	}
+
+	getImagePreviewSrc(key: string): string | null {
+		return this.getImagePreviewFromValue(this.ouvrageForm[key]);
+	}
+
+	getImageDisplayValue(key: string): string {
+		const val = this.ouvrageForm[key];
+		if (val == null || val === '') return '';
+		return String(val);
+	}
+
+	getImagePreviewFromValue(value: unknown): string | null {
+		if (typeof value !== 'string' || !value.trim()) return null;
+		const s = value.trim();
+		if (s.startsWith('data:image/')) return s;
+		if (/^https?:\/\//i.test(s)) return s;
+		return null;
+	}
+
 	/** Libellé d'affichage pour un champ (lecture modale) */
 	formatOuvrageLabel(key: string): string {
 		const labels: Record<string, string> = {
@@ -1058,6 +1246,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 			assettype: 'Type d\'actif',
 			name: 'Nom',
 			nom: 'Nom',
+			image: 'Image',
 			code: 'Code',
 			username: 'Utilisateur',
 			section: 'Section',
@@ -1148,8 +1337,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	buildPopupContent(props: Record<string, unknown>): string {
 		if (!props || typeof props !== 'object') return '<div class="map-popup"><div class="map-popup-body">Ouvrage</div></div>';
 		const { _layerSlug, geom, Geom, ...rest } = props;
+		const imageEntry = Object.entries(rest).find(([k, v]) => this.isImageKey(k) && this.getImagePreviewFromValue(v));
+		const imageSrc = imageEntry ? this.getImagePreviewFromValue(imageEntry[1]) : null;
 		const rawEntries = Object.entries(rest)
-			.filter(([k, v]) => k !== '_layerSlug' && v != null && String(v).trim() !== '')
+			.filter(([k, v]) => k !== '_layerSlug' && !this.isImageKey(k) && v != null && String(v).trim() !== '')
 			.map(([k, v]) => ({
 				key: k,
 				label: this.formatOuvrageLabel(k),
@@ -1164,15 +1355,182 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		let html = '<div class="map-popup">';
 		html += `<div class="map-popup-header"><i class="fa fa-info-circle map-popup-icon"></i><span>${this.escapeHtml(titleFormatted)}</span></div>`;
 		html += '<div class="map-popup-body">';
+		if (imageSrc) {
+			html += `<div class="map-popup-image-wrap"><img class="map-popup-image" src="${this.escapeHtml(imageSrc)}" alt="Image ouvrage"></div>`;
+		}
 		ordered.forEach((e, i) => {
 			html += `<div class="map-popup-row ${i % 2 === 0 ? 'map-popup-row--even' : ''}"><span class="map-popup-key">${this.escapeHtml(e.label)}</span><span class="map-popup-val">${this.escapeHtml(e.val)}</span></div>`;
 		});
 		html += '</div>';
 		html += '<div class="map-popup-actions">';
+		html += `<button type="button" class="map-popup-btn map-popup-btn--ocr" data-slug="${slug}" data-pk="${pk}" data-pk-key="${pkKey}" title="Appliquer OCR"><i class="fa fa-eye"></i> Appliquer OCR</button>`;
 		html += `<button type="button" class="map-popup-btn map-popup-btn--edit" data-slug="${slug}" data-pk="${pk}" data-pk-key="${pkKey}" title="Modifier"><i class="fa fa-pencil"></i> Modifier</button>`;
 		html += `<button type="button" class="map-popup-btn map-popup-btn--delete" data-slug="${slug}" data-pk="${pk}" data-pk-key="${pkKey}" title="Supprimer"><i class="fa fa-trash"></i> Supprimer</button>`;
 		html += '</div></div>';
 		return html;
+	}
+
+	private getImageFromRow(row: Record<string, unknown>): { key: string; src: string } | null {
+		for (const [k, v] of Object.entries(row)) {
+			if (!this.isImageKey(k)) continue;
+			const src = this.getImagePreviewFromValue(v);
+			if (src) return { key: k, src };
+		}
+		return null;
+	}
+
+	private dataUrlToFile(dataUrl: string, filename: string): File | null {
+		const m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+		if (!m) return null;
+		const mime = m[1] || 'image/jpeg';
+		const b64 = m[2] || '';
+		const bin = atob(b64);
+		const arr = new Uint8Array(bin.length);
+		for (let i = 0; i < bin.length; i += 1) arr[i] = bin.charCodeAt(i);
+		const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+		return new File([arr], `${filename}.${ext}`, { type: mime });
+	}
+
+	private async imageSrcToFile(imageSrc: string, filename: string): Promise<File | null> {
+		if (imageSrc.startsWith('data:image/')) return this.dataUrlToFile(imageSrc, filename);
+		if (/^https?:\/\//i.test(imageSrc)) {
+			try {
+				const resp = await fetch(imageSrc);
+				if (!resp.ok) return null;
+				const blob = await resp.blob();
+				return new File([blob], `${filename}.jpg`, { type: blob.type || 'image/jpeg' });
+			} catch {
+				return null;
+			}
+		}
+		return null;
+	}
+
+	openImageViewer(src: string, title = 'Image'): void {
+		if (!src) return;
+		this.imageViewerSrc = src;
+		this.imageViewerTitle = title;
+		this.imageViewerVisible = true;
+		this.cdr.markForCheck();
+	}
+
+	private openPopupOcr(slug: string, pk: string, pkKey: string): void {
+		if (!this.gisApi) return;
+		this.popupOcrVisible = true;
+		this.popupOcrLoading = true;
+		this.popupOcrText = '';
+		this.popupOcrTitle = `OCR - ${slug} (${pk})`;
+		const target = this.resolveCrudTarget(slug, { _layerSlug: slug, [pkKey]: pk });
+		if (!target.slug || !target.pk) {
+			this.popupOcrLoading = false;
+			this.popupOcrText = "Impossible d'identifier l'ouvrage cible.";
+			this.cdr.markForCheck();
+			return;
+		}
+		const cacheKey = `${target.slug}:${target.pk}`;
+		this.popupOcrTargetSlug = target.slug;
+		this.popupOcrTargetPk = target.pk;
+		const consumeRow = async (row: Record<string, unknown> | null): Promise<void> => {
+			if (!row) {
+				this.popupOcrLoading = false;
+				this.popupOcrText = "Ouvrage introuvable.";
+				this.cdr.markForCheck();
+				return;
+			}
+			const image = this.getImageFromRow(row);
+			if (!image) {
+				this.popupOcrLoading = false;
+				this.popupOcrText = "Aucune image disponible sur cet ouvrage.";
+				this.cdr.markForCheck();
+				return;
+			}
+			this.popupOcrSourceRow = row;
+			this.popupOcrFieldOptions = this.buildPopupOcrFieldOptions(row);
+			const file = await this.imageSrcToFile(image.src, `${target.slug}-${target.pk}`);
+			if (!file) {
+				this.popupOcrLoading = false;
+				this.popupOcrText = "Impossible de convertir l'image pour l'OCR.";
+				this.cdr.markForCheck();
+				return;
+			}
+			this.gisApi!.processOcr(file, { language: 'fra+eng', engine: 'tesseract' }).pipe(
+				catchError(() => of({ success: false, text: '', error: "api_ocr_indisponible" }))
+			).subscribe((res) => {
+				this.popupOcrLoading = false;
+				const text = (res?.text ?? '').trim();
+				this.popupOcrText = text || "Aucun texte détecté dans l'image.";
+				this.popupOcrMappings = this.buildPopupOcrMappings(this.popupOcrText, this.popupOcrFieldOptions);
+				this.cdr.markForCheck();
+			});
+		};
+		const cached = this.popupDetailsCache.get(cacheKey);
+		if (cached) {
+			void consumeRow(cached);
+			return;
+		}
+		this.gisApi.getById(target.slug, target.pk).pipe(
+			catchError(() => of(null))
+		).subscribe((full) => {
+			if (full) this.popupDetailsCache.set(cacheKey, full as Record<string, unknown>);
+			void consumeRow((full as Record<string, unknown> | null) ?? null);
+		});
+	}
+
+	private buildPopupOcrFieldOptions(row: Record<string, unknown>): Array<{ key: string; label: string }> {
+		return Object.keys(row)
+			.filter((k) => !this.isGeomKey(k) && !this.isImageKey(k) && !/^_layerSlug$/i.test(k))
+			.map((k) => ({ key: k, label: this.formatOuvrageLabel(k) }))
+			.sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+	}
+
+	private buildPopupOcrMappings(
+		text: string,
+		options: Array<{ key: string; label: string }>
+	): Array<{ text: string; field: string }> {
+		const lines = text
+			.split(/\r?\n/)
+			.map((l) => l.trim())
+			.filter((l) => l.length > 0);
+		const unique: string[] = [];
+		for (const line of lines) {
+			if (!unique.includes(line)) unique.push(line);
+		}
+		return unique.map((line) => ({ text: line, field: this.guessFieldForOcrLine(line, options) }));
+	}
+
+	private guessFieldForOcrLine(line: string, options: Array<{ key: string; label: string }>): string {
+		const normLine = this.normalizeSearchText(line);
+		for (const opt of options) {
+			const nk = this.normalizeSearchText(opt.key);
+			const nl = this.normalizeSearchText(opt.label);
+			if (normLine.startsWith(nk + ' ') || normLine.startsWith(nl + ' ')) return opt.key;
+			if (normLine.includes(nk) || normLine.includes(nl)) return opt.key;
+		}
+		return '';
+	}
+
+	applyPopupOcrMappings(): void {
+		if (!this.popupOcrSourceRow) return;
+		const next = { ...this.popupOcrSourceRow };
+		let count = 0;
+		for (const m of this.popupOcrMappings) {
+			const field = (m.field || '').trim();
+			const text = (m.text || '').trim();
+			if (!field || !text) continue;
+			next[field] = text;
+			count += 1;
+		}
+		this.ouvrageForm = next;
+		this.ouvrageModalMode = 'edit';
+		this.ouvrageModalVisible = true;
+		this.viewFormInPanel = false;
+		this.editFormInPanel = false;
+		this.createFormInPanel = false;
+		this.popupOcrVisible = false;
+		if (this.popupOcrTargetSlug) this.editTargetSlug = this.popupOcrTargetSlug;
+		if (this.popupOcrTargetPk) this.editTargetPk = this.popupOcrTargetPk;
+		this.ocrMessage = count > 0 ? `OCR appliqué: ${count} champ(s) renseigné(s).` : "Aucun champ sélectionné.";
+		this.cdr.markForCheck();
 	}
 
 	private formatPopupValue(key: string, v: unknown): string {
@@ -1208,6 +1566,39 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		return div.innerHTML;
 	}
 
+	private popupHasImage(props: Record<string, unknown>): boolean {
+		return Object.entries(props).some(([k, v]) => this.isImageKey(k) && !!this.getImagePreviewFromValue(v));
+	}
+
+	private bindPopupWithLazyImage(
+		layer: { bindPopup: (content: string, opts?: { maxWidth?: number }) => void; on?: (ev: string, fn: () => void) => void; setPopupContent?: (content: string) => void },
+		slug: string,
+		props: Record<string, unknown>
+	): void {
+		layer.bindPopup(this.buildPopupContent(props), { maxWidth: 380 });
+		if (!layer.on || !this.gisApi || this.popupHasImage(props)) return;
+		const target = this.resolveCrudTarget(slug, props);
+		if (!target.slug || !target.pk) return;
+		const cacheKey = `${target.slug}:${target.pk}`;
+		layer.on('popupopen', () => {
+			const cached = this.popupDetailsCache.get(cacheKey);
+			if (cached) {
+				const merged = { ...props, ...cached, _layerSlug: props['_layerSlug'] ?? slug };
+				layer.setPopupContent?.(this.buildPopupContent(merged));
+				return;
+			}
+			this.gisApi!.getById(target.slug!, target.pk).pipe(
+				catchError(() => of(null))
+			).subscribe((full) => {
+				if (!full) return;
+				const details = full as Record<string, unknown>;
+				this.popupDetailsCache.set(cacheKey, details);
+				const merged = { ...props, ...details, _layerSlug: props['_layerSlug'] ?? slug };
+				layer.setPopupContent?.(this.buildPopupContent(merged));
+			});
+		});
+	}
+
 	/** Indique si l'ouvrage a une géométrie à afficher */
 	hasOuvrageGeom(): boolean {
 		return this.getOuvrageGeomValue().length > 0 && this.getOuvrageGeomValue() !== '—';
@@ -1216,6 +1607,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Clés du formulaire pour la modale (ordre stable, geom en dernier) */
 	getOuvrageFormKeys(): string[] {
 		const keys = Object.keys(this.ouvrageForm);
+		// Champ image toujours disponible pour l'ajout/édition d'image, même si absent du payload source.
+		if (!keys.some((k) => /^image($|_)/i.test(k))) keys.push('image');
 		const geomKeys = keys.filter((k) => /^geom$/i.test(k));
 		const rest = keys.filter((k) => !/^geom$/i.test(k)).sort();
 		return [...rest, ...geomKeys];
@@ -1223,7 +1616,11 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 
 	/** Enregistre (création ou mise à jour) */
 	saveOuvrage(): void {
-		const slug = this.selectedLayerSlug;
+		const target =
+			this.ouvrageModalMode === 'edit' && this.editTargetSlug
+				? { slug: this.editTargetSlug, pk: this.editTargetPk }
+				: this.resolveCrudTarget(this.selectedLayerSlug, this.ouvrageForm);
+		const slug = target.slug;
 		if (!slug || !this.gisApi) return;
 		this.crudLoading = true;
 		this.cdr.markForCheck();
@@ -1240,6 +1637,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		).subscribe((res) => {
 			this.crudLoading = false;
 			if (res) {
+				if (target.pk) this.popupDetailsCache.set(`${slug}:${target.pk}`, res as Record<string, unknown>);
 				this.modelResult = { success: true, message: this.ouvrageModalMode === 'create' ? 'Ouvrage créé.' : 'Ouvrage mis à jour.' };
 				this.showCrudSuccessOverlay(this.modelResult.message);
 				if (this.createFormInPanel) {
@@ -1396,7 +1794,15 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				});
 			}
 			this.popupButtonsClickListener = (e: Event): void => {
-				const target = (e.target as HTMLElement).closest?.('.map-popup-btn--edit, .map-popup-btn--delete');
+				const imageTarget = (e.target as HTMLElement).closest?.('.map-popup-image');
+				if (imageTarget && imageTarget instanceof HTMLImageElement) {
+					this.ngZone.run(() => {
+						const src = imageTarget.getAttribute('src') ?? '';
+						this.openImageViewer(src, 'Image ouvrage');
+					});
+					return;
+				}
+				const target = (e.target as HTMLElement).closest?.('.map-popup-btn--ocr, .map-popup-btn--edit, .map-popup-btn--delete');
 				if (!target || !(target instanceof HTMLElement)) return;
 				const slug = target.getAttribute?.('data-slug');
 				const pk = target.getAttribute?.('data-pk');
@@ -1404,7 +1810,9 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				if (!slug || !pk) return;
 				const props: Record<string, unknown> = { _layerSlug: slug, [pkKey]: pk };
 				this.ngZone.run(() => {
-					if (target.classList.contains('map-popup-btn--edit')) {
+					if (target.classList.contains('map-popup-btn--ocr')) {
+						this.openPopupOcr(slug, pk, pkKey);
+					} else if (target.classList.contains('map-popup-btn--edit')) {
 						this.openEditFromMapClick(slug, props);
 					} else if (target.classList.contains('map-popup-btn--delete')) {
 						this.openDeleteFromMapClick(slug, props);
@@ -1477,7 +1885,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, { ...style, radius: 8 }),
 				onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (content: string, opts?: { maxWidth?: number }) => void; on?: (ev: string, fn: () => void) => void }) => {
 					const props = feature.properties ?? {};
-					layer.bindPopup(self.buildPopupContent(props), { maxWidth: 380 });
+					self.bindPopupWithLazyImage(layer, slug, props);
 					if (layer.on) {
 						layer.on('click', () => {
 							const layerSlug = String(props['_layerSlug'] ?? slug);
@@ -1641,7 +2049,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		};
 		forkJoin(
 			slugs.map((slug, i) =>
-				this.gisApi.getList(slug, 500, 0).pipe(
+				this.gisApi.getList(slug, 2000, 0).pipe(
 					map((rows: Record<string, unknown>[]) => ({ slug, rows, color: getColor(slug, i) })),
 					catchError(() => of({ slug, rows: [] as Record<string, unknown>[], color: getColor(slug, i) }))
 				)
@@ -1696,7 +2104,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 						pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, { ...style, radius: 8 }),
 						onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (content: string, opts?: { maxWidth?: number }) => void; on?: (ev: string, fn: () => void) => void }) => {
 							const props = feature.properties ?? {};
-							layer.bindPopup(self.buildPopupContent(props), { maxWidth: 380 });
+							self.bindPopupWithLazyImage(layer, slug, props);
 							if (layer.on) {
 								layer.on('click', () => {
 									const layerSlug = String(props['_layerSlug'] ?? slug);

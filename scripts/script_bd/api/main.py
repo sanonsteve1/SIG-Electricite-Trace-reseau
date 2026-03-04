@@ -255,12 +255,19 @@ OUTPUT_SRID = 4326
 DEFAULT_INPUT_SRID = 32630
 
 
-def build_select_list(meta: dict) -> str:
-    """Liste SQL SELECT avec géométries en WKT (WGS84). Points, lignes et polygones sont transformés."""
+def build_select_list(meta: dict, include_image_fields: bool = True) -> str:
+    """Liste SQL SELECT avec géométries en WKT (WGS84).
+
+    Par défaut, toutes les colonnes sont renvoyées. Pour les listes volumineuses,
+    `include_image_fields=False` permet d'exclure les champs image/base64 afin
+    d'éviter des payloads très lourds côté frontend.
+    """
     geom_cols = get_geometry_columns(meta)
     parts = []
     for c in meta["columns"]:
         f = c["Field"]
+        if not include_image_fields and re.match(r"^image($|_)", str(f), flags=re.IGNORECASE):
+            continue
         q = quote_ident(f)
         if f in geom_cols:
             # WGS84 pour la carte (points, lignes, polygones). Si SRID=0, on suppose 32630 (UTM 30N).
@@ -328,6 +335,19 @@ def get_geometry_type_from_db(table_name: str, meta: dict) -> str | None:
     if gtype.upper().startswith("ST_"):
         return gtype[3:]
     return gtype
+
+
+def get_geometry_srid_from_db(table_name: str, geom_col: str) -> int | None:
+    """Retourne le SRID déclaré d'une colonne géométrique (None si indisponible)."""
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute("SELECT Find_SRID('public', %s, %s) AS srid", (table_name, geom_col))
+                row = cur.fetchone()
+                srid = int(row["srid"]) if row and row.get("srid") is not None else None
+                return srid if srid and srid > 0 else None
+    except Exception:
+        return None
 
 
 @app.get("/gis/{table_slug}/meta")
@@ -531,16 +551,16 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     return start
 
 
-def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> list[tuple[str, str]]:
+def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> tuple[list[tuple[str, str]], set[str]]:
     """
     BFS directionnel à partir des nœuds start_ids sur ligne_bt, ligne_hta, ligne_brcht.
-    Retourne [(slug, gid), ...].
+    Retourne ([(slug, gid), ...], {node_ids_visités}).
     - aval : suit upstream -> downstream (id_depart_* vers id_poteau_*)
     - amont : suit downstream -> upstream
     """
     start_ids = {_canon_id(s) for s in start_ids if s and str(s).strip()}
     if not start_ids:
-        return []
+        return [], set()
     direction = (direction or "aval").strip().lower()
     if direction not in {"amont", "aval"}:
         direction = "aval"
@@ -594,7 +614,7 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> l
         visited |= next_frontier
         frontier = next_frontier
 
-    return result
+    return result, visited
 
 
 def _trace_directional_links_count(cur) -> int:
@@ -654,6 +674,89 @@ def _trace_nearby_lines_fallback(cur, trace_type: str, ref_id: str, radius_m: in
     return pairs
 
 
+def _table_has_column(meta: dict, col_name: str) -> bool:
+    cols = [c.get("Field") for c in (meta.get("columns") or [])]
+    return col_name in cols
+
+
+def _trace_points_from_node_ids(cur, node_ids: set[str]) -> list[tuple[str, str]]:
+    """
+    À partir des identifiants de nœuds visités, retrouve les ouvrages ponctuels (tables de points)
+    dont gid correspond à ces nœuds.
+    """
+    canon_nodes = sorted({_canon_id(n) for n in node_ids if _canon_id(n)})
+    if not canon_nodes:
+        return []
+    pairs: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        if not _is_point_table(slug):
+            continue
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not _table_has_column(meta, "gid"):
+            continue
+        try:
+            qtable = quote_ident(table_name)
+            placeholders = ", ".join(["%s"] * len(canon_nodes))
+            cur.execute(
+                f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                tuple(canon_nodes),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is None:
+                    continue
+                key = (slug, str(gid_val))
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append(key)
+        except Exception:
+            continue
+    return pairs
+
+
+def _trace_nearby_points_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120) -> list[tuple[str, str]]:
+    """Fallback spatial pour points : ouvrages ponctuels proches du point de référence."""
+    wkt = _get_ref_point_wkt(trace_type, ref_id)
+    if not wkt:
+        return []
+    geog_ref = f"SRID=4326;{wkt}"
+    pairs: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        if not _is_point_table(slug):
+            continue
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not (_table_has_column(meta, "gid") and len(get_geometry_columns(meta)) > 0):
+            continue
+        qtable = quote_ident(table_name)
+        qgeom = quote_ident(get_geometry_columns(meta)[0])
+        geog_expr = _geom_to_4326_geography("t." + qgeom)
+        try:
+            cur.execute(
+                f"""
+                SELECT t.gid
+                FROM {qtable} t
+                WHERE t.{qgeom} IS NOT NULL
+                  AND ST_DWithin({geog_expr}, ST_GeogFromText(%s), %s)
+                ORDER BY ST_Distance({geog_expr}, ST_GeogFromText(%s))
+                LIMIT 150
+                """,
+                (geog_ref, radius_m, geog_ref),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is None:
+                    continue
+                key = (slug, str(gid_val))
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append(key)
+        except Exception:
+            continue
+    return pairs
+
+
 @app.get("/gis/trace")
 def trace_ouvrages(
     type: str = "poste_source",
@@ -676,13 +779,22 @@ def trace_ouvrages(
         with get_connection() as conn:
             with get_cursor(conn) as cur:
                 start_nodes = _trace_resolve_start_nodes(cur, type, ref_id)
-                pairs = _trace_bfs_from_node(cur, start_nodes, direction)
+                pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, direction)
+                point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
                 links_count = _trace_directional_links_count(cur)
                 used_spatial_fallback = False
                 if not pairs and links_count == 0:
                     # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
                     pairs = _trace_nearby_lines_fallback(cur, type, ref_id, radius_m=120)
+                    point_pairs = _trace_nearby_points_fallback(cur, type, ref_id, radius_m=150)
                     used_spatial_fallback = len(pairs) > 0
+                merged: list[tuple[str, str]] = []
+                seen_merged: set[tuple[str, str]] = set()
+                for item in (pairs + point_pairs):
+                    if item not in seen_merged:
+                        seen_merged.add(item)
+                        merged.append(item)
+                pairs = merged
     except Exception as e:
         _log.warning("Trace amont/aval: %s", e)
         return {"ouvrage_ids": [], "message": f"Erreur lors du tracé: {e}"}
@@ -954,10 +1066,19 @@ def list_rows(
     """Liste les enregistrements de la table (pagination). Toutes les colonnes, geom en WKT."""
     table_name, meta = get_table_meta(table_slug)
     quoted_table = quote_ident(table_name)
-    select_list = build_select_list(meta)
+    pk = get_primary_key(meta)
+    quoted_pk = quote_ident(pk)
+    # En liste, on exclut les colonnes image/base64 pour garder la réponse légère
+    # et éviter des rechargements UI instables après ajout de photos.
+    select_list = build_select_list(meta, include_image_fields=False)
     with get_connection() as conn:
         with get_cursor(conn) as cur:
-            cur.execute(f'SELECT {select_list} FROM {quoted_table} ORDER BY 1 LIMIT %s OFFSET %s', (limit, offset))
+            # Tri stable: éviter qu'un ouvrage "disparaisse" de la première page après update
+            # quand une colonne non-PK est modifiée (ex: image/base64).
+            cur.execute(
+                f'SELECT {select_list} FROM {quoted_table} ORDER BY {quoted_pk} NULLS LAST LIMIT %s OFFSET %s',
+                (limit, offset),
+            )
             rows = cur.fetchall()
     return [row_to_json(r) for r in rows]
 
@@ -1162,22 +1283,20 @@ def get_by_id(
     table_name, meta = get_table_meta(table_slug)
     pk = get_primary_key(meta)
     quoted_table = quote_ident(table_name)
-    quoted_pk = quote_ident(pk)
     select_list = build_select_list(meta)
     row = None
+    canon = _canon_id(pk_value)
+    search_cols = [pk, *get_alternate_key_columns(meta, pk)]
     with get_connection() as conn:
         with get_cursor(conn) as cur:
-            cur.execute(f'SELECT {select_list} FROM {quoted_table} WHERE {quoted_pk} = %s', (pk_value,))
-            row = cur.fetchone()
-            if row is None:
-                for alt in get_alternate_key_columns(meta, pk):
-                    cur.execute(
-                        f'SELECT {select_list} FROM {quoted_table} WHERE {quote_ident(alt)} = %s',
-                        (pk_value,),
-                    )
-                    row = cur.fetchone()
-                    if row is not None:
-                        break
+            for col in search_cols:
+                cur.execute(
+                    f"SELECT {select_list} FROM {quoted_table} WHERE {_canon_sql_expr(col)} = %s LIMIT 1",
+                    (canon,),
+                )
+                row = cur.fetchone()
+                if row is not None:
+                    break
     if not row:
         raise HTTPException(status_code=404, detail="Non trouvé")
     return row_to_json(row)
@@ -1191,6 +1310,7 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
     pk = get_primary_key(meta)
     all_columns = get_all_columns(meta)
     geom_cols = get_geometry_columns(meta)
+    geom_srid_by_col = {c: (get_geometry_srid_from_db(table_name, c) or DEFAULT_INPUT_SRID) for c in geom_cols}
     quoted_table = quote_ident(table_name)
     data = {k: v for k, v in body.items() if k in all_columns}
     if not data:
@@ -1209,8 +1329,18 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
                             continue
                         q = quote_ident(c)
                         if c in geom_cols and data[c] is not None:
-                            set_parts.append(f"{q} = ST_GeomFromEWKT(%s)")
-                            values.append(data[c])
+                            geom_text = str(data[c]).strip()
+                            target_srid = int(geom_srid_by_col.get(c) or DEFAULT_INPUT_SRID)
+                            if re.match(r"^SRID=\d+;", geom_text, flags=re.IGNORECASE):
+                                set_parts.append(f"{q} = ST_Transform(ST_GeomFromEWKT(%s), {target_srid})")
+                                values.append(geom_text)
+                            else:
+                                # WKT sans SRID depuis le frontend -> interprété en WGS84,
+                                # puis transformé vers le SRID réel de la colonne.
+                                set_parts.append(
+                                    f"{q} = ST_Transform(ST_SetSRID(ST_GeomFromText(%s), {OUTPUT_SRID}), {target_srid})"
+                                )
+                                values.append(geom_text)
                         else:
                             set_parts.append(f"{q} = %s")
                             values.append(data[c])
@@ -1225,7 +1355,14 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
             placeholders = []
             for c in cols:
                 if c in geom_cols and data[c] is not None:
-                    placeholders.append("ST_GeomFromEWKT(%s)")
+                    geom_text = str(data[c]).strip()
+                    target_srid = int(geom_srid_by_col.get(c) or DEFAULT_INPUT_SRID)
+                    if re.match(r"^SRID=\d+;", geom_text, flags=re.IGNORECASE):
+                        placeholders.append(f"ST_Transform(ST_GeomFromEWKT(%s), {target_srid})")
+                    else:
+                        placeholders.append(
+                            f"ST_Transform(ST_SetSRID(ST_GeomFromText(%s), {OUTPUT_SRID}), {target_srid})"
+                        )
                 else:
                     placeholders.append("%s")
             cols_quoted = ", ".join(quote_ident(c) for c in cols)
@@ -1248,7 +1385,23 @@ def create_or_update(
     body: dict = Body(default={}, description="Champs à créer ou mettre à jour"),
 ):
     """Crée ou met à jour un enregistrement (si clé primaire fournie et existante → update). Toutes les colonnes acceptées ; geom en WKT/EWKT."""
-    return _do_create_or_update_row(table_slug, body or {})
+    try:
+        return _do_create_or_update_row(table_slug, body or {})
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        table_name, _meta = get_table_meta(table_slug)
+        sql_fix = f"ALTER TABLE {table_name} REPLICA IDENTITY FULL;"
+        if _try_set_replica_identity_full(table_name):
+            return _do_create_or_update_row(table_slug, body or {})
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "replica_identity_required",
+                "message": "Mise à jour impossible : la table est utilisée en réplication logique sans REPLICA IDENTITY.",
+                "sql": sql_fix,
+                "hint": "Exécuter en base (avec droits suffisants) : " + sql_fix,
+                "pg_message": str(e),
+            },
+        ) from e
 
 
 @app.post("/gis/webhooks/arcgis")
@@ -1287,6 +1440,13 @@ def webhook_arcgis(body: dict = Body(default=None)):
         try:
             out = _do_create_or_update_row(table_slug, row_body)
             created.append(out)
+        except psycopg2.errors.ObjectNotInPrerequisiteState:
+            table_name, _meta = get_table_meta(table_slug)
+            if _try_set_replica_identity_full(table_name):
+                out = _do_create_or_update_row(table_slug, row_body)
+                created.append(out)
+            else:
+                errors.append({"index": i, "error": f"REPLICA IDENTITY requis sur {table_name}"})
         except HTTPException:
             raise
         except Exception as e:
