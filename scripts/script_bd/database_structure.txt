@@ -1,0 +1,2852 @@
+================================================================================
+EXTRACTION DE LA BASE DE DONNÉES: pre_prod_test1
+Date: 2026-03-04 10:04:01
+================================================================================
+
+
+================================================================================
+TABLE: abonne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (22):
+--------------------------------------------------------------------------------
+   • num_abonne                     text                 NULL
+   • num_police                     text                 NULL
+   • id_abonne_usage                integer(32)          NULL
+   • id_abonne_type                 integer(32)          NULL
+   • id_abonne_nature               integer(32)          NULL
+   • puissance_souscrite            numeric              NULL
+   • id_abonne_activite             integer(32)          NULL
+   • nom                            text                 NULL
+   • prenoms                        text                 NULL
+   • telephone                      text                 NULL
+   • id_abonne_categ_socio_prof     integer(32)          NULL
+   • id_abonne_type_bati            integer(32)          NULL
+   • abonne_equipement              text                 NULL
+   • id_abonne_categ_adm            integer(32)          NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_compteur                    character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• abonne_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: armement_ferrure
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 208 kB
+   - Taille des données: 112 kB
+   - Taille des index: 64 kB
+
+📋 Colonnes (10):
+--------------------------------------------------------------------------------
+   • id_arm_fer_armement            integer(32)          NULL
+   • id_arm_fer_ferrure             integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • validation                     integer(32)          NULL
+   • id_poteau_bt                   character varying    NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• armement_ferrure_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: arrivee
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (8):
+--------------------------------------------------------------------------------
+   • numero                         character varying    NULL
+   • tension                        integer(32)          NULL
+   • gid                            character varying    [PK] NOT NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • validation                     integer(32)          NULL
+   • date_de_collecte               timestamp with time zone NULL
+   • id_poste_source                character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• arrivee_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: branchement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (18):
+--------------------------------------------------------------------------------
+   • numero                         numeric              NULL
+   • id_branchement_type            integer(32)          NULL
+   • id_branchement_rapport_transfo integer(32)          NULL
+   • existence_compteur             boolean              NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • code_client                    text                 NULL
+   • nom                            text                 NULL
+   • prenoms                        text                 NULL
+   • telephone                      text                 NULL
+   • numero_cnib                    text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_point_raccordement          character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• branchement_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: cellule
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (11):
+--------------------------------------------------------------------------------
+   • tension                        integer(32)          NULL
+   • marque                         integer(32)          NULL
+   • type                           integer(32)          NULL
+   • valide_par                     character varying    NULL
+   • validation                     integer(32)          NULL
+   • collecte_par                   character varying    NULL
+   • date_de_collecte               timestamp with time zone NULL
+   • gid                            character varying    [PK] NOT NULL
+   • id_depart                      character varying    NULL
+   • image                          character varying    NULL
+   • id_poste_cabine                character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• cellule_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: coffret
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (18):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • numero_poste_distrib           text                 NULL
+   • id_coffret_type                integer(32)          NULL
+   • numero_compteur                text                 NULL
+   • id_coffret_type_compteur       integer(32)          NULL
+   • id_coffret_modele_compteur     integer(32)          NULL
+   • nbre_lampadaire                numeric              NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poteau_bt                   character varying    NULL
+   • id_ligne_bt                    character varying    NULL
+   • geom                           USER-DEFINED         NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• coffret_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: coffret_repiquage
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (12):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_coffret_repiquage_marque    integer(32)          NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_ligne_bt                    character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • image                          text                 NULL
+   • id_coffret                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• coffret_repiquage_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: compteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (12):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_compteur_type               integer(32)          NULL
+   • id_compteur_facturation        integer(32)          NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_branchement                 character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• compteur_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: depart
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (9):
+--------------------------------------------------------------------------------
+   • numero                         character varying    NULL
+   • id_poste_source                character varying    NULL
+   • image                          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • validation                     integer(32)          NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp with time zone NULL
+   • tension                        integer(32)          NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• depart_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: depart_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (9):
+--------------------------------------------------------------------------------
+   • numero_depart                  text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poste_sur_poteau            character varying    NULL
+   • id_poste_cabine                character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• depart_bt_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: itineraire_reseau
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 16 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 0 bytes
+
+📋 Colonnes (5):
+--------------------------------------------------------------------------------
+   • seq                            integer(32)          NULL
+   • node                           bigint(64)           NULL
+   • edge                           bigint(64)           NULL
+   • cost                           integer(32)          NULL
+   • geom                           USER-DEFINED         NULL
+
+
+================================================================================
+TABLE: jonction_hta
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (13):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_jonction_hta_tension        integer(32)          NULL
+   • id_jonction_hta_type           integer(32)          NULL
+   • id_jonction_hta_section        integer(32)          NULL
+   • noeud                          boolean              NULL
+   • date_pose                      date                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_ligne_hta                   character varying    NULL
+   • geom                           USER-DEFINED         NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• jonction_hta_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_activites
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('l_abonne_activites_id_seq'::regclass)
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_abonne_activites_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_categ_adm
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_categ_adm_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_categ_socio_prof
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_categ_socio_prof_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_equipement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • designation                    text                 NULL
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('l_abonne_equipement_id_seq'::regclass)
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_abonne_equipement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_nature
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_nature_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_type_bati
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_type_bati_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_abonne_usage
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• abonne_usage_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_arm_fer_armement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• arm_fer_armement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_arm_fer_ferrure
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• arm_fer_ferrure_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_arrivee_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_arrivee_tension_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_arrivee_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_branchement_rapport_transfo
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• branchement_rapport_transfo_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_branchement_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• branchement_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_cellule_ps_marque
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_cellule_ps_marque_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_cellule_ps_marque_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_cellule_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('l_cellule_tension_id_seq'::regclass)
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_cellule_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_cellule_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_cellule_ps_type_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_cellule_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_coffret_modele_compteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• coffret_modele_compteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_coffret_repiquage_marque
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• coffret_repiquage_marque_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_coffret_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• coffret_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_coffret_type_compteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• coffret_type_compteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_compteur_facturation
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• compteur_facturation_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_compteur_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• compteur_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_exploitation
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 104 kB
+   - Taille des données: 40 kB
+   - Taille des index: 32 kB
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_exploitation_fid_seq'::regclass)
+   • designation                    character varying    NULL
+   • exploitation                   text                 NULL
+   • localite                       text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_exploitation_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_jonction_hta_section
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• jonction_hta_section_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_jonction_hta_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• jonction_hta_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_jonction_hta_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• jonction_hta_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_brcht_nature
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_brt_nature_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_brcht_section_cable
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_brcht_section_cable_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_brcht_type_cable
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_brcht_type_cable_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_bt_nature_cable
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_bt_nature_cable_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_bt_section_cable
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_bt_section_cable_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_bt_statut
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_bt_statut_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_bt_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_bt_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_bt_type_cable
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_bt_type_cable_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_hta_ame_conductrice
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_hta_ame_conductrice_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_hta_section
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (3):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('l_ligne_hta_section_id_seq'::regclass)
+   • designation                    text                 NULL
+   • type                           integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_ligne_hta_section_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_hta_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_hta_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ligne_hta_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ligne_hta_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ocr_marque
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ocr_marque_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ocr_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ocr_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ocr_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ocr_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_parafoudre_tension_isolement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• parafoudre_tension_isolement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_parafoudre_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• parafoudre_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_point_raccord_organe
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• point_raccord_organe_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_point_raccord_section_cadastre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 16 kB
+   - Taille des données: 0 bytes
+   - Taille des index: 8192 bytes
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• point_raccord_section_cadastre_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_point_raccord_section_sonabel
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 480 kB
+   - Taille des données: 280 kB
+   - Taille des index: 160 kB
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+   • exploitation                   text                 NULL
+   • id_exploitation                integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• point_raccord_section_sonabel_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poste_cabine_tur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poste_cabine_tur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poste_cabine_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poste_cabine_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poste_sur_poteau_dhp
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poste_sur_poteau_dhp_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poste_sur_poteau_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poste_sur_poteau_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_bt_accessoire
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_bt_accessoire_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_bt_hauteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_bt_hauteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_bt_implantation
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_bt_implantation_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_bt_terre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_bt_terre_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_bt_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_bt_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_assemblage
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_assemblage_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_hauteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_hauteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_implantation
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_implantation_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_terre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_terre_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_poteau_hta_type_isolateur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• poteau_hta_type_isolateur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ps_anomalie
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_anomalie_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_ps_anomalie_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ps_autre_equipement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ls_ps_autres_equipements_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_ps_equipement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('equipement_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_ps_equipement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_source_financement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_source_financement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_enroulement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_enroulement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_prise
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_prise_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_puissance
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_puissance_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_tension_entree
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_tension_entree_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_tension_sortie
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_tension_sortie_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ht_bt_type_borne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• transfo_ht_bt_type_borne_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ps_enroulement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_transfo_ps_enroulement_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_transfo_ps_enroulement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ps_puissance
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_transfo_ps_puissance_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_transfo_ps_puissance_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ps_tension
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_transfo_ps_tension_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_transfo_ps_tension_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ps_type_borne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_transfo_ps_type_borne_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_transfo_ps_type_borne_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_transfo_ps_type_refroidissement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('liste_transfo_ps_type_refroidissement_fid_seq'::regclass)
+   • designation                    character varying    NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• l_transfo_ps_type_refroidissement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: l_tur_type
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (2):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL
+   • designation                    text                 NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• tur_type_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ligne_brcht
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (16):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_ligne_brcht_nature          integer(32)          NULL
+   • id_ligne_brcht_type_cable      integer(32)          NULL
+   • id_ligne_brcht_section_cable   integer(32)          NULL
+   • anomalie                       text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_coffret_repiquage           character varying    NULL
+   • id_depart_bt                   character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • id_poteau_bt                   character varying    NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• ligne_brcht_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ligne_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 96 kB
+   - Taille des données: 32 kB
+   - Taille des index: 32 kB
+
+📋 Colonnes (18):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • date_pose                      date                 NULL
+   • anomalie                       text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_ligne_bt_financement        integer(32)          NULL
+   • id_ligne_bt_type               integer(32)          NULL
+   • id_ligne_bt_statut             integer(32)          NULL
+   • id_ligne_bt_nature             integer(32)          NULL
+   • id_ligne_bt_type_cable         integer(32)          NULL
+   • id_ligne_bt_section_cable      integer(32)          NULL
+   • geom                           USER-DEFINED         NULL
+   • id_depart_bt                   character varying    NULL
+   • id_poteau_bt                   character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• ligne_bt_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ligne_connecte
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 64 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: ligne_hta
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 80 kB
+   - Taille des données: 32 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (17):
+--------------------------------------------------------------------------------
+   • numero                         character varying    NOT NULL
+   • id_ligne_hta_financement       integer(32)          NULL
+   • date_pose                      date                 NULL
+   • id_ligne_hta_tension           integer(32)          NULL
+   • id_ligne_hta_type              integer(32)          NULL
+   • id_ligne_hta_ame               integer(32)          NULL
+   • id_ligne_hta_section           integer(32)          NULL
+   • anomalie                       text                 NULL
+   • geom                           USER-DEFINED         NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_depart_hta                  character varying    NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• ligne_hta_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ligne_non_connecte
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 16 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: lignes
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 64 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: lignes_non_double
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 64 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: lignes_non_sectionne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 432 kB
+   - Taille des données: 216 kB
+   - Taille des index: 176 kB
+
+📋 Colonnes (7):
+--------------------------------------------------------------------------------
+   • gid                            character varying    [PK] NOT NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+   • source                         integer(32)          NULL
+   • target                         integer(32)          NULL
+   • cost                           integer(32)          NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• lignes_non_sectionne_geom_idx (geom)
+• lignes_non_sectionne_id_idx (id)
+• lignes_non_sectionne_pkey (gid) UNIQUE PRIMARY
+• lignes_non_sectionne_source_idx (source)
+• lignes_non_sectionne_target_idx (target)
+
+
+================================================================================
+TABLE: lignes_non_sectionne_vertices_pgr
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           [PK] NOT NULL DEFAULT nextval('lignes_non_sectionne_vertices_pgr_id_seq'::regclass)
+   • cnt                            integer(32)          NULL
+   • chk                            integer(32)          NULL
+   • ein                            integer(32)          NULL
+   • eout                           integer(32)          NULL
+   • the_geom                       USER-DEFINED         NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• lignes_non_sectionne_vertices_pgr_pkey (id) UNIQUE PRIMARY
+• lignes_non_sectionne_vertices_pgr_the_geom_idx (the_geom)
+
+
+================================================================================
+TABLE: lignes_sections
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 304 kB
+   - Taille des données: 144 kB
+   - Taille des index: 120 kB
+
+📋 Colonnes (8):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           [PK] NOT NULL
+   • source                         integer(32)          NULL
+   • target                         integer(32)          NULL
+   • cost                           integer(32)          NULL
+   • component                      integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• lignes_sections_geom_idx (geom)
+• lignes_sections_pkey (id) UNIQUE PRIMARY
+• lignes_sections_source_idx (source)
+• lignes_sections_target_idx (target)
+
+
+================================================================================
+TABLE: lignes_sections_distinct
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 56 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            character varying    NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: lignes_sections_distinct_vertices_pgr
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           [PK] NOT NULL DEFAULT nextval('lignes_sections_distinct_vertices_pgr_id_seq'::regclass)
+   • cnt                            integer(32)          NULL
+   • chk                            integer(32)          NULL
+   • ein                            integer(32)          NULL
+   • eout                           integer(32)          NULL
+   • the_geom                       USER-DEFINED         NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• lignes_sections_distinct_vertices_pgr_pkey (id) UNIQUE PRIMARY
+• lignes_sections_distinct_vertices_pgr_the_geom_idx (the_geom)
+
+
+================================================================================
+TABLE: lignes_sections_vertices_pgr
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           [PK] NOT NULL DEFAULT nextval('lignes_sections_vertices_pgr_id_seq'::regclass)
+   • cnt                            integer(32)          NULL
+   • chk                            integer(32)          NULL
+   • ein                            integer(32)          NULL
+   • eout                           integer(32)          NULL
+   • the_geom                       USER-DEFINED         NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• lignes_sections_vertices_pgr_pkey (id) UNIQUE PRIMARY
+• lignes_sections_vertices_pgr_the_geom_idx (the_geom)
+
+
+================================================================================
+TABLE: ocr
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (13):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • numero_ocr                     text                 NULL
+   • id_ocr_type                    integer(32)          NULL
+   • id_ocr_marque                  integer(32)          NULL
+   • id_ocr_tension                 integer(32)          NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• ocr_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: parafoudre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (12):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_parafoudre_type             integer(32)          NULL
+   • marque                         text                 NULL
+   • id_parafoudre_tension_isolement integer(32)          NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• parafoudre_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: point_connecte
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 200 kB
+   - Taille des données: 160 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            text                 NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: point_connecte_topologie
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 184 kB
+   - Taille des données: 144 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            text                 NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: point_non_connecte
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 56 kB
+   - Taille des données: 48 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            text                 NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: point_raccordement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 80 kB
+   - Taille des données: 32 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_point_raccord_organe        integer(32)          NULL
+   • id_point_raccord_exploitation  integer(32)          NULL
+   • id_point_raccord_section_cadastre integer(32)          NULL
+   • lot_cadastre                   numeric              NULL
+   • parcelle_cadastre              numeric              NULL
+   • id_point_raccord_section_sonabel integer(32)          NULL
+   • lot_sonabel                    numeric              NULL
+   • parcelle_sonabel               numeric              NULL
+   • numero_abonne                  text                 NULL
+   • image                          text                 NULL
+   • anomalie                       text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • geom                           USER-DEFINED         NULL
+   • id_ligne_brcht                 character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• point_raccordement_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: points
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 248 kB
+   - Taille des données: 208 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (4):
+--------------------------------------------------------------------------------
+   • gid                            text                 NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           NULL
+
+
+================================================================================
+TABLE: poste_cabine
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (14):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_poste_cabine_type           integer(32)          NULL
+   • nbre_transfo                   numeric              NULL DEFAULT 1
+   • id_poste_cabine_tur            integer(32)          NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • validation                     integer(32)          NULL
+   • geom                           USER-DEFINED         NULL
+   • id_ligne_hta                   character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• poste_cabine_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: poste_source
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (12):
+--------------------------------------------------------------------------------
+   • geom                           USER-DEFINED         NULL
+   • numero_poste                   character varying    NULL
+   • image                          character varying    NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • validation                     integer(32)          NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp with time zone NULL
+   • equipement                     text                 NULL
+   • anomalie                       text                 NULL
+   • exploitation                   integer(32)          NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• poste_source_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: poste_sur_poteau
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (13):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • numero_poste                   text                 NULL
+   • id_poste_sur_poteau_type       integer(32)          NULL
+   • id_poste_sur_poteau_dhp        integer(32)          NULL
+   • date_mes                       date                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poteau_hta                  character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• poste_sur_poteau_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: poteau_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 232 kB
+   - Taille des données: 144 kB
+   - Taille des index: 56 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_poteau_bt_terre             integer(32)          NULL
+   • gabarit                        numeric              NULL
+   • id_poteau_bt_type              integer(32)          NULL
+   • id_poteau_bt_hauteur           integer(32)          NULL
+   • id_poteau_bt_implantation      integer(32)          NULL
+   • noeud                          boolean              NULL
+   • extension                      boolean              NULL
+   • descente                       boolean              NULL
+   • avec_lampadaire                boolean              NULL
+   • accessoires                    text                 NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • geom                           USER-DEFINED         NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• poteau_bt_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: poteau_hta
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 288 kB
+   - Taille des données: 192 kB
+   - Taille des index: 64 kB
+
+📋 Colonnes (24):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_poteau_hta_type_isolateur   integer(32)          NULL
+   • id_poteau_hta_terre            integer(32)          NULL
+   • id_poteau_hta_type             integer(32)          NULL
+   • gabarit                        numeric              NULL
+   • id_poteau_hta_hauteur          integer(32)          NULL
+   • id_poteau_hta_implantation     integer(32)          NULL
+   • noeud                          boolean              NULL
+   • extension_ht                   boolean              NULL
+   • extension_bt                   boolean              NULL
+   • descente_bt                    boolean              NULL
+   • id_poteau_hta_assemblage       integer(32)          NULL
+   • nbre_transfo                   numeric              NULL
+   • avec_lampadaire                boolean              NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            text                 [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • geom                           USER-DEFINED         NULL
+   • IMG                            text                 NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• poteau_hta_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: spatial_ref_sys
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 7144 kB
+   - Taille des données: 6896 kB
+   - Taille des index: 208 kB
+
+📋 Colonnes (5):
+--------------------------------------------------------------------------------
+   • srid                           integer(32)          [PK] NOT NULL
+   • auth_name                      character varying(256) NULL
+   • auth_srid                      integer(32)          NULL
+   • srtext                         character varying(2048) NULL
+   • proj4text                      character varying(2048) NULL
+
+🔑 Clé primaire: srid
+
+📇 Index:
+• spatial_ref_sys_pkey (srid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: transfo_ht_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 24 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (21):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • marque                         text                 NULL
+   • code_poste                     text                 NULL
+   • id_transfo_ht_bt_puissance     integer(32)          NULL
+   • id_transfo_ht_bt_tension_entree integer(32)          NULL
+   • id_transfo_ht_bt_tension_sortie integer(32)          NULL
+   • id_transfo_ht_bt_type_borne    integer(32)          NULL
+   • annee_fabrication              integer(32)          NULL
+   • id_transfo_ht_bt_prise         integer(32)          NULL
+   • tension_cc                     numeric              NULL
+   • id_transfo_ht_bt_enroulement   integer(32)          NULL
+   • image_plaque                   text                 NULL
+   • image_globale                  text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_poste_sur_poteau            character varying    NULL
+   • id_poste_cabine                character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• transfo_ht_bt_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: transfo_poteau
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 40 kB
+   - Taille des données: 32 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (24):
+--------------------------------------------------------------------------------
+   • numero                         text                 NULL
+   • id_poteau_hta_type_isolateur   integer(32)          NULL
+   • id_poteau_hta_terre            integer(32)          NULL
+   • id_poteau_hta_type             integer(32)          NULL
+   • gabarit                        numeric              NULL
+   • id_poteau_hta_hauteur          integer(32)          NULL
+   • id_poteau_hta_implantation     integer(32)          NULL
+   • noeud                          boolean              NULL
+   • extension_ht                   boolean              NULL
+   • extension_bt                   boolean              NULL
+   • descente_bt                    boolean              NULL
+   • id_poteau_hta_assemblage       integer(32)          NULL
+   • nbre_transfo                   numeric              NULL
+   • avec_lampadaire                boolean              NULL
+   • anomalie                       text                 NULL
+   • image                          text                 NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            text                 NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • geom                           USER-DEFINED         NULL
+   • IMG                            text                 NULL
+
+
+================================================================================
+TABLE: transformateur_ps
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (19):
+--------------------------------------------------------------------------------
+   • numero_serie                   character varying    NULL
+   • marque                         character varying    NULL
+   • code_transfo                   character varying    NULL
+   • puissance                      integer(32)          NULL
+   • tension                        integer(32)          NULL
+   • type_borne                     integer(32)          NULL
+   • annee                          integer(32)          NULL
+   • tension_cc                     double precision(53) NULL
+   • mass                           double precision(53) NULL
+   • type_refroidissement           integer(32)          NULL
+   • enroulement                    integer(32)          NULL
+   • image_plaque                   character varying    NULL
+   • image                          character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • validation                     integer(32)          NULL
+   • valide_par                     character varying    NULL
+   • collecte_par                   character varying    NULL
+   • date_de_collecte               timestamp with time zone NULL
+   • id_poste_source                character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• transformateur_ps_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: tur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (9):
+--------------------------------------------------------------------------------
+   • id_tur_type                    integer(32)          NULL
+   • pouvoir_coupure                numeric              NULL
+   • validation                     integer(32)          NULL
+   • precision_de_collecte          character varying    NULL
+   • collecte_par                   character varying    NULL
+   • valide_par                     character varying    NULL
+   • gid                            character varying    [PK] NOT NULL
+   • date_de_collecte               timestamp without time zone NULL
+   • id_depart_bt                   character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• tur_pkey (gid) UNIQUE PRIMARY

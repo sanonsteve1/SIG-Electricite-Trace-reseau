@@ -1,0 +1,7005 @@
+{
+  "abonne": {
+    "columns": [
+      {
+        "Field": "num_abonne",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_police",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_usage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_nature",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puissance_souscrite",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_activite",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "prenoms",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telephone",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_categ_socio_prof",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_type_bati",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "abonne_equipement",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_abonne_categ_adm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_compteur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "armement_ferrure": {
+    "columns": [
+      {
+        "Field": "id_arm_fer_armement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_arm_fer_ferrure",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "armement_ferrure_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "208 kB",
+      "data_size": "112 kB",
+      "indexes_size": "64 kB",
+      "table_rows": 0
+    }
+  },
+  "arrivee": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp with time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_source",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "arrivee_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "branchement": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_branchement_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_branchement_rapport_transfo",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "existence_compteur",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_client",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "prenoms",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telephone",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_cnib",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_point_raccordement",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "branchement_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "cellule": {
+    "columns": [
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp with time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_cabine",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "cellule_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "coffret": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_poste_distrib",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_compteur",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret_type_compteur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret_modele_compteur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_lampadaire",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "coffret_repiquage": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret_repiquage_marque",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_repiquage_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "compteur": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_compteur_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_compteur_facturation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_branchement",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "compteur_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "depart": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_source",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp with time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "depart_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "depart_bt": {
+    "columns": [
+      {
+        "Field": "numero_depart",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_sur_poteau",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_cabine",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "depart_bt_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "itineraire_reseau": {
+    "columns": [
+      {
+        "Field": "seq",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "node",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "edge",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cost",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "16 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "jonction_hta": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_jonction_hta_tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_jonction_hta_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_jonction_hta_section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "noeud",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_pose",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "jonction_hta_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_activites": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('l_abonne_activites_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_abonne_activites_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_categ_adm": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_categ_adm_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_categ_socio_prof": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_categ_socio_prof_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_equipement": {
+    "columns": [
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('l_abonne_equipement_id_seq'::regclass)",
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_abonne_equipement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_nature": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_nature_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_type_bati": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_type_bati_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_abonne_usage": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "abonne_usage_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_arm_fer_armement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "arm_fer_armement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_arm_fer_ferrure": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "arm_fer_ferrure_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_arrivee_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_arrivee_tension_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_arrivee_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_branchement_rapport_transfo": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "branchement_rapport_transfo_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_branchement_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "branchement_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_cellule_ps_marque": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_cellule_ps_marque_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_cellule_ps_marque_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_cellule_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('l_cellule_tension_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_cellule_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_cellule_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_cellule_ps_type_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_cellule_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_coffret_modele_compteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_modele_compteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_coffret_repiquage_marque": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_repiquage_marque_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_coffret_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_coffret_type_compteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "coffret_type_compteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_compteur_facturation": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "compteur_facturation_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_compteur_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "compteur_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_exploitation": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_exploitation_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "localite",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_exploitation_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "104 kB",
+      "data_size": "40 kB",
+      "indexes_size": "32 kB",
+      "table_rows": 0
+    }
+  },
+  "l_jonction_hta_section": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "jonction_hta_section_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_jonction_hta_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "jonction_hta_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_jonction_hta_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "jonction_hta_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_brcht_nature": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_brt_nature_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_brcht_section_cable": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_brcht_section_cable_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_brcht_type_cable": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_brcht_type_cable_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_bt_nature_cable": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_nature_cable_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_bt_section_cable": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_section_cable_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_bt_statut": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_statut_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_bt_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_bt_type_cable": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_type_cable_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_hta_ame_conductrice": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_hta_ame_conductrice_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_hta_section": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('l_ligne_hta_section_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_ligne_hta_section_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_hta_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_hta_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ligne_hta_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_hta_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ocr_marque": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ocr_marque_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ocr_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ocr_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ocr_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ocr_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_parafoudre_tension_isolement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "parafoudre_tension_isolement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_parafoudre_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "parafoudre_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_point_raccord_organe": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "point_raccord_organe_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_point_raccord_section_cadastre": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "point_raccord_section_cadastre_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "16 kB",
+      "data_size": "0 bytes",
+      "indexes_size": "8192 bytes",
+      "table_rows": 0
+    }
+  },
+  "l_point_raccord_section_sonabel": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_exploitation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "point_raccord_section_sonabel_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "480 kB",
+      "data_size": "280 kB",
+      "indexes_size": "160 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poste_cabine_tur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_cabine_tur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poste_cabine_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_cabine_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poste_sur_poteau_dhp": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_sur_poteau_dhp_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poste_sur_poteau_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_sur_poteau_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_bt_accessoire": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_accessoire_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_bt_hauteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_hauteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_bt_implantation": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_implantation_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_bt_terre": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_terre_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_bt_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_assemblage": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_assemblage_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_hauteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_hauteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_implantation": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_implantation_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_terre": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_terre_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_poteau_hta_type_isolateur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_type_isolateur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ps_anomalie": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_anomalie_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_ps_anomalie_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ps_autre_equipement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ls_ps_autres_equipements_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_ps_equipement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('equipement_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_ps_equipement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_source_financement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_source_financement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_enroulement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_enroulement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_prise": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_prise_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_puissance": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_puissance_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_tension_entree": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_tension_entree_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_tension_sortie": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_tension_sortie_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ht_bt_type_borne": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_type_borne_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ps_enroulement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_transfo_ps_enroulement_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_transfo_ps_enroulement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ps_puissance": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_transfo_ps_puissance_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_transfo_ps_puissance_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ps_tension": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_transfo_ps_tension_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_transfo_ps_tension_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ps_type_borne": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_transfo_ps_type_borne_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_transfo_ps_type_borne_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_transfo_ps_type_refroidissement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('liste_transfo_ps_type_refroidissement_fid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "l_transfo_ps_type_refroidissement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "l_tur_type": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designation",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "tur_type_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ligne_brcht": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_brcht_nature",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_brcht_type_cable",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_brcht_section_cable",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_coffret_repiquage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_depart_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_brcht_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ligne_bt": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_pose",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_financement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_statut",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_nature",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_type_cable",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_bt_section_cable",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_depart_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_bt_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "96 kB",
+      "data_size": "32 kB",
+      "indexes_size": "32 kB",
+      "table_rows": 0
+    }
+  },
+  "ligne_connecte": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "64 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "ligne_hta": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta_financement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_pose",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta_tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta_ame",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta_section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_depart_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ligne_hta_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "80 kB",
+      "data_size": "32 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ligne_non_connecte": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "16 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "lignes": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "64 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "lignes_non_double": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "64 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "lignes_non_sectionne": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "source",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "target",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cost",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_non_sectionne_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "lignes_non_sectionne_id_idx",
+        "column_name": "id",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "lignes_non_sectionne_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "lignes_non_sectionne_source_idx",
+        "column_name": "source",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "lignes_non_sectionne_target_idx",
+        "column_name": "target",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "432 kB",
+      "data_size": "216 kB",
+      "indexes_size": "176 kB",
+      "table_rows": 0
+    }
+  },
+  "lignes_non_sectionne_vertices_pgr": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": "nextval('lignes_non_sectionne_vertices_pgr_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "cnt",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "chk",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ein",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eout",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "the_geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_non_sectionne_vertices_pgr_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "lignes_non_sectionne_vertices_pgr_the_geom_idx",
+        "column_name": "the_geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 0
+    }
+  },
+  "lignes_sections": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "source",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "target",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cost",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "component",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_sections_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "lignes_sections_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "lignes_sections_source_idx",
+        "column_name": "source",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "lignes_sections_target_idx",
+        "column_name": "target",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "304 kB",
+      "data_size": "144 kB",
+      "indexes_size": "120 kB",
+      "table_rows": 0
+    }
+  },
+  "lignes_sections_distinct": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "56 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "lignes_sections_distinct_vertices_pgr": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": "nextval('lignes_sections_distinct_vertices_pgr_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "cnt",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "chk",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ein",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eout",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "the_geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_sections_distinct_vertices_pgr_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "lignes_sections_distinct_vertices_pgr_the_geom_idx",
+        "column_name": "the_geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 0
+    }
+  },
+  "lignes_sections_vertices_pgr": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": "nextval('lignes_sections_vertices_pgr_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "cnt",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "chk",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ein",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eout",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "the_geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_sections_vertices_pgr_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "lignes_sections_vertices_pgr_the_geom_idx",
+        "column_name": "the_geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 0
+    }
+  },
+  "ocr": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_ocr",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ocr_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ocr_marque",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ocr_tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ocr_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "parafoudre": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_parafoudre_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_parafoudre_tension_isolement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "parafoudre_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "point_connecte": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "200 kB",
+      "data_size": "160 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "point_connecte_topologie": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "184 kB",
+      "data_size": "144 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "point_non_connecte": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "56 kB",
+      "data_size": "48 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "point_raccordement": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_point_raccord_organe",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_point_raccord_exploitation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_point_raccord_section_cadastre",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lot_cadastre",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "parcelle_cadastre",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_point_raccord_section_sonabel",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lot_sonabel",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "parcelle_sonabel",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_abonne",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_brcht",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "point_raccordement_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "80 kB",
+      "data_size": "32 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "points": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "248 kB",
+      "data_size": "208 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "poste_cabine": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_cabine_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_transfo",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": "1",
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_cabine_tur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_ligne_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_cabine_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "poste_source": {
+    "columns": [
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp with time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "equipement",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_source_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "poste_sur_poteau": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_poste",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_sur_poteau_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_sur_poteau_dhp",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poste_sur_poteau_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "poteau_bt": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt_terre",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gabarit",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt_hauteur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_bt_implantation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "noeud",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "extension",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "descente",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "avec_lampadaire",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessoires",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_bt_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "232 kB",
+      "data_size": "144 kB",
+      "indexes_size": "56 kB",
+      "table_rows": 0
+    }
+  },
+  "poteau_hta": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_type_isolateur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_terre",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gabarit",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_hauteur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_implantation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "noeud",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "extension_ht",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "extension_bt",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "descente_bt",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_assemblage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_transfo",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "avec_lampadaire",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "IMG",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "poteau_hta_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "288 kB",
+      "data_size": "192 kB",
+      "indexes_size": "64 kB",
+      "table_rows": 0
+    }
+  },
+  "spatial_ref_sys": {
+    "columns": [
+      {
+        "Field": "srid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "auth_name",
+        "Type": "character varying(256)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "auth_srid",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "srtext",
+        "Type": "character varying(2048)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proj4text",
+        "Type": "character varying(2048)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "srid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "spatial_ref_sys_pkey",
+        "column_name": "srid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "7144 kB",
+      "data_size": "6896 kB",
+      "indexes_size": "208 kB",
+      "table_rows": 0
+    }
+  },
+  "transfo_ht_bt": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_poste",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_puissance",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_tension_entree",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_tension_sortie",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_type_borne",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "annee_fabrication",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_prise",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension_cc",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_transfo_ht_bt_enroulement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image_plaque",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image_globale",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_sur_poteau",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_cabine",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transfo_ht_bt_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "24 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "transfo_poteau": {
+    "columns": [
+      {
+        "Field": "numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_type_isolateur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_terre",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gabarit",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_hauteur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_implantation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "noeud",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "extension_ht",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "extension_bt",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "descente_bt",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poteau_hta_assemblage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_transfo",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "avec_lampadaire",
+        "Type": "boolean",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomalie",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "IMG",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "32 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "transformateur_ps": {
+    "columns": [
+      {
+        "Field": "numero_serie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_transfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puissance",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_borne",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "annee",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension_cc",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "mass",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_refroidissement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "enroulement",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image_plaque",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "image",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp with time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_poste_source",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "transformateur_ps_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "tur": {
+    "columns": [
+      {
+        "Field": "id_tur_type",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "pouvoir_coupure",
+        "Type": "numeric",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validation",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "precision_de_collecte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "valide_par",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gid",
+        "Type": "character varying",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_de_collecte",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id_depart_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "tur_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  }
+}

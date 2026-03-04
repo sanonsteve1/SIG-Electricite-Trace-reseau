@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Select } from 'primeng/select';
@@ -83,6 +83,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	mapPanelCollapsed = true;
 	/** Légende carte : panneau ouvert ou fermé */
 	legendPanelOpen = false;
+	/** Panneau « Couches visibles » (comme Carte réseau) */
+	layersPanelOpen = false;
+	/** Spinner : chargement des couches sur la carte */
+	layersMapLoading = false;
 	/** Action du panneau carte actuellement sélectionnée (pour mise en évidence visuelle) */
 	selectedMapPanelAction: 'create' | 'modify' | 'delete' | null = null;
 	ouvragesList: Record<string, unknown>[] = [];
@@ -104,7 +108,9 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 
 	private map: unknown = null;
 	/** Groupe Leaflet pour les couches du modèle (lignes, points) */
-	private layerGroup: { addLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
+	private layerGroup: { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
+	/** Par slug : groupe de couches (pour afficher/masquer comme dans Carte réseau) */
+	private slugToLayerGroups = new Map<string, unknown>();
 	/** Groupe pour le cercle de clignotement (consulter ouvrage) */
 	private highlightLayerGroup: { addLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
 	private blinkCircle: unknown = null;
@@ -145,11 +151,14 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	private removeDrawingListeners: (() => void) | null = null;
 	/** Timeout pour debounce du rechargement des suggestions au déplacement de la carte. */
 	private suggestMoveEndTimeout: ReturnType<typeof setTimeout> | null = null;
+	/** Listener de délégation pour les boutons Modifier/Supprimer du popup carte. */
+	private popupButtonsClickListener: ((e: Event) => void) | null = null;
 
 	constructor(
 		private gisApi: GisApiService,
 		private layerFormDefaults: LayerFormDefaultsService,
-		private cdr: ChangeDetectorRef
+		private cdr: ChangeDetectorRef,
+		private ngZone: NgZone
 	) {}
 
 	ngOnInit(): void {
@@ -166,6 +175,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	ngOnDestroy(): void {
 		this.clearCrudOverlayTimeout();
 		this.stopBlink();
+		if (this.popupButtonsClickListener && this.mapContainer?.nativeElement) {
+			this.mapContainer.nativeElement.removeEventListener('click', this.popupButtonsClickListener);
+			this.popupButtonsClickListener = null;
+		}
 		if (this.suggestMoveEndTimeout) {
 			clearTimeout(this.suggestMoveEndTimeout);
 			this.suggestMoveEndTimeout = null;
@@ -229,11 +242,35 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 			this.couchesModele = couches;
 			this.couchesIncludedList = couches.filter((c) => c.included);
 			this.cdr.markForCheck();
+			if (this.map && this.layerGroup && couches.length > 0) {
+				this.loadAllLayersOnMap();
+			}
 		});
+	}
+
+	/** Charge toutes les couches du modèle sur la carte (comme l’onglet Carte réseau). */
+	loadAllLayersOnMap(): void {
+		if (!this.couchesModele?.length || !this.gisApi) return;
+		const slugs = this.couchesModele.map((c) => c.id);
+		this.lastLoadedModelSlugs = slugs;
+		this.loadModelOnMap(slugs);
 	}
 
 	toggleCouche(couche: { id: string; label: string; color: string; included: boolean }): void {
 		couche.included = !couche.included;
+		const mainGroup = this.layerGroup as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void } | null;
+		if (!mainGroup) {
+			this.cdr.markForCheck();
+			return;
+		}
+		const slugGroup = this.slugToLayerGroups.get(couche.id);
+		if (slugGroup) {
+			if (couche.included) {
+				mainGroup.addLayer(slugGroup);
+			} else {
+				mainGroup.removeLayer(slugGroup);
+			}
+		}
 		this.cdr.markForCheck();
 	}
 
@@ -286,6 +323,15 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		}
 		const first = Object.keys(ouvrage)[0];
 		return first ? String(ouvrage[first]) : '';
+	}
+
+	/** Retourne le nom de la clé primaire (pour le popup data-pk-key) */
+	private getPkKey(props: Record<string, unknown>): string {
+		for (const k of PK_KEYS) {
+			if (props[k] != null) return k;
+		}
+		const keys = Object.keys(props).filter((x) => x !== '_layerSlug' && x !== 'geom' && x !== 'Geom');
+		return keys[0] ?? 'gid';
 	}
 
 	/** Colonnes à afficher dans la liste (hors geom) */
@@ -395,6 +441,15 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				this.cdr.markForCheck();
 			}
 		});
+	}
+
+	/** En mode Supprimer : clic sur un ouvrage sur la carte → ouvrir la confirmation de suppression */
+	openDeleteFromMapClick(slug: string, props: Record<string, unknown>): void {
+		this.selectedLayerSlug = slug;
+		this.selectedLayerLabel = this.couchesModele.find((c) => c.id === slug)?.label ?? slug;
+		this.ouvrageToDelete = { ...props };
+		this.deleteConfirmVisible = true;
+		this.cdr.markForCheck();
 	}
 
 	/** Démarre la création : dessin sur la carte selon le type de géométrie, puis formulaire dans le panneau. Charge les suggestions de placement. */
@@ -870,13 +925,25 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Charge la liste des ouvrages et marque l’action « Modifier » comme sélectionnée */
 	actionModify(): void {
 		this.selectedMapPanelAction = 'modify';
-		this.loadOuvragesForLayer();
+		if (this.selectedLayerSlug) {
+			this.loadOuvragesForLayer();
+		} else if (this.couchesModele.length > 0 && this.map && this.layerGroup) {
+			this.loadAllLayersOnMap();
+		}
+		this.mapPanelCollapsed = false;
+		this.cdr.markForCheck();
 	}
 
 	/** Charge la liste des ouvrages et marque l’action « Supprimer » comme sélectionnée */
 	actionDelete(): void {
 		this.selectedMapPanelAction = 'delete';
-		this.loadOuvragesForLayer();
+		if (this.selectedLayerSlug) {
+			this.loadOuvragesForLayer();
+		} else if (this.couchesModele.length > 0 && this.map && this.layerGroup) {
+			this.loadAllLayersOnMap();
+		}
+		this.mapPanelCollapsed = false;
+		this.cdr.markForCheck();
 	}
 
 	closeOuvrageModal(): void {
@@ -1077,7 +1144,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		return s.length < 500 ? s : s.slice(0, 200) + '…';
 	}
 
-	/** Construit le HTML du popup carte au clic sur un ouvrage */
+	/** Construit le HTML du popup carte au clic sur un ouvrage (avec boutons Modifier / Supprimer) */
 	buildPopupContent(props: Record<string, unknown>): string {
 		if (!props || typeof props !== 'object') return '<div class="map-popup"><div class="map-popup-body">Ouvrage</div></div>';
 		const { _layerSlug, geom, Geom, ...rest } = props;
@@ -1091,12 +1158,19 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		const ordered = this.orderPopupEntries(rawEntries);
 		const title = _layerSlug ? String(_layerSlug).replace(/-/g, ' ').replace(/_/g, ' ') : 'Ouvrage';
 		const titleFormatted = title.replace(/\b\w/g, (c) => c.toUpperCase());
+		const slug = _layerSlug != null ? this.escapeHtml(String(_layerSlug)) : '';
+		const pk = this.escapeHtml(this.getPkValue(props));
+		const pkKey = this.escapeHtml(this.getPkKey(props));
 		let html = '<div class="map-popup">';
 		html += `<div class="map-popup-header"><i class="fa fa-info-circle map-popup-icon"></i><span>${this.escapeHtml(titleFormatted)}</span></div>`;
 		html += '<div class="map-popup-body">';
 		ordered.forEach((e, i) => {
 			html += `<div class="map-popup-row ${i % 2 === 0 ? 'map-popup-row--even' : ''}"><span class="map-popup-key">${this.escapeHtml(e.label)}</span><span class="map-popup-val">${this.escapeHtml(e.val)}</span></div>`;
 		});
+		html += '</div>';
+		html += '<div class="map-popup-actions">';
+		html += `<button type="button" class="map-popup-btn map-popup-btn--edit" data-slug="${slug}" data-pk="${pk}" data-pk-key="${pkKey}" title="Modifier"><i class="fa fa-pencil"></i> Modifier</button>`;
+		html += `<button type="button" class="map-popup-btn map-popup-btn--delete" data-slug="${slug}" data-pk="${pk}" data-pk-key="${pkKey}" title="Supprimer"><i class="fa fa-trash"></i> Supprimer</button>`;
 		html += '</div></div>';
 		return html;
 	}
@@ -1283,8 +1357,11 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				attribution: '© OpenStreetMap contributors'
 			}).addTo(this.map);
 			Lx.control.zoom({ position: 'topleft' }).addTo(this.map);
-			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
+			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void; clearLayers: () => void };
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
+			if (this.couchesModele.length > 0) {
+				setTimeout(() => this.loadAllLayersOnMap(), 350);
+			}
 			// Pane dédié au dessin en cours, au-dessus des autres couches (z-index élevé)
 			const mapWithPane = this.map as { createPane?: (name: string) => HTMLElement };
 			let drawOpts: { pane?: string } = {};
@@ -1318,6 +1395,24 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 					}, 400);
 				});
 			}
+			this.popupButtonsClickListener = (e: Event): void => {
+				const target = (e.target as HTMLElement).closest?.('.map-popup-btn--edit, .map-popup-btn--delete');
+				if (!target || !(target instanceof HTMLElement)) return;
+				const slug = target.getAttribute?.('data-slug');
+				const pk = target.getAttribute?.('data-pk');
+				const pkKey = target.getAttribute?.('data-pk-key') ?? 'gid';
+				if (!slug || !pk) return;
+				const props: Record<string, unknown> = { _layerSlug: slug, [pkKey]: pk };
+				this.ngZone.run(() => {
+					if (target.classList.contains('map-popup-btn--edit')) {
+						this.openEditFromMapClick(slug, props);
+					} else if (target.classList.contains('map-popup-btn--delete')) {
+						this.openDeleteFromMapClick(slug, props);
+					}
+					this.cdr.markForCheck();
+				});
+			};
+			this.mapContainer.nativeElement.addEventListener('click', this.popupButtonsClickListener);
 		});
 	}
 
@@ -1385,9 +1480,11 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 					layer.bindPopup(self.buildPopupContent(props), { maxWidth: 380 });
 					if (layer.on) {
 						layer.on('click', () => {
+							const layerSlug = String(props['_layerSlug'] ?? slug);
 							if (self.selectedMapPanelAction === 'modify') {
-								const layerSlug = String(props['_layerSlug'] ?? slug);
 								self.openEditFromMapClick(layerSlug, props);
+							} else if (self.selectedMapPanelAction === 'delete') {
+								self.openDeleteFromMapClick(layerSlug, props);
 							}
 						});
 					}
@@ -1532,7 +1629,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	 */
 	private loadModelOnMap(slugs: string[]): void {
 		if (!this.map || !this.layerGroup || !this.gisApi || slugs.length === 0) return;
+		this.layersMapLoading = true;
+		this.cdr.markForCheck();
 		this.layerGroup.clearLayers();
+		this.slugToLayerGroups.clear();
 		this.ouvrageIdToLayer.clear();
 		this.highlightedOuvrageKey = null;
 		const getColor = (slug: string, index: number): string => {
@@ -1546,8 +1646,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 					catchError(() => of({ slug, rows: [] as Record<string, unknown>[], color: getColor(slug, i) }))
 				)
 			)
-		).subscribe((results) => {
-			Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
+		).subscribe({
+			next: (results) => {
+				const self = this;
+				Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
 				const leaflet = (LModule as { default: unknown }).default as {
 					geoJSON: (f: object, opts: object) => { eachLayer: (fn: (layer: unknown) => void) => void };
 					circleMarker: (latlng: unknown, opts: object) => unknown;
@@ -1589,7 +1691,6 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 					const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
 					if (!slugGroup) continue;
 					const fc = { type: 'FeatureCollection' as const, features };
-					const self = this;
 					const geoJsonLayer = leaflet.geoJSON(fc, {
 						style: () => style,
 						pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, { ...style, radius: 8 }),
@@ -1598,9 +1699,11 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 							layer.bindPopup(self.buildPopupContent(props), { maxWidth: 380 });
 							if (layer.on) {
 								layer.on('click', () => {
+									const layerSlug = String(props['_layerSlug'] ?? slug);
 									if (self.selectedMapPanelAction === 'modify') {
-										const layerSlug = String(props['_layerSlug'] ?? slug);
 										self.openEditFromMapClick(layerSlug, props);
+									} else if (self.selectedMapPanelAction === 'delete') {
+										self.openDeleteFromMapClick(layerSlug, props);
 									}
 								});
 							}
@@ -1628,13 +1731,26 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 							}
 						}
 					});
-					group.addLayer(slugGroup);
+					self.slugToLayerGroups.set(slug, slugGroup);
+					const couche = self.couchesModele.find((c) => c.id === slug);
+					if (couche?.included !== false) {
+						group.addLayer(slugGroup);
+					}
 				}
 				const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
 				if (m?.invalidateSize) m.invalidateSize();
 				if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-				this.cdr.markForCheck();
+				self.layersMapLoading = false;
+				self.cdr.markForCheck();
+			}).catch(() => {
+				self.layersMapLoading = false;
+				self.cdr.markForCheck();
 			});
+			},
+			error: () => {
+				this.layersMapLoading = false;
+				this.cdr.markForCheck();
+			}
 		});
 	}
 }

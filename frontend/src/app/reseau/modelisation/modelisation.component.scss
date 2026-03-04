@@ -327,6 +327,52 @@ $header-height: 56px;
 	}
 }
 
+.modelisation-layers-float {
+	position: absolute;
+	bottom: 20px;
+	left: 12px;
+	z-index: 1000;
+}
+.modelisation-layers-panel {
+	max-height: 45vh;
+	overflow-y: auto;
+	min-width: 200px;
+}
+.modelisation-layer-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	padding: 0.25rem 0.5rem;
+	&:hover {
+		background: #f3f4f6;
+	}
+	input[type="checkbox"] {
+		margin: 0;
+		cursor: pointer;
+	}
+}
+
+.modelisation-map-loading-spinner {
+	position: absolute;
+	bottom: 20px;
+	left: 12px;
+	z-index: 1000;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.85rem;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+	font-size: 0.9rem;
+	color: #475569;
+	.fa-spinner {
+		color: $primary;
+		font-size: 1.1rem;
+	}
+}
+
 .modelisation-map-legend {
 	position: absolute;
 	bottom: 20px;
@@ -1123,6 +1169,44 @@ $header-height: 56px;
 	min-width: 0;
 	color: #1e293b;
 	font-weight: 500;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-actions {
+	display: flex;
+	gap: 0.5rem;
+	padding: 0.6rem 1rem;
+	background: #f1f5f9;
+	border-top: 1px solid #e2e8f0;
+	border-radius: 0 0 12px 12px;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.4rem 0.75rem;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	cursor: pointer;
+	background: #fff;
+	color: #475569;
+	transition: background 0.15s, color 0.15s;
+	&:hover {
+		background: #f1f5f9;
+		color: #1e293b;
+	}
+	&.map-popup-btn--edit:hover {
+		background: #dbeafe;
+		color: #1d4ed8;
+		border-color: #93c5fd;
+	}
+	&.map-popup-btn--delete:hover {
+		background: #fee2e2;
+		color: #b91c1c;
+		border-color: #fca5a5;
+	}
 }
 
 /* Overlay plein écran : succès (confettis) / échec (animation) */

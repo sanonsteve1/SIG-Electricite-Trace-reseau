@@ -6,13 +6,15 @@ import os
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "port": int(os.getenv("DB_PORT", "5432")),
-    "database": os.getenv("DB_NAME", "goughin_backup"),
+    "database": os.getenv("DB_NAME", "pre_prod_test1"),
     "user": os.getenv("DB_USER", "postgres"),
     "password": os.getenv("DB_PASSWORD", "2023"),
 }
 
-# Fichier de structure des tables (relatif au dossier script_bd)
+# Fichier de structure des tables : uniquement script_bd/database_structure.json
+# (chaque table de ce fichier aura sa propre API : GET/POST/DELETE par table)
+_script_bd_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STRUCTURE_JSON_PATH = os.getenv(
     "STRUCTURE_JSON",
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "..", "database_structure.json"),
+    os.path.join(_script_bd_dir, "database_structure.json"),
 )

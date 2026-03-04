@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script pour extraire toutes les tables et leurs champs de la base de données goughin_backup
+Script pour extraire toutes les tables et leurs champs de la base de données (défaut : pre_prod_test1)
 """
 
 import psycopg2
@@ -9,16 +9,21 @@ from psycopg2.extras import RealDictCursor
 from psycopg2 import Error
 from psycopg2.extensions import quote_ident
 import json
+import os
 from datetime import datetime
 
-# Configuration de la connexion à la base de données
+# Configuration de la connexion (même logique que api/config.py pour cohérence API / structure)
 DB_CONFIG = {
-    'host': 'localhost',  # Modifier selon votre configuration
-    'port': 5432,         # Port par défaut PostgreSQL
-    'database': 'goughin_backup',
-    'user': 'postgres',       # Modifier selon votre configuration
-    'password': '2023',       # Modifier selon votre configuration
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', '5432')),
+    'database': os.getenv('DB_NAME', 'pre_prod_test1'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', '2023'),
 }
+# Dossier de sortie : script_bd (à côté de ce script)
+_SCRIPT_BD_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_STRUCTURE_JSON = os.path.join(_SCRIPT_BD_DIR, 'database_structure.json')
+DEFAULT_STRUCTURE_TXT = os.path.join(_SCRIPT_BD_DIR, 'database_structure.txt')
 
 
 def get_connection():
@@ -259,8 +264,10 @@ def format_output(data):
     return "\n".join(output)
 
 
-def save_to_json(data, filename='database_structure.json'):
-    """Sauvegarde les données au format JSON"""
+def save_to_json(data, filename=None):
+    """Sauvegarde les données au format JSON (par défaut script_bd/database_structure.json)."""
+    if filename is None:
+        filename = DEFAULT_STRUCTURE_JSON
     try:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False, default=str)
@@ -269,8 +276,10 @@ def save_to_json(data, filename='database_structure.json'):
         print(f"❌ Erreur lors de la sauvegarde JSON: {e}")
 
 
-def save_to_text(data, filename='database_structure.txt'):
-    """Sauvegarde les données au format texte"""
+def save_to_text(data, filename=None):
+    """Sauvegarde les données au format texte (par défaut script_bd/database_structure.txt)."""
+    if filename is None:
+        filename = DEFAULT_STRUCTURE_TXT
     try:
         output = format_output(data)
         with open(filename, 'w', encoding='utf-8') as f:

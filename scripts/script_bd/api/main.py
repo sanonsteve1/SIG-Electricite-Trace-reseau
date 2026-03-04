@@ -7,6 +7,7 @@ import json
 import os
 import re
 
+import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import Body, FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,12 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import DB_CONFIG, STRUCTURE_JSON_PATH
 from .db import get_connection, get_cursor
 
-# Résolution du chemin du schéma (api est dans script_bd/api, racine = 3 niveaux au-dessus)
+import logging
+_log = logging.getLogger(__name__)
+
 _script_dir = os.path.dirname(os.path.abspath(__file__))
-_project_root = os.path.normpath(os.path.join(_script_dir, "..", "..", ".."))
-STRUCTURE_PATH = os.path.join(_project_root, "database_structure.json")
-if not os.path.isfile(STRUCTURE_PATH):
-    STRUCTURE_PATH = STRUCTURE_JSON_PATH
+# Structure des tables : uniquement script_bd/database_structure.json (une API par table)
+STRUCTURE_PATH = STRUCTURE_JSON_PATH
 
 app = FastAPI(
     title="API GIS – Tables base goughin",
@@ -85,13 +86,43 @@ def row_to_json(row: dict) -> dict:
     return out
 
 
+def get_existing_table_names() -> set[str] | None:
+    """
+    Retourne l'ensemble des noms de tables (public, minuscules) présentes en base.
+    Retourne None si la connexion échoue (pour ne pas filtrer au démarrage).
+    """
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute(
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+                )
+                rows = cur.fetchall()
+        return {str(r["table_name"]).lower() for r in (rows or [])}
+    except Exception:
+        return None
+
+
 # Chargement du schéma au démarrage
 STRUCTURE = load_structure()
-# Map slug URL -> (table_name, meta)
+# Map slug URL -> (table_name, meta) — uniquement les tables qui existent en base
 TABLE_BY_SLUG = {}
 for table_name, meta in STRUCTURE.items():
     slug = table_slug(table_name)
     TABLE_BY_SLUG[slug] = (table_name, meta)
+
+# Ne garder que les tables présentes dans la base actuelle (alignement BD / API / frontend)
+_existing = get_existing_table_names()
+if _existing is not None:
+    _to_drop = [s for s, (t, _) in TABLE_BY_SLUG.items() if t.lower() not in _existing]
+    for s in _to_drop:
+        del TABLE_BY_SLUG[s]
+    if _to_drop:
+        import logging
+        logging.getLogger(__name__).info(
+            "API: %d table(s) exclues (absentes de la base): %s", len(_to_drop), sorted(_to_drop)[:10]
+        )
 
 # Valeurs par défaut pour le pré-remplissage des formulaires par couche (module IA)
 FORM_DEFAULTS_PATH = os.path.join(_script_dir, "form_defaults.json")
@@ -144,11 +175,47 @@ def get_form_defaults_for_slug(slug: str) -> dict:
     return out
 
 
+# Alias slugs dashboard frontend (noms ArcGIS/Utility Network) -> slug API (table réelle)
+# Permet au tableau de bord d'obtenir les comptes sans modifier le frontend.
+SLUG_ALIASES: dict[str, str] = {
+    "structurejunction-electricmediumvoltagepole-poteau-hta": "poteau-hta",
+    "structurejunction-electriclowvoltagepole-poteau-bt": "poteau-bt",
+    "electricdevice-lowvoltagecontrolunit-tur": "tur",
+    "electricdevice-lowvoltagenetworkprotection-disjoncteur": "tur",
+    "electricjunction-lowvoltageconnection-point-noeud-bt": "point-connecte",
+    "electricdevice-ground-terre": "point-raccordement",
+    "electricdevice-mediumvoltageswitch-cellule-ocr": "ocr",
+    "electricdevice-mediumvoltagetransformer-transfo-ht-bt": "transfo-ht-bt",
+    "electricdevice-highvoltagetransformer-transfo-ps": "transformateur-ps",
+    "electricdevice-mediumvoltagearrester-parafoudre": "parafoudre",
+    "electricline-lowvoltageundergroundconductor-ligne-bt-souterrain": "ligne-bt",
+    "electricline-lowvoltageoverheadconductor-ligne-bt-aerien": "ligne-bt",
+    "electricjunction-lowvoltagelineend-findeligne": "point-non-connecte",
+    "electricline-mediumvoltageundergroundconductor-ligne-hta-souter": "ligne-hta",
+    "electricline-mediumvoltageoverheadconductor-ligne-hta-aerien": "ligne-hta",
+    "structureboundary-electricsubstationboundary-limite-poste-sourc": "poste-source",
+    "structueboundary-electricdistributionstationboundary-limite-po": "poste-cabine",
+    "structurejunction-electricjunctionbox-coffret": "coffret",
+    "subscriberform-abonne": "abonne",
+    "meters-compteur": "compteur",
+    "distributionpanel-branchement": "branchement",
+    "electricline-lowvoltageservice-ligne-branchement-bt": "ligne-brcht",
+}
+
+
+def _resolve_slug(slug: str) -> str:
+    """Retourne le slug réel (table API) pour un slug éventuellement alias (dashboard)."""
+    if slug in TABLE_BY_SLUG:
+        return slug
+    return SLUG_ALIASES.get(slug, slug)
+
+
 def get_table_meta(slug: str) -> tuple[str, dict]:
-    """Retourne (table_name, meta) pour un slug. Sinon 404."""
-    if slug not in TABLE_BY_SLUG:
+    """Retourne (table_name, meta) pour un slug (ou alias dashboard). Sinon 404."""
+    resolved = _resolve_slug(slug)
+    if resolved not in TABLE_BY_SLUG:
         raise HTTPException(status_code=404, detail=f"Table inconnue: {slug}")
-    return TABLE_BY_SLUG[slug]
+    return TABLE_BY_SLUG[resolved]
 
 
 def get_all_columns(meta: dict) -> list[str]:
@@ -175,10 +242,10 @@ def get_primary_key(meta: dict) -> str:
 
 
 def get_alternate_key_columns(meta: dict, pk: str) -> list[str]:
-    """Colonnes à essayer en secours pour retrouver une ligne (ex: objectid si la PK est id)."""
+    """Colonnes à essayer en secours pour retrouver une ligne (ex: id si la PK est gid, ou objectid)."""
     all_cols = get_all_columns(meta)
-    # Ordre préféré pour la compatibilité frontend (qui envoie souvent objectid)
-    fallback = ["objectid", "assetid", "gid"]
+    # Ordre préféré pour la compatibilité frontend (qui envoie souvent id ou objectid)
+    fallback = ["objectid", "assetid", "id", "gid"]
     return [c for c in fallback if c in all_cols and c != pk]
 
 
@@ -209,12 +276,23 @@ def build_select_list(meta: dict) -> str:
 
 @app.get("/")
 def root():
-    """Liste des ressources disponibles."""
+    """
+    Liste des tables exposées par l'API.
+    Chaque table a sa propre API sous /gis/{slug} :
+    - GET /gis/{slug} (liste paginée)
+    - GET /gis/{slug}/count
+    - GET /gis/{slug}/meta
+    - GET /gis/{slug}/{id}
+    - POST /gis/{slug}
+    - DELETE /gis/{slug}/{id}
+    Uniquement les tables définies dans script_bd/database_structure.json sont exposées.
+    """
     return {
         "tables": [
-            {"slug": slug, "table": TABLE_BY_SLUG[slug][0]}
+            {"slug": slug, "table": TABLE_BY_SLUG[slug][0], "api_base": f"/gis/{slug}"}
             for slug in sorted(TABLE_BY_SLUG.keys())
-        ]
+        ],
+        "source": "script_bd/database_structure.json",
     }
 
 
@@ -296,6 +374,286 @@ def form_defaults_export():
     return {"layers": result, "source": "form_defaults.json"}
 
 
+def _trace_ref_slug_for_type(trace_type: str) -> str | None:
+    """Retourne le slug de la table correspondant au type de point de départ du tracé."""
+    trace_type = (trace_type or "").strip().lower()
+    # Ordre préféré aligné au frontend:
+    # - poste_source -> poste-source
+    # - poste_transformation -> poste-cabine / transfo-poteau (fallback transfo-ht-bt)
+    # - abonne -> point-raccordement (fallback abonne / branchement)
+    if trace_type == "poste_source":
+        for slug in ("poste-source", "limite-poste", "poste-sourc"):
+            if slug in TABLE_BY_SLUG:
+                return slug
+        for slug in TABLE_BY_SLUG:
+            if "poste" in slug.lower() and "sourc" in slug.lower():
+                return slug
+    if trace_type == "poste_transformation":
+        for slug in ("poste-cabine", "transfo-poteau", "transfo-ht-bt", "transfo-ht_bt"):
+            if slug in TABLE_BY_SLUG:
+                return slug
+        for slug in TABLE_BY_SLUG:
+            s = slug.lower()
+            if ("poste" in s and "cabine" in s) or ("transfo" in s and "poteau" in s) or ("transfo" in s and "ht" in s and "bt" in s):
+                return slug
+    if trace_type == "abonne":
+        for slug in ("point-raccordement", "abonne", "branchement", "distributionpanel-branchement"):
+            if slug in TABLE_BY_SLUG:
+                return slug
+        for slug in TABLE_BY_SLUG:
+            s = slug.lower()
+            if ("point" in s and "raccord" in s) or "abonne" in s or "branchement" in s:
+                return slug
+    return None
+
+
+def _get_ref_point_wkt(trace_type: str, ref_id: str) -> str | None:
+    """Récupère la géométrie (WKT WGS84) du point de référence pour le tracé. Retourne None si non trouvé."""
+    if not ref_id or not ref_id.strip():
+        return None
+    slug = _trace_ref_slug_for_type(trace_type)
+    if not slug:
+        return None
+    try:
+        table_name, meta = get_table_meta(slug)
+    except HTTPException:
+        return None
+    geom_cols = get_geometry_columns(meta)
+    if not geom_cols:
+        return None
+    pk = get_primary_key(meta)
+    quoted_table = quote_ident(table_name)
+    qgeom = quote_ident(geom_cols[0])
+    select_geom = (
+        f"ST_AsText(CASE WHEN ST_SRID({qgeom}) = 0 THEN ST_Transform(ST_SetSRID({qgeom}, {DEFAULT_INPUT_SRID}), {OUTPUT_SRID}) "
+        f"ELSE ST_Transform({qgeom}, {OUTPUT_SRID}) END)"
+    )
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(pk)} = %s", (ref_id.strip(),))
+            row = cur.fetchone()
+            if row and row.get("wkt"):
+                return str(row["wkt"])
+            for alt in get_alternate_key_columns(meta, pk):
+                cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(alt)} = %s", (ref_id.strip(),))
+                row = cur.fetchone()
+                if row and row.get("wkt"):
+                    return str(row["wkt"])
+    return None
+
+
+# Configuration des tables de lignes pour le tracé (graphe par gid de nœuds)
+# Les lignes relient des nœuds : depart (HTA), depart_bt, poteau_bt, poteau_hta, etc.
+_TRACE_EDGE_TABLES = [
+    ("ligne_bt", "ligne-bt", ["id_depart_bt", "id_poteau_bt"]),
+    ("ligne_hta", "ligne-hta", ["id_depart_hta", "id_poteau_hta"]),
+    ("ligne_brcht", "ligne-brcht", ["id_depart_bt", "id_poteau_bt", "id_poteau_hta"]),
+]
+
+
+def _canon_id(value) -> str:
+    """Normalise un identifiant pour comparaison robuste (uuid avec/sans accolades, casse)."""
+    if value is None:
+        return ""
+    return str(value).strip().replace("{", "").replace("}", "").lower()
+
+
+def _canon_sql_expr(col_name: str) -> str:
+    """Expression SQL de normalisation texte alignée avec _canon_id."""
+    q = quote_ident(col_name)
+    return f"REPLACE(REPLACE(LOWER(CAST({q} AS TEXT)), '{{', ''), '}}', '')"
+
+
+def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
+    """
+    Résout le point de départ (poste source, transfo, abonné) en nœuds du graphe.
+    Les tables de lignes référencent depart.gid, depart_bt.gid, poteau_bt.gid, poteau_hta.gid,
+    pas directement poste_source.gid. On retourne tous les gids à utiliser comme frontière initiale.
+    """
+    start = {ref_id}
+    ref_canon = _canon_id(ref_id)
+    trace_type = (trace_type or "").strip().lower()
+    try:
+        if trace_type == "poste_source":
+            # HTA : ligne_hta.id_depart_hta = depart.gid, et depart.id_poste_source = poste_source.gid
+            cur.execute(
+                "SELECT gid FROM depart "
+                "WHERE REPLACE(REPLACE(LOWER(CAST(id_poste_source AS TEXT)), '{', ''), '}', '') = %s "
+                "AND gid IS NOT NULL",
+                (ref_canon,),
+            )
+            for row in cur.fetchall() or []:
+                if row.get("gid"):
+                    start.add(str(row["gid"]).strip())
+        elif trace_type == "poste_transformation":
+            # Le point de départ peut être poste_cabine/transfo_poteau ; on essaie de retrouver
+            # les nœuds BT associés (depart_bt) pour entrer dans le graphe des lignes.
+            for q, p in [
+                ("SELECT gid FROM depart_bt WHERE id_poste_cabine = %s AND gid IS NOT NULL", (ref_id,)),
+                ("SELECT gid FROM depart_bt WHERE id_transfo_ht_bt = %s AND gid IS NOT NULL", (ref_id,)),
+                ("SELECT gid FROM depart_bt WHERE id_transfo_poteau = %s AND gid IS NOT NULL", (ref_id,)),
+            ]:
+                try:
+                    cur.execute(q, p)
+                    for row in cur.fetchall() or []:
+                        if row.get("gid"):
+                            start.add(str(row["gid"]).strip())
+                except Exception:
+                    # Colonnes/table possiblement absentes selon le schéma : ignorer
+                    continue
+        elif trace_type == "abonne":
+            # Point de raccordement : s'il porte un id_ligne_brcht, on prend ses nœuds
+            # de ligne branchement comme points de départ (amont/aval directionnel ensuite).
+            try:
+                cur.execute(
+                    "SELECT id_ligne_brcht FROM point_raccordement "
+                    "WHERE REPLACE(REPLACE(LOWER(CAST(gid AS TEXT)), '{', ''), '}', '') = %s",
+                    (ref_canon,),
+                )
+                row = cur.fetchone()
+                line_id = str(row.get("id_ligne_brcht")).strip() if row and row.get("id_ligne_brcht") else ""
+                if line_id:
+                    cur.execute(
+                        "SELECT id_depart_bt, id_poteau_bt, id_poteau_hta FROM ligne_brcht WHERE gid = %s",
+                        (line_id,),
+                    )
+                    line = cur.fetchone()
+                    if line:
+                        for k in ("id_depart_bt", "id_poteau_bt", "id_poteau_hta"):
+                            v = line.get(k)
+                            if v is not None and str(v).strip():
+                                start.add(str(v).strip())
+            except Exception:
+                # fallback: garder ref_id seulement
+                pass
+    except Exception as e:
+        _log.debug("Résolution nœuds de départ: %s", e)
+    return start
+
+
+def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> list[tuple[str, str]]:
+    """
+    BFS directionnel à partir des nœuds start_ids sur ligne_bt, ligne_hta, ligne_brcht.
+    Retourne [(slug, gid), ...].
+    - aval : suit upstream -> downstream (id_depart_* vers id_poteau_*)
+    - amont : suit downstream -> upstream
+    """
+    start_ids = {_canon_id(s) for s in start_ids if s and str(s).strip()}
+    if not start_ids:
+        return []
+    direction = (direction or "aval").strip().lower()
+    if direction not in {"amont", "aval"}:
+        direction = "aval"
+    visited = set(start_ids)
+    frontier = set(start_ids)
+    result: list[tuple[str, str]] = []
+    seen_gids: set[tuple[str, str]] = set()
+
+    while frontier:
+        next_frontier: set[str] = set()
+        frontier_list = list(frontier)
+        for table_name, slug, node_cols in _TRACE_EDGE_TABLES:
+            # Convention directionnelle:
+            # - node_cols[0] = nœud amont principal (id_depart_*)
+            # - node_cols[1:] = nœuds aval (id_poteau_*)
+            upstream_col = node_cols[0]
+            downstream_cols = node_cols[1:] if len(node_cols) > 1 else node_cols
+            placeholders = ", ".join(["%s"] * len(frontier_list))
+            if direction == "aval":
+                conditions = f"{_canon_sql_expr(upstream_col)} IN ({placeholders})"
+                params = frontier_list
+            else:
+                conditions = " OR ".join(f"{_canon_sql_expr(c)} IN ({placeholders})" for c in downstream_cols)
+                params = frontier_list * len(downstream_cols)
+            try:
+                cur.execute(
+                    f'SELECT gid, {", ".join(quote_ident(c) for c in node_cols)} FROM {quote_ident(table_name)} WHERE {conditions}',
+                    params,
+                )
+            except Exception:
+                continue
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is None:
+                    continue
+                gid_str = str(gid_val)
+                key = (slug, gid_str)
+                if key not in seen_gids:
+                    seen_gids.add(key)
+                    result.append((slug, gid_str))
+                if direction == "aval":
+                    candidates = [row.get(c) for c in downstream_cols]
+                else:
+                    candidates = [row.get(upstream_col)]
+                for v in candidates:
+                    if v is not None:
+                        v_str = _canon_id(v)
+                        if v_str and v_str not in visited:
+                            next_frontier.add(v_str)
+        next_frontier -= visited
+        visited |= next_frontier
+        frontier = next_frontier
+
+    return result
+
+
+def _trace_directional_links_count(cur) -> int:
+    """Nombre total de références de connectivité non nulles dans les tables de lignes."""
+    total = 0
+    for table_name, _slug, node_cols in _TRACE_EDGE_TABLES:
+        for c in node_cols:
+            try:
+                cur.execute(
+                    f"SELECT COUNT(*) AS c FROM {quote_ident(table_name)} "
+                    f"WHERE {quote_ident(c)} IS NOT NULL AND CAST({quote_ident(c)} AS TEXT) <> ''"
+                )
+                row = cur.fetchone() or {}
+                total += int(row.get("c") or 0)
+            except Exception:
+                continue
+    return total
+
+
+def _trace_nearby_lines_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120) -> list[tuple[str, str]]:
+    """
+    Fallback non directionnel si la connectivité par identifiants n'est pas disponible:
+    retourne les lignes proches du point de référence (poste/transfo/point raccordement).
+    """
+    wkt = _get_ref_point_wkt(trace_type, ref_id)
+    if not wkt:
+        return []
+    geog_ref = f"SRID=4326;{wkt}"
+    pairs: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+        try:
+            qtable = quote_ident(table_name)
+            qgeom = quote_ident("geom")
+            geog_expr = _geom_to_4326_geography("t." + qgeom)
+            cur.execute(
+                f"""
+                SELECT t.gid
+                FROM {qtable} t
+                WHERE t.{qgeom} IS NOT NULL
+                  AND ST_DWithin({geog_expr}, ST_GeogFromText(%s), %s)
+                ORDER BY ST_Distance({geog_expr}, ST_GeogFromText(%s))
+                LIMIT 120
+                """,
+                (geog_ref, radius_m, geog_ref),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is None:
+                    continue
+                key = (slug, str(gid_val))
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append(key)
+        except Exception:
+            continue
+    return pairs
+
+
 @app.get("/gis/trace")
 def trace_ouvrages(
     type: str = "poste_source",
@@ -303,12 +661,46 @@ def trace_ouvrages(
     direction: str = "amont",
 ):
     """
-    Tracé amont/aval : retourne les ouvrages connectés à un point (poste source,
-    poste de transformation ou abonné). type: poste_source | poste_transformation | abonne.
-    direction: amont | aval. Stub: retourne une liste vide tant que la logique métier n'est pas implémentée.
+    Tracé amont/aval : retourne les ouvrages (lignes BT, HTA, branchement) connectés à un point de départ.
+    type: poste_source | poste_transformation | abonne.
+    direction: amont | aval (parcours directionnel du graphe ligne_bt / ligne_hta / ligne_brcht).
     """
-    # TODO: implémenter la requête (graphe de connexion, vues, etc.)
-    return {"ouvrage_ids": []}
+    ref_id = (ref_id or "").strip()
+    if not ref_id:
+        return {"ouvrage_ids": [], "message": "ref_id requis."}
+    direction = (direction or "aval").strip().lower()
+    if direction not in {"amont", "aval"}:
+        return {"ouvrage_ids": [], "message": "direction invalide (amont|aval)."}
+
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                start_nodes = _trace_resolve_start_nodes(cur, type, ref_id)
+                pairs = _trace_bfs_from_node(cur, start_nodes, direction)
+                links_count = _trace_directional_links_count(cur)
+                used_spatial_fallback = False
+                if not pairs and links_count == 0:
+                    # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
+                    pairs = _trace_nearby_lines_fallback(cur, type, ref_id, radius_m=120)
+                    used_spatial_fallback = len(pairs) > 0
+    except Exception as e:
+        _log.warning("Trace amont/aval: %s", e)
+        return {"ouvrage_ids": [], "message": f"Erreur lors du tracé: {e}"}
+
+    ouvrage_ids = [{"slug": slug, "id": gid} for slug, gid in pairs]
+    detail = None
+    if not ouvrage_ids:
+        detail = (
+            "Aucune ligne trouvée. Vérifiez que : (1) le point de départ existe en base (ex. poste source avec des départs HTA), "
+            "(2) les tables ligne_bt, ligne_hta, ligne_brcht contiennent des lignes dont les champs id_depart_bt, id_poteau_bt, "
+            "id_depart_hta, id_poteau_hta référencent ce point ou des nœuds connectés."
+        )
+    elif "used_spatial_fallback" in locals() and used_spatial_fallback:
+        detail = (
+            "Tracé calculé en mode spatial (proximité géométrique), car les champs de connectivité "
+            "id_depart_*/id_poteau_* sont vides dans les tables de lignes."
+        )
+    return {"ouvrage_ids": ouvrage_ids, "message": detail}
 
 
 def _is_line_table(slug: str) -> bool:
@@ -902,6 +1294,40 @@ def webhook_arcgis(body: dict = Body(default=None)):
     return {"created": len(created), "errors": len(errors), "details": created, "errors_list": errors}
 
 
+def _try_set_replica_identity_full(table_name: str) -> bool:
+    """Tente d'exécuter ALTER TABLE ... REPLICA IDENTITY FULL (nécessaire pour DELETE sur tables répliquées). Retourne True si OK."""
+    conn = None
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(f"ALTER TABLE {quote_ident(table_name)} REPLICA IDENTITY FULL")
+        cur.close()
+        _log.info("REPLICA IDENTITY FULL appliqué sur la table %s", table_name)
+        return True
+    except Exception as e:
+        _log.warning("Impossible d'appliquer REPLICA IDENTITY FULL sur %s: %s", table_name, e)
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def _do_delete_row(conn, cur, quoted_table: str, quoted_pk: str, meta: dict, pk: str, pk_value: str) -> bool:
+    """Exécute le DELETE et retourne True si une ligne a été supprimée."""
+    cur.execute(f"DELETE FROM {quoted_table} WHERE {quoted_pk} = %s", (pk_value,))
+    if cur.rowcount > 0:
+        return True
+    for alt in get_alternate_key_columns(meta, pk):
+        cur.execute(
+            f"DELETE FROM {quoted_table} WHERE {quote_ident(alt)} = %s",
+            (pk_value,),
+        )
+        if cur.rowcount > 0:
+            return True
+    return False
+
+
 @app.delete("/gis/{table_slug}/{pk_value}")
 def delete_row(
     table_slug: str = Path(..., description="Slug de la table"),
@@ -913,19 +1339,36 @@ def delete_row(
     quoted_table = quote_ident(table_name)
     quoted_pk = quote_ident(pk)
     deleted = False
-    with get_connection() as conn:
-        with get_cursor(conn) as cur:
-            cur.execute(f'DELETE FROM {quoted_table} WHERE {quoted_pk} = %s', (pk_value,))
-            deleted = cur.rowcount > 0
-            if not deleted:
-                for alt in get_alternate_key_columns(meta, pk):
-                    cur.execute(
-                        f'DELETE FROM {quoted_table} WHERE {quote_ident(alt)} = %s',
-                        (pk_value,),
-                    )
-                    if cur.rowcount > 0:
-                        deleted = True
-                        break
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                deleted = _do_delete_row(conn, cur, quoted_table, quoted_pk, meta, pk, pk_value)
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        sql_fix = f"ALTER TABLE {table_name} REPLICA IDENTITY FULL;"
+        if _try_set_replica_identity_full(table_name):
+            with get_connection() as conn:
+                with get_cursor(conn) as cur:
+                    deleted = _do_delete_row(conn, cur, quoted_table, quoted_pk, meta, pk, pk_value)
+        else:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "replica_identity_required",
+                    "message": "Suppression impossible : la table est utilisée en réplication logique sans REPLICA IDENTITY. Un administrateur base de données doit exécuter la commande ci-dessous.",
+                    "sql": sql_fix,
+                    "hint": "Exécuter en base (avec droits suffisants) : " + sql_fix,
+                    "pg_message": str(e),
+                },
+            ) from e
+    except psycopg2.errors.ForeignKeyViolation as e:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "foreign_key_violation",
+                "message": "Suppression impossible : d'autres enregistrements référencent encore cette ligne.",
+                "pg_message": str(e),
+            },
+        ) from e
     if not deleted:
         raise HTTPException(status_code=404, detail="Non trouvé")
     return {"deleted": True, "id": pk_value}

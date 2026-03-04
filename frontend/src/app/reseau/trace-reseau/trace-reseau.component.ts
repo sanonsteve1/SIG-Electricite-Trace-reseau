@@ -32,8 +32,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	paramTypePoint: string = 'poste_source';
 	typePointOptions: { label: string; value: string }[] = [
 		{ label: 'Poste source', value: 'poste_source' },
-		{ label: 'Poste de transformation', value: 'poste_transformation' },
-		{ label: 'Abonné', value: 'abonne' }
+		{ label: 'Poste cabine / Transfo poteau', value: 'poste_transformation' },
+		{ label: 'Point de raccordement', value: 'abonne' }
 	];
 
 	paramPosteSource: string | null = null;
@@ -52,6 +52,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Couches chargées depuis l’API (un ouvrage par table) */
 	couchesReseau: { id: string; label: string; color: string; visible: boolean }[] = [];
 
+	/** Clés (slug:id) des ouvrages du tracé courant pour surligner la carte */
+	private traceOuvrageIds = new Set<string>();
+
 	resumeLongueurKm = 0;
 	resumePoteaux = 0;
 	resumeOuvrages = 0;
@@ -69,7 +72,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private initialBounds: unknown = null;
 	private slugToLayerGroups = new Map<string, unknown>();
 	/** Pour clignoter sur la carte : (slug + ':' + id) -> layer Leaflet */
-	private slugIdToLayer = new Map<string, { getBounds?: () => { getCenter?: () => unknown } }>();
+	private slugIdToLayer = new Map<string, { getBounds?: () => { getCenter?: () => unknown }; getLatLng?: () => { lat: number; lng: number } }>();
 	/** Groupe Leaflet pour le cercle de clignotement */
 	private highlightLayerGroup: { addLayer: (l: unknown) => void; clearLayers: () => void } | null = null;
 	private blinkCircle: unknown = null;
@@ -96,35 +99,55 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		}
 	}
 
-	/** Charge les listes poste source, poste transfo, abonnés depuis les tables API */
+	/** Charge les listes poste source, poste transfo, point de raccordement depuis les tables API. */
 	private loadOptionsForTrace(): void {
 		if (!this.gisApi) return;
 		this.gisApi.getTables().subscribe((tables) => {
-			for (const t of tables) {
-				const slug = t.slug.toLowerCase();
-				const label = this.formatOuvrageLabel(t.table || t.slug);
-				if (!this.slugPosteSource && (slug.includes('limite-poste') || slug.includes('poste-sourc'))) {
-					this.slugPosteSource = t.slug;
-					this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
-						this.posteSourceOptions = this.buildOptionsFromRows(rows, ['assetid', 'name', 'objectid'], 'Poste source');
-						if (this.posteSourceOptions.length > 0) this.paramPosteSource = this.posteSourceOptions[0].value;
-						this.cdr.markForCheck();
-					});
-				} else if (!this.slugPosteTransfo && (slug.includes('transfo-ht-bt') || slug.includes('transfo_ht_bt'))) {
-					this.slugPosteTransfo = t.slug;
-					this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
-						this.posteTransfoOptions = this.buildOptionsFromRows(rows, ['distributionstationcode', 'transformercode', 'name'], 'Transformateur');
-						if (this.posteTransfoOptions.length > 0) this.paramPosteTransfo = this.posteTransfoOptions[0].value;
-						this.cdr.markForCheck();
-					});
-				} else if (!this.slugAbonne && (slug.includes('abonne') || slug.includes('branchement'))) {
-					this.slugAbonne = t.slug;
-					this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
-						this.abonneOptions = this.buildOptionsFromRows(rows, ['subscribernumber', 'subscribername', 'meternumber', 'customercode', 'name', 'objectid'], 'Abonné');
-						if (this.abonneOptions.length > 0) this.paramAbonne = this.abonneOptions[0].value;
-						this.cdr.markForCheck();
-					});
-				}
+			const bySlug = new Map(tables.map((t) => [t.slug.toLowerCase(), t]));
+			// Poste source : préférer poste-source, sinon limite-poste
+			const posteSourceSlug = bySlug.has('poste-source') ? 'poste-source' : [...bySlug.keys()].find((s) => s.includes('poste-sourc') || s.includes('limite-poste'));
+			if (posteSourceSlug && !this.slugPosteSource) {
+				const t = bySlug.get(posteSourceSlug)!;
+				this.slugPosteSource = t.slug;
+				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
+					this.posteSourceOptions = this.buildOptionsFromRows(rows, ['numero_poste', 'assetid', 'name', 'objectid', 'gid'], 'Poste source');
+					if (this.posteSourceOptions.length > 0) this.paramPosteSource = this.posteSourceOptions[0].value;
+					this.cdr.markForCheck();
+				});
+			}
+			// Poste transformation : prioriser poste-cabine puis transfo-poteau, sinon fallback transfo-ht-bt
+			const transfoSlug =
+				bySlug.has('poste-cabine') ? 'poste-cabine'
+					: bySlug.has('transfo-poteau') ? 'transfo-poteau'
+						: bySlug.has('transfo-ht-bt') ? 'transfo-ht-bt'
+							: [...bySlug.keys()].find((s) =>
+								(s.includes('poste') && s.includes('cabine'))
+								|| (s.includes('transfo') && s.includes('poteau'))
+								|| (s.includes('transfo') && s.includes('ht') && s.includes('bt'))
+							);
+			if (transfoSlug && !this.slugPosteTransfo) {
+				const t = bySlug.get(transfoSlug)!;
+				this.slugPosteTransfo = t.slug;
+				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
+					this.posteTransfoOptions = this.buildOptionsFromRows(rows, ['numero', 'code_poste', 'code_transfo', 'distributionstationcode', 'transformercode', 'name', 'gid'], 'Poste transfo');
+					if (this.posteTransfoOptions.length > 0) this.paramPosteTransfo = this.posteTransfoOptions[0].value;
+					this.cdr.markForCheck();
+				});
+			}
+			// Point de raccordement : prioriser point-raccordement, fallback ancien abonne/branchement
+			const abonneSlug =
+				bySlug.has('point-raccordement') ? 'point-raccordement'
+					: bySlug.has('abonne') ? 'abonne'
+						: bySlug.has('branchement') ? 'branchement'
+							: [...bySlug.keys()].find((s) => (s.includes('point') && s.includes('raccord')) || s.includes('abonne') || s.includes('branchement'));
+			if (abonneSlug && !this.slugAbonne) {
+				const t = bySlug.get(abonneSlug)!;
+				this.slugAbonne = t.slug;
+				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
+					this.abonneOptions = this.buildOptionsFromRows(rows, ['numero', 'numero_abonne', 'num_abonne', 'nom', 'code_client', 'subscribernumber', 'subscribername', 'meternumber', 'customercode', 'name', 'gid'], 'Point raccordement');
+					if (this.abonneOptions.length > 0) this.paramAbonne = this.abonneOptions[0].value;
+					this.cdr.markForCheck();
+				});
 			}
 			this.cdr.markForCheck();
 		});
@@ -135,11 +158,13 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		labelFields: string[],
 		fallbackPrefix: string
 	): { label: string; value: string }[] {
-		const pk = 'id';
+		// Valeur = clé primaire (gid pour poste_source/transfo_ht_bt/branchement, id ou gid selon table)
+		const getPkValue = (r: Record<string, unknown>): string =>
+			String(r['gid'] ?? r['id'] ?? r['objectid'] ?? '').trim();
 		const seen = new Set<string>();
 		return (rows || [])
 			.filter((r) => {
-				const id = r[pk] != null ? String(r[pk]) : '';
+				const id = getPkValue(r);
 				if (!id || seen.has(id)) return false;
 				seen.add(id);
 				return true;
@@ -153,7 +178,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						break;
 					}
 				}
-				const idVal = String(r[pk] ?? '');
+				const idVal = getPkValue(r);
 				if (!label || label === idVal) label = `${fallbackPrefix} ${idVal}`.trim();
 				return { label, value: idVal };
 			});
@@ -162,6 +187,26 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	onTypePointChange(): void {
 		this.cdr.markForCheck();
 		this.onSelectionChange();
+	}
+
+	/** Sélectionne un point de départ depuis la liste des éléments utilisables pour les tracés */
+	selectElement(type: 'poste_source' | 'poste_transformation' | 'abonne', value: string): void {
+		this.paramTypePoint = type;
+		if (type === 'poste_source') {
+			this.paramPosteSource = value;
+			this.paramPosteTransfo = null;
+			this.paramAbonne = null;
+		} else if (type === 'poste_transformation') {
+			this.paramPosteTransfo = value;
+			this.paramPosteSource = null;
+			this.paramAbonne = null;
+		} else {
+			this.paramAbonne = value;
+			this.paramPosteSource = null;
+			this.paramPosteTransfo = null;
+		}
+		this.onSelectionChange();
+		this.cdr.markForCheck();
 	}
 
 	/** Appelé quand l’utilisateur change le poste source, poste transfo ou abonné sélectionné → clignoter sur la carte */
@@ -205,18 +250,46 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		const slug = this.getSlugForCurrentType();
 		const id = this.getSelectedId();
 		if (!slug || !id || !this.map) {
-			console.log('[Trace réseau] highlightSelectionOnMap ignoré (slug, id ou map manquant)', { slug, id, hasMap: !!this.map });
 			return;
 		}
-		const key = `${slug}:${id}`;
-		const entry = this.slugIdToLayer.get(key) ?? this.slugIdToLayer.get(`${slug}:${Number(id)}`);
-		if (!entry?.getBounds) {
-			console.log('[Trace réseau] Aucune couche trouvée pour le clignotement', { key, keysCount: this.slugIdToLayer.size, sampleKeys: Array.from(this.slugIdToLayer.keys()).slice(0, 5) });
+		const normalizeId = (v: unknown): string => String(v ?? '').replace(/^\{|\}$/g, '').trim().toLowerCase();
+		const idNorm = String(id).replace(/^\{|\}$/g, '');
+		const idCanonical = normalizeId(id);
+		const idNum = Number(id);
+		let entry =
+			this.slugIdToLayer.get(`${slug}:${id}`) ??
+			this.slugIdToLayer.get(`${slug}:${idNorm}`) ??
+			this.slugIdToLayer.get(`${slug}:{${idNorm}}`) ??
+			this.slugIdToLayer.get(`${slug}:${idNorm.toLowerCase()}`) ??
+			(!Number.isNaN(idNum) ? this.slugIdToLayer.get(`${slug}:${idNum}`) : null);
+		const hasLayerGeometry = !!entry && (typeof entry.getBounds === 'function' || typeof entry.getLatLng === 'function');
+		if (!hasLayerGeometry) {
+			for (const [key, layer] of this.slugIdToLayer) {
+				const colon = key.indexOf(':');
+				if (colon < 0) continue;
+				const hasGeometry = !!layer && (typeof layer.getBounds === 'function' || typeof layer.getLatLng === 'function');
+				if (!hasGeometry) continue;
+				const keySlug = key.slice(0, colon);
+				const keyId = key.slice(colon + 1);
+				if (keySlug.toLowerCase() !== slug.toLowerCase()) continue;
+				const keyCanonical = normalizeId(keyId);
+				if (keyCanonical === idCanonical || (keyId === String(idNum) && !Number.isNaN(idNum))) {
+					entry = layer;
+					break;
+				}
+			}
+		}
+		const hasEntryGeometry = !!entry && (typeof entry.getBounds === 'function' || typeof entry.getLatLng === 'function');
+		if (!hasEntryGeometry) {
 			return;
 		}
-		console.log('[Trace réseau] Clignotement démarré', { slug, id, key });
-		const b = entry.getBounds();
-		const center = b && typeof (b as { getCenter?: () => unknown }).getCenter === 'function' ? (b as { getCenter: () => unknown }).getCenter() : null;
+		const b = typeof entry.getBounds === 'function' ? entry.getBounds() : null;
+		const center =
+			b && typeof (b as { getCenter?: () => unknown }).getCenter === 'function'
+				? (b as { getCenter: () => unknown }).getCenter()
+				: typeof entry.getLatLng === 'function'
+					? entry.getLatLng()
+					: null;
 		if (!center) return;
 		const latLng = Array.isArray(center) ? center : [(center as { lat: number }).lat, (center as { lng: number }).lng];
 		this.stopBlink();
@@ -234,7 +307,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				fillOpacity: 0.5
 			});
 			this.highlightLayerGroup.addLayer(marker);
-			(marker as { bringToFront?: () => void }).bringToFront?.();
+			const hlg = this.highlightLayerGroup as unknown as { bringToFront?: () => void };
+			if (hlg.bringToFront) hlg.bringToFront();
+			(marker as unknown as { bringToFront?: () => void }).bringToFront?.();
 			this.blinkCircle = marker;
 			let radius = 28;
 			let growing = true;
@@ -252,8 +327,15 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			setTimeout(() => {
 				this.stopBlink();
 			}, 4000);
-			const m = this.map as { fitBounds?: (b: unknown, o?: object) => void };
-			if (m?.fitBounds && b) m.fitBounds(b, { padding: [80, 80], maxZoom: 18 });
+			const m = this.map as {
+				fitBounds?: (b: unknown, o?: object) => void;
+				setView?: (center: [number, number] | unknown, zoom?: number, opts?: object) => void;
+			};
+			if (m?.fitBounds && b) {
+				m.fitBounds(b, { padding: [80, 80], maxZoom: 18 });
+			} else if (m?.setView && latLng) {
+				m.setView(latLng, 18, { animate: true });
+			}
 		});
 	}
 
@@ -333,10 +415,28 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private applyTraceResult(ouvrageIds: { slug: string; id: string }[]): void {
 		// Pour l’instant : si le backend renvoie des IDs, on pourrait masquer les couches non concernées ou surligner.
 		// Ici on garde l’affichage actuel ; à étendre quand le backend renverra les géométries ou IDs.
-		if (ouvrageIds.length > 0) {
-			this.resumeOuvrages = ouvrageIds.length;
-			this.cdr.markForCheck();
-		}
+		this.traceOuvrageIds = new Set(ouvrageIds.map((o) => `${o.slug}:${o.id}`));
+		this.resumeOuvrages = ouvrageIds.length;
+		this.resumePoteaux = ouvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
+		this.resumeLongueurKm = 0;
+		this.applyTraceStyleToMap();
+		this.cdr.markForCheck();
+	}
+
+	private isPointSlug(slug: string): boolean {
+		const s = slug.toLowerCase();
+		return /poteau|pole|transfo|poste|abonne|branchement|noeud|junction/.test(s) && !/ligne|electricline/.test(s);
+	}
+
+	private applyTraceStyleToMap(): void {
+		const highlight = { opacity: 1, fillOpacity: 0.7, weight: 6 };
+		const dimmed = { opacity: 0.2, fillOpacity: 0.15, weight: 2 };
+		this.slugIdToLayer.forEach((layer, key) => {
+			const setStyle = (layer as { setStyle?: (s: object) => void }).setStyle;
+			if (setStyle) {
+				setStyle.call(layer, this.traceOuvrageIds.size === 0 || this.traceOuvrageIds.has(key) ? highlight : dimmed);
+			}
+		});
 	}
 
 	toggleCouche(layer: { id: string; label: string; color: string; visible: boolean }): void {
@@ -361,8 +461,30 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	demarrerTrace(): void {}
-	effacerTrace(): void {}
-	exporterTrace(): void {}
+
+	/** Efface le tracé : restaure l'affichage normal et réinitialise le résumé. */
+	effacerTrace(): void {
+		this.traceOuvrageIds = new Set();
+		this.resumeOuvrages = 0;
+		this.resumePoteaux = 0;
+		this.resumeLongueurKm = 0;
+		this.applyTraceStyleToMap();
+		this.cdr.markForCheck();
+	}
+
+	/** Exporte la liste des ouvrages du tracé courant en JSON. */
+	exporterTrace(): void {
+		const list = Array.from(this.traceOuvrageIds).map((key) => {
+			const [slug, id] = key.split(/:(.*)/);
+			return { slug, id };
+		});
+		const blob = new Blob([JSON.stringify({ ouvrage_ids: list }, null, 2)], { type: 'application/json' });
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = `trace-reseau-${new Date().toISOString().slice(0, 10)}.json`;
+		a.click();
+		URL.revokeObjectURL(a.href);
+	}
 
 	resetMapView(): void {
 		const m = this.map as { fitBounds?: (b: unknown, o?: object) => void } | null;
@@ -554,14 +676,27 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						});
 						geoJsonLayer.eachLayer((l: unknown) => {
 							(slugGroup as { addLayer: (l: unknown) => void }).addLayer(l);
-							const withBounds = l as { getBounds?: () => { getCenter?: () => unknown } };
+							const withBounds = l as { getBounds?: () => { getCenter?: () => unknown }; getLatLng?: () => { lat: number; lng: number } };
 							const withFeature = l as { feature?: { properties?: Record<string, unknown> } };
-							const props = withFeature.feature?.properties;
-							const id = props && props['id'] != null ? String(props['id']) : '';
-							if (id && withBounds.getBounds) {
-								self.slugIdToLayer.set(`${slug}:${id}`, withBounds);
-								const numId = Number(id);
-								if (!Number.isNaN(numId)) self.slugIdToLayer.set(`${slug}:${numId}`, withBounds);
+							const props = withFeature.feature?.properties ?? {};
+							const id = props['id'] != null ? String(props['id']) : '';
+							const gid = props['gid'] != null ? String(props['gid']) : '';
+							const objectid = props['objectid'] != null ? String(props['objectid']) : '';
+							const setLayerKey = (keyId: string) => {
+								if (!keyId) return;
+								self.slugIdToLayer.set(`${slug}:${keyId}`, withBounds);
+								const norm = String(keyId).replace(/^\{|\}$/g, '');
+								if (norm !== keyId) self.slugIdToLayer.set(`${slug}:${norm}`, withBounds);
+								const normLower = norm.toLowerCase();
+								if (normLower !== norm) self.slugIdToLayer.set(`${slug}:${normLower}`, withBounds);
+								const num = Number(keyId);
+								if (!Number.isNaN(num)) self.slugIdToLayer.set(`${slug}:${num}`, withBounds);
+							};
+							const hasLayerGeometry = typeof withBounds.getBounds === 'function' || typeof withBounds.getLatLng === 'function';
+							if (hasLayerGeometry) {
+								if (id) setLayerKey(id);
+								if (gid) setLayerKey(gid);
+								if (objectid) setLayerKey(objectid);
 							}
 							if (withBounds.getBounds) {
 								const b = withBounds.getBounds();
@@ -583,6 +718,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
 					this.mapLoading = false;
 					this.cdr.markForCheck();
+					setTimeout(() => self.highlightSelectionOnMap(), 0);
 				});
 			},
 			error: () => {

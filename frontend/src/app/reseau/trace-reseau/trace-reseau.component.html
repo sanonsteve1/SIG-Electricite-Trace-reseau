@@ -23,12 +23,12 @@
 							<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste source" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
 						}
 						@if (paramTypePoint === 'poste_transformation') {
-							<label class="trace-reseau-label">Poste de transformation</label>
-							<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste de transformation" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+							<label class="trace-reseau-label">Poste cabine / Transfo poteau</label>
+							<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste cabine ou un transfo poteau" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
 						}
 						@if (paramTypePoint === 'abonne') {
-							<label class="trace-reseau-label">Abonné</label>
-							<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un abonné" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+							<label class="trace-reseau-label">Point de raccordement</label>
+							<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un point de raccordement" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
 						}
 					</div>
 				</section>

@@ -125,30 +125,33 @@
 			}
 		</aside>
 		<div class="modelisation-map-wrapper" [class.modelisation-map-wrapper--drawing]="createDrawingMode">
-			@if (selectedLayerSlug) {
-				<div class="modelisation-map-panel" [class.modelisation-map-panel--collapsed]="mapPanelCollapsed && !createDrawingMode && !createFormInPanel && !editFormInPanel && !viewFormInPanel">
-					<div class="modelisation-map-panel-header">
-						@if (!mapPanelCollapsed && selectedLayerGeometryType) {
-							<span class="modelisation-map-panel-geom-type">{{ selectedLayerGeometryType }}</span>
-						}
-						<button type="button" class="modelisation-map-panel-toggle" (click)="mapPanelCollapsed = !mapPanelCollapsed" [title]="mapPanelCollapsed ? 'Développer le panneau' : 'Réduire le panneau'">
-							<i class="fa" [class.fa-chevron-right]="mapPanelCollapsed" [class.fa-chevron-down]="!mapPanelCollapsed"></i>
-						</button>
-					</div>
-					<div class="modelisation-map-panel-actions">
-						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'create'" (click)="openCreate()" title="Créer" [disabled]="createDrawingMode || createFormInPanel">
-							<i class="fa fa-plus"></i>
-							<span class="modelisation-map-panel-btn-text">Créer</span>
-						</button>
-						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'modify'" (click)="actionModify()" title="Modifier">
-							<i class="fa fa-pencil"></i>
-							<span class="modelisation-map-panel-btn-text">Modifier</span>
-						</button>
-						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'delete'" (click)="actionDelete()" title="Supprimer">
-							<i class="fa fa-trash"></i>
-							<span class="modelisation-map-panel-btn-text">Supprimer</span>
-						</button>
-					</div>
+			<!-- Panneau actions carte : toujours visible (comme Carte réseau), modifier/supprimer par clic sur la carte -->
+			<div class="modelisation-map-panel" [class.modelisation-map-panel--collapsed]="mapPanelCollapsed && !createDrawingMode && !createFormInPanel && !editFormInPanel && !viewFormInPanel">
+				<div class="modelisation-map-panel-header">
+					@if (!mapPanelCollapsed && selectedLayerGeometryType) {
+						<span class="modelisation-map-panel-geom-type">{{ selectedLayerGeometryType }}</span>
+					}
+					@if (!mapPanelCollapsed && !selectedLayerSlug && (selectedMapPanelAction === 'modify' || selectedMapPanelAction === 'delete')) {
+						<span class="modelisation-map-panel-geom-type">Cliquez sur un ouvrage sur la carte</span>
+					}
+					<button type="button" class="modelisation-map-panel-toggle" (click)="mapPanelCollapsed = !mapPanelCollapsed" [title]="mapPanelCollapsed ? 'Développer le panneau' : 'Réduire le panneau'">
+						<i class="fa" [class.fa-chevron-right]="mapPanelCollapsed" [class.fa-chevron-down]="!mapPanelCollapsed"></i>
+					</button>
+				</div>
+				<div class="modelisation-map-panel-actions">
+					<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'create'" (click)="openCreate()" title="Créer (choisir une couche dans la liste à gauche)" [disabled]="!selectedLayerSlug || createDrawingMode || createFormInPanel">
+						<i class="fa fa-plus"></i>
+						<span class="modelisation-map-panel-btn-text">Créer</span>
+					</button>
+					<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'modify'" (click)="actionModify()" title="Modifier : cliquez sur un ouvrage sur la carte">
+						<i class="fa fa-pencil"></i>
+						<span class="modelisation-map-panel-btn-text">Modifier</span>
+					</button>
+					<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'delete'" (click)="actionDelete()" title="Supprimer : cliquez sur un ouvrage sur la carte">
+						<i class="fa fa-trash"></i>
+						<span class="modelisation-map-panel-btn-text">Supprimer</span>
+					</button>
+				</div>
 					<div class="modelisation-map-panel-scroll">
 					@if (viewFormInPanel && ouvrageModalMode === 'view') {
 						<div class="modelisation-map-panel-form modelisation-map-panel-view">
@@ -289,20 +292,20 @@
 					}
 					</div>
 				</div>
-			}
-			<!-- Bouton flottant Légende -->
-			<div class="modelisation-map-legend">
-				<button type="button" class="modelisation-map-legend-btn" (click)="legendPanelOpen = !legendPanelOpen" [class.modelisation-map-legend-btn--open]="legendPanelOpen" [title]="legendPanelOpen ? 'Fermer la légende' : 'Afficher la légende'">
-					<i class="fa fa-info-circle"></i>
-					<span>Légende</span>
+			<!-- Couches visibles sur la carte (comme onglet Carte réseau) -->
+			<div class="modelisation-map-legend modelisation-layers-float">
+				<button type="button" class="modelisation-map-legend-btn" [class.modelisation-map-legend-btn--open]="layersPanelOpen" (click)="layersPanelOpen = !layersPanelOpen" [attr.aria-expanded]="layersPanelOpen" [title]="layersPanelOpen ? 'Masquer les couches' : 'Afficher les couches'">
+					<i class="fa fa-layer-group"></i>
+					<span>Couches visibles</span>
 				</button>
-				@if (legendPanelOpen) {
-					<div class="modelisation-map-legend-panel">
+				@if (layersPanelOpen) {
+					<div class="modelisation-map-legend-panel modelisation-layers-panel">
 						@for (couche of couchesModele; track couche.id) {
-							<div class="modelisation-map-legend-item">
+							<label class="modelisation-map-legend-item modelisation-layer-item">
+								<input type="checkbox" [(ngModel)]="couche.included" (ngModelChange)="toggleCouche(couche)" />
 								<span class="modelisation-map-legend-symbol modelisation-map-legend-symbol--line" [style.--legend-color]="couche.color"></span>
 								<span class="modelisation-map-legend-label">{{ couche.label }}</span>
-							</div>
+							</label>
 						}
 						@if (couchesModele.length === 0) {
 							<p class="modelisation-map-legend-empty">Chargement des couches…</p>
@@ -310,6 +313,13 @@
 					</div>
 				}
 			</div>
+			<!-- Spinner chargement des données (à la place de la légende) -->
+			@if (layersMapLoading) {
+				<div class="modelisation-map-loading-spinner" title="Chargement des données…">
+					<i class="fa fa-spinner fa-spin"></i>
+					<span>Chargement des données…</span>
+				</div>
+			}
 			<div #mapContainer class="modelisation-map"></div>
 		</div>
 	</div>

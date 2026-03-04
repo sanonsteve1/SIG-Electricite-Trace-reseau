@@ -1,6 +1,7 @@
 # API REST Python (FastAPI) – Tables GIS
 
-API CRUD générée automatiquement à partir de `database_structure.json` pour toutes les tables de la base **goughin_backup**.
+API CRUD générée à partir de **`script_bd/database_structure.json`** uniquement.  
+**Chaque table** définie dans ce fichier dispose de **sa propre API** (liste, détail, création/mise à jour, suppression). Aucune autre table de la base n’est exposée.
 
 ## Installation
 
@@ -17,13 +18,15 @@ Variables d’environnement optionnelles (sinon valeurs par défaut) :
 |---------------|------------------|--------------------|
 | `DB_HOST`     | `localhost`      | Hôte PostgreSQL   |
 | `DB_PORT`     | `5432`           | Port               |
-| `DB_NAME`     | `goughin_backup` | Nom de la base     |
+| `DB_NAME`     | `pre_prod_test1` | Nom de la base     |
 | `DB_USER`     | `postgres`       | Utilisateur        |
 | `DB_PASSWORD` | `2023`           | Mot de passe       |
 
+L'API n'expose **que les tables qui existent** dans la base connectée. Pour régénérer la structure : `python extract_tables.py` dans `script_bd` avec les mêmes variables d'environnement (ex. `DB_NAME`).
+
 ## Lancement
 
-Depuis le dossier `scripts/script_bd` (le fichier `database_structure.json` doit être à la racine du projet) :
+Depuis le dossier `scripts/script_bd` (le fichier `database_structure.json` doit être dans ce même dossier) :
 
 ```powershell
 cd scripts/script_bd
@@ -39,7 +42,7 @@ L’API écoute sur **http://0.0.0.0:8000**.
 
 ## Endpoints
 
-Pour chaque table du schéma, le **slug** est le nom de la table en minuscules avec des tirets (ex. `DistributionPanel_branchement` → `distributionpanel-branchement`).
+L’API n’expose **que les tables** listées dans `script_bd/database_structure.json` (et `database_structure.txt`). Pour chaque table, le **slug** est le nom de la table en minuscules avec des tirets (ex. `branchement` → `branchement`, `ligne_bt` → `ligne-bt`).
 
 | Méthode | URL | Description |
 |--------|-----|-------------|
@@ -90,3 +93,19 @@ Les valeurs sont définies dans **api/form_defaults.json**. Pour l’interfaçag
 
 - **Module Field Maps** : `script_bd/fieldmaps/README.md`
 - **Vue d’ensemble intégration** : `script_bd/docs/FIELDMAPS_INTEGRATION.md`
+
+## Dépannage
+
+### Erreur 409 « replica_identity_required » sur DELETE
+
+Si une suppression renvoie **409** avec le détail `replica_identity_required`, la table est dans une **publication de réplication** qui publie les suppressions, mais elle n’a pas d’**identité de réplicat**. Exécuter en base (avec les droits appropriés) :
+
+```sql
+ALTER TABLE nom_de_la_table REPLICA IDENTITY FULL;
+```
+
+Exemple pour `lignes_sections_distinct` :
+
+```sql
+ALTER TABLE lignes_sections_distinct REPLICA IDENTITY FULL;
+```
