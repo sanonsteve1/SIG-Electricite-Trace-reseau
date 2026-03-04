@@ -1,0 +1,5701 @@
+{
+  "DistributionPanel_branchement": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"DistributionPanel_branchement_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subscribername",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "connectiontype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "transformationreport",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codesticker",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "existencedecompteur",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "customercode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "name",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "firstname",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phone",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_cnib",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessibility",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "DistributionPanel_branchement_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "2496 kB",
+      "data_size": "2232 kB",
+      "indexes_size": "224 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_Ground_Terre": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_Ground_Terre_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "designtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grounding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(2000)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tapsandpoles",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "normaloperatingstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "secondaryvoltagelinetoline",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxoperatingvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maximumpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "minimumpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ratedpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coolingtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hasarrester",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "address",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "currentvaultpole",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "serialnumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "totalmass",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "year",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subnetworkcontrollername",
+        "Type": "character varying(2000)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomaly",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ocrtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "loadtapchangepercent",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shortcircuitvoltage",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "peakload",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "voltagelevel",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "height",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "height_metric",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorybt",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessoryfunction",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorymaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorytype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmmaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmposition",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwarematerial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwaretype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatormaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatortype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofimplantation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "equipmenttypeorclass",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assembly",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofinstallation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "labeltext",
+        "Type": "character varying(256)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsizemetric",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sourceoffunding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "neutraltype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "natureoftheline",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_Ground_Terre_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "16 kB",
+      "data_size": "0 bytes",
+      "indexes_size": "8192 bytes",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_HighVoltageTransformer_Transfo_PS": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_HighVoltageTransformer_Transfo_PS_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coolingtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hasarrester",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maximumpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxoperatingvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "normaloperatingstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(2000)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "serialnumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "totalmass",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "year",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "secondaryvoltagelinetoline",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ratedpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "winding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shortcircuitvoltagepercentage",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "terminaltype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "transformercode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "polenumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_HighVoltageTransformer_Transfo_PS_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_LowVoltageControlUnit_TUR": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_LowVoltageControlUnit_TUR_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxoperatingvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lowvoltagefeederscode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "loadtapchangepercent",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "breakingcapacity",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "distributionboardpanelstype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_LowVoltageControlUnit_TUR_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_LowVoltageNetworkProtection_Disjoncteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_LowVoltageNetworkProtection_Disjoncteur_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "normaloperatingstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dhptype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorytype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_LowVoltageNetworkProtection_Disjoncteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_MediumVoltageArrester_Parafoudre": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_MediumVoltageArrester_Parafoudre_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "currentdevicestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "arrestertype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_MediumVoltageArrester_Parafoudre_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_MediumVoltageSwitch_cellule_ocr": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_MediumVoltageSwitch_cellule_ocr_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anomaly",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "normaloperatingstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(2000)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ocrtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "switchtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "feederscode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_MediumVoltageSwitch_cellule_ocr_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "80 kB",
+      "data_size": "32 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricDevice_MediumVoltageTransformer_transfo_ht_bt": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricDevice_MediumVoltageTransformer_transfo_ht_bt_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coolingtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hasarrester",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maximumpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxoperatingvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maxvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "normaloperatingstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(2000)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ratedpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "secondaryvoltagelinetoline",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "serialnumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shortcircuitvoltage",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "year",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "winding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "distributionstationcode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tapchanger",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fittingtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "terminaltype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricDevice_MediumVoltageTransformer_transfo_ht_bt_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricJunction_LowVoltageConnection_Point_noeud_bt": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricJunction_LowVoltageConnection_Point_noeud_bt_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cadastresection",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cadastrelot",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "cadastreparcel",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sonabelsection",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sonabelparcel",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "connectiondevice",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "operation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "otherequipments",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessibility",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sonabellot",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricJunction_LowVoltageConnection_Point_noeud_bt_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "1096 kB",
+      "data_size": "944 kB",
+      "indexes_size": "112 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricJunction_LowVoltageLineEnd_findeligne": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricJunction_LowVoltageLineEnd_findeligne_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricJunction_LowVoltageLineEnd_findeligne_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "neutraltype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sourceoffunding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "linetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lowvoltagefeedercode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofmaterial",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "448 kB",
+      "data_size": "360 kB",
+      "indexes_size": "48 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricLine_LowVoltageService_ligne_branchement_bt": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricLine_LowVoltageService_ligne_branchement_bt_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofmaterial",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricLine_LowVoltageService_ligne_branchement_bt_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "840 kB",
+      "data_size": "720 kB",
+      "indexes_size": "80 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricLine_LowVoltageUndergroundConductor_ligne_bt_souterrain": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricLine_LowVoltageUndergroundConductor_ligne_bt_sou_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "neutraltype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sourceoffunding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "linetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lowvoltagefeedercode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofmaterial",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validatedby",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricLine_LowVoltageUndergroundConductor_ligne_bt_soute_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricLine_MediumVoltageOverheadConductor_ligne_hta_aerien": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricLine_MediumVoltageOverheadConductor_ligne_hta_ae_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sourceoffunding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofmaterial",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "feederscode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricLine_MediumVoltageOverheadConductor_ligne_hta_aeri_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "24 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_souter": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commonconductortype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nominalvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesnormal",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "conductorsize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofmaterial",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sourceoffunding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numphasesconstructed",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasechange",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phasesenergized",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_s_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "Meters_compteur": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"Meters_compteur_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subscriptionnumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "counternumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "policeno",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "name",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "firstname",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "customernature",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "useofotherenergysource",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "otherenergysources",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "customertype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subscribedpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "use_",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "administrationcategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "administrationtypeofbuilding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "administrationequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "institutioncategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "institutiontypeofbuilding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "institutionequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "socioprofessionalcategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "housekeepingtypeofbuilding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "housekeepingequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "secondaryuseforactivity",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "companytypeofbuilding",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "activities",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "meternumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "billing",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "stickercode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "metertype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessibility",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "Meters_compteur_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "2008 kB",
+      "data_size": "1776 kB",
+      "indexes_size": "192 kB",
+      "table_rows": 0
+    }
+  },
+  "StructueBoundary_ElectricdistributionstationBoundary_limite_po": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"StructueBoundary_ElectricdistributionstationBoundary_lim_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grouding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_area",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "StructueBoundary_ElectricdistributionstationBoundary_limit_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "64 kB",
+      "data_size": "16 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "StructureBoundary_ElectricSubstationBoundary_limite_poste_sourc": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"StructureBoundary_ElectricSubstationBoundary_limite_post_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "operation",
+        "Type": "character varying(1)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "otherequipments",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_area",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "StructureBoundary_ElectricSubstationBoundary_limite_poste__pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "StructureJunction_ElectricJunctionBox_coffret": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"StructureJunction_ElectricJunctionBox_coffret_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "height",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "installdate",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "junctionhtatype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "boxtype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "metetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "metermodel",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "distributionstationcode",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "metersize",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "meternumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assignedvoltage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "material",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "StructureJunction_ElectricJunctionBox_coffret_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "StructureJunction_ElectricLowVoltagePole_poteau_bt": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"StructureJunction_ElectricLowVoltagePole_poteau_bt_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "OBJECTID",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessoryfunction",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorymaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorytype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ASSETGROUP",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ASSETTYPE",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmmaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmposition",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "GlobalID",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwarematerial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwaretype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "height_metric",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatormaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatortype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofimplantation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "QualityVerified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Earthing",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "EquipmentTypeOrClass",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Grounding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "PresenceOfAStreetLamp",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Height",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "Pa25",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "SuspensionClampWithBracket",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "TensionClampWithBracket",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "AngleChampRA25",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "StructureJunction_ElectricLowVoltagePole_poteau_bt_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "728 kB",
+      "data_size": "616 kB",
+      "indexes_size": "72 kB",
+      "table_rows": 0
+    }
+  },
+  "StructureJunction_ElectricMediumVoltagePole_poteau_hta": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"StructureJunction_ElectricMediumVoltagePole_poteau_hta_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessoryfunction",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorymaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorytype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assembly",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetgroup",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assetid",
+        "Type": "character varying(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "assettype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "constructionstatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmmaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmposition",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarmtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwarematerial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "hardwaretype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatormaterial",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "insulatortype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lifecyclestatus",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "maintby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "manufacturer",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "materialcode",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ownedby",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofinstallation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "earthing",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "template",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "equipmenttypeorclass",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grounding",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessorylv",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "presenceofastreetlamp",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fittingtype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "height",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "flag",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "archedcrossarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "alternatingorstaggered",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "triangle",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "canadianstylecrossarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "horizontalcrossarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "others",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "pa25",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "suspensionclampwithbracket",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tensionclampwithbracket",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anglechampra25",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "crossarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sidearm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "inclinedarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "deadendarm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "anglearm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "doublearm",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "StructureJunction_ElectricMediumVoltagePole_poteau_hta_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "168 kB",
+      "data_size": "120 kB",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "SubscriberForm_abonne": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('\"SubscriberForm_abonné_id_seq\"'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "batch",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "plot",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rank",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "meternumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subscribernumber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "gpsposition",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "phonenumber",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codesticker",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "subscribedpower",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "amperage",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitation",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "customernature",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "useofotherenergysource",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "otherenergysource",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "customertype",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "use_",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "institutioncategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "typeofframe",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "administrationcategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "activities",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_user",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edited_date",
+        "Type": "timestamp without time zone",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "notes",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "lot",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "secondaryueofactivity",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "username",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "validator",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "qualityverified",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "accessibility",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nameofsubcriber",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "policeno",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "firstname",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "socioprofessionalcategory",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "administrationequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "institutionequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "housekeepingequipment",
+        "Type": "character varying(255)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "SubscriberForm_abonné_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "2640 kB",
+      "data_size": "2416 kB",
+      "indexes_size": "184 kB",
+      "table_rows": 0
+    }
+  },
+  "lignes": {
+    "columns": [
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "lignes_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "1560 kB",
+      "data_size": "1328 kB",
+      "indexes_size": "192 kB",
+      "table_rows": 0
+    }
+  },
+  "point_connecte": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "2792 kB",
+      "data_size": "2752 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "points": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "t",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [],
+    "foreign_keys": [],
+    "indexes": [],
+    "table_info": {
+      "total_size": "2800 kB",
+      "data_size": "2760 kB",
+      "indexes_size": "0 bytes",
+      "table_rows": 0
+    }
+  },
+  "spatial_ref_sys": {
+    "columns": [
+      {
+        "Field": "srid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "auth_name",
+        "Type": "character varying(256)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "auth_srid",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "srtext",
+        "Type": "character varying(2048)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proj4text",
+        "Type": "character varying(2048)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "srid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "spatial_ref_sys_pkey",
+        "column_name": "srid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "7144 kB",
+      "data_size": "6896 kB",
+      "indexes_size": "208 kB",
+      "table_rows": 0
+    }
+  }
+}

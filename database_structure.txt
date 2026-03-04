@@ -1,0 +1,1223 @@
+================================================================================
+EXTRACTION DE LA BASE DE DONNÉES: goughin_backup
+Date: 2026-02-19 14:52:40
+================================================================================
+
+
+================================================================================
+TABLE: DistributionPanel_branchement
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 2496 kB
+   - Taille des données: 2232 kB
+   - Taille des index: 224 kB
+
+📋 Colonnes (23):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"DistributionPanel_branchement_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • subscribername                 character varying(255) NULL
+   • connectiontype                 integer(32)          NULL
+   • transformationreport           integer(32)          NULL
+   • codesticker                    character varying(255) NULL
+   • existencedecompteur            character varying(255) NULL
+   • customercode                   character varying(255) NULL
+   • name                           character varying(255) NULL
+   • firstname                      character varying(255) NULL
+   • phone                          character varying(255) NULL
+   • n_cnib                         character varying(255) NULL
+   • globalid                       character varying    NULL
+   • created_user                   character varying(255) NULL
+   • created_date                   timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • notes                          character varying(255) NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • accessibility                  integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• DistributionPanel_branchement_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_Ground_Terre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 16 kB
+   - Taille des données: 0 bytes
+   - Taille des index: 8192 bytes
+
+📋 Colonnes (69):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_Ground_Terre_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • designtype                     integer(32)          NULL
+   • globalid                       character varying    NULL
+   • grounding                      integer(32)          NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • notes                          character varying(2000) NULL
+   • phasesnormal                   integer(32)          NULL
+   • tapsandpoles                   integer(32)          NULL
+   • normaloperatingstatus          integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • secondaryvoltagelinetoline     integer(32)          NULL
+   • maxvoltage                     integer(32)          NULL
+   • maxoperatingvoltage            integer(32)          NULL
+   • maximumpower                   integer(32)          NULL
+   • minimumpower                   integer(32)          NULL
+   • ratedpower                     integer(32)          NULL
+   • coolingtype                    integer(32)          NULL
+   • hasarrester                    integer(32)          NULL
+   • address                        character varying(255) NULL
+   • currentvaultpole               character varying(255) NULL
+   • serialnumber                   character varying(255) NULL
+   • totalmass                      double precision(53) NULL
+   • year                           timestamp without time zone NULL
+   • subnetworkcontrollername       character varying(2000) NULL
+   • anomaly                        character varying(255) NULL
+   • ocrtype                        character varying(255) NULL
+   • loadtapchangepercent           integer(32)          NULL
+   • shortcircuitvoltage            character varying(255) NULL
+   • peakload                       integer(32)          NULL
+   • voltagelevel                   character varying(255) NULL
+   • materialcode                   integer(32)          NULL
+   • height                         integer(32)          NULL
+   • ownedby                        integer(32)          NULL
+   • maintby                        integer(32)          NULL
+   • height_metric                  integer(32)          NULL
+   • accessorybt                    character varying(255) NULL
+   • accessoryfunction              character varying(255) NULL
+   • accessorymaterial              character varying(255) NULL
+   • accessorytype                  character varying(255) NULL
+   • crossarmmaterial               character varying(255) NULL
+   • crossarmposition               character varying(255) NULL
+   • crossarmtype                   character varying(255) NULL
+   • hardwarematerial               character varying(255) NULL
+   • hardwaretype                   character varying(255) NULL
+   • insulatormaterial              character varying(255) NULL
+   • insulatortype                  character varying(255) NULL
+   • typeofimplantation             character varying(255) NULL
+   • equipmenttypeorclass           integer(32)          NULL
+   • assembly                       character varying(255) NULL
+   • typeofinstallation             character varying(255) NULL
+   • commonconductortype            integer(32)          NULL
+   • labeltext                      character varying(256) NULL
+   • conductorsize                  double precision(53) NULL
+   • conductorsizemetric            double precision(53) NULL
+   • sourceoffunding                character varying(255) NULL
+   • neutraltype                    integer(32)          NULL
+   • natureoftheline                character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_Ground_Terre_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_HighVoltageTransformer_Transfo_PS
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (37):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_HighVoltageTransformer_Transfo_PS_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • coolingtype                    integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • hasarrester                    integer(32)          NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • maximumpower                   integer(32)          NULL
+   • maxoperatingvoltage            integer(32)          NULL
+   • maxvoltage                     integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • normaloperatingstatus          integer(32)          NULL
+   • notes                          character varying(2000) NULL
+   • phasesnormal                   integer(32)          NULL
+   • serialnumber                   character varying(255) NULL
+   • totalmass                      double precision(53) NULL
+   • year                           timestamp without time zone NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • secondaryvoltagelinetoline     integer(32)          NULL
+   • ratedpower                     integer(32)          NULL
+   • winding                        integer(32)          NULL
+   • shortcircuitvoltagepercentage  double precision(53) NULL
+   • terminaltype                   integer(32)          NULL
+   • transformercode                character varying(255) NULL
+   • polenumber                     character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_HighVoltageTransformer_Transfo_PS_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_LowVoltageControlUnit_TUR
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (27):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_LowVoltageControlUnit_TUR_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • maxoperatingvoltage            integer(32)          NULL
+   • maxvoltage                     integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • lowvoltagefeederscode          character varying(255) NULL
+   • loadtapchangepercent           integer(32)          NULL
+   • breakingcapacity               character varying(255) NULL
+   • distributionboardpanelstype    integer(32)          NULL
+   • qualityverified                integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_LowVoltageControlUnit_TUR_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_LowVoltageNetworkProtection_Disjoncteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (26):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_LowVoltageNetworkProtection_Disjoncteur_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • normaloperatingstatus          integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • dhptype                        integer(32)          NULL
+   • phasechange                    integer(32)          NULL
+   • maintby                        integer(32)          NULL
+   • ownedby                        integer(32)          NULL
+   • numphasesconstructed           integer(32)          NULL
+   • accessorytype                  character varying(255) NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_LowVoltageNetworkProtection_Disjoncteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_MediumVoltageArrester_Parafoudre
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (24):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_MediumVoltageArrester_Parafoudre_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • currentdevicestatus            integer(32)          NULL
+   • arrestertype                   integer(32)          NULL
+   • numphasesconstructed           integer(32)          NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_MediumVoltageArrester_Parafoudre_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_MediumVoltageSwitch_cellule_ocr
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 80 kB
+   - Taille des données: 32 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (26):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_MediumVoltageSwitch_cellule_ocr_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • anomaly                        character varying(255) NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • normaloperatingstatus          integer(32)          NULL
+   • notes                          character varying(2000) NULL
+   • ocrtype                        character varying(255) NULL
+   • phasesnormal                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • switchtype                     integer(32)          NULL
+   • feederscode                    character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_MediumVoltageSwitch_cellule_ocr_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricDevice_MediumVoltageTransformer_transfo_ht_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (38):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricDevice_MediumVoltageTransformer_transfo_ht_bt_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • coolingtype                    integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • hasarrester                    integer(32)          NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • maximumpower                   integer(32)          NULL
+   • maxoperatingvoltage            integer(32)          NULL
+   • maxvoltage                     integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • normaloperatingstatus          integer(32)          NULL
+   • notes                          character varying(2000) NULL
+   • phasesnormal                   integer(32)          NULL
+   • ratedpower                     integer(32)          NULL
+   • secondaryvoltagelinetoline     integer(32)          NULL
+   • serialnumber                   character varying(255) NULL
+   • shortcircuitvoltage            character varying(255) NULL
+   • year                           timestamp without time zone NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • winding                        integer(32)          NULL
+   • distributionstationcode        character varying(255) NULL
+   • numphasesconstructed           integer(32)          NULL
+   • tapchanger                     character varying(255) NULL
+   • fittingtype                    character varying(255) NULL
+   • terminaltype                   integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricDevice_MediumVoltageTransformer_transfo_ht_bt_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricJunction_LowVoltageConnection_Point_noeud_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 1096 kB
+   - Taille des données: 944 kB
+   - Taille des index: 112 kB
+
+📋 Colonnes (27):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricJunction_LowVoltageConnection_Point_noeud_bt_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • globalid                       character varying    NULL
+   • phasesnormal                   integer(32)          NULL
+   • created_user                   character varying(255) NULL
+   • created_date                   timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • manufacturer                   integer(32)          NULL
+   • cadastresection                character varying(255) NULL
+   • cadastrelot                    character varying(255) NULL
+   • cadastreparcel                 character varying(255) NULL
+   • sonabelsection                 character varying(255) NULL
+   • sonabelparcel                  character varying(255) NULL
+   • phasesenergized                integer(32)          NULL
+   • connectiondevice               integer(32)          NULL
+   • operation                      character varying(255) NULL
+   • otherequipments                integer(32)          NULL
+   • accessibility                  integer(32)          NULL
+   • sonabellot                     character varying(255) NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricJunction_LowVoltageConnection_Point_noeud_bt_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricJunction_LowVoltageLineEnd_findeligne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (17):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricJunction_LowVoltageLineEnd_findeligne_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • globalid                       character varying    NULL
+   • phasesnormal                   integer(32)          NULL
+   • created_user                   character varying(255) NULL
+   • created_date                   timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • qualityverified                integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • numphasesconstructed           integer(32)          NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricJunction_LowVoltageLineEnd_findeligne_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 448 kB
+   - Taille des données: 360 kB
+   - Taille des index: 48 kB
+
+📋 Colonnes (30):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • globalid                       character varying    NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • commonconductortype            integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • neutraltype                    integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • sourceoffunding                character varying(255) NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • linetype                       integer(32)          NULL
+   • conductorsize                  character varying(255) NULL
+   • conductorstatus                integer(32)          NULL
+   • assetid                        character varying(255) NULL
+   • lowvoltagefeedercode           character varying(255) NULL
+   • notes                          character varying(255) NULL
+   • typeofmaterial                 integer(32)          NULL
+   • section                        integer(32)          NULL
+   • phasechange                    integer(32)          NULL
+   • phasesenergized                integer(32)          NULL
+   • shape_length                   double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricLine_LowVoltageService_ligne_branchement_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 840 kB
+   - Taille des données: 720 kB
+   - Taille des index: 80 kB
+
+📋 Colonnes (25):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricLine_LowVoltageService_ligne_branchement_bt_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • commonconductortype            integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • nominalvoltage                 character varying(255) NULL
+   • conductorsize                  character varying(255) NULL
+   • typeofmaterial                 integer(32)          NULL
+   • notes                          character varying(255) NULL
+   • assetid                        character varying(255) NULL
+   • section                        integer(32)          NULL
+   • phasechange                    integer(32)          NULL
+   • phasesenergized                integer(32)          NULL
+   • shape_length                   double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricLine_LowVoltageService_ligne_branchement_bt_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricLine_LowVoltageUndergroundConductor_ligne_bt_souterrain
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (32):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricLine_LowVoltageUndergroundConductor_ligne_bt_sou_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • commonconductortype            integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • neutraltype                    integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • sourceoffunding                character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • conductorstatus                integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • assetid                        character varying(255) NULL
+   • linetype                       integer(32)          NULL
+   • lowvoltagefeedercode           character varying(255) NULL
+   • numphasesconstructed           integer(32)          NULL
+   • typeofmaterial                 integer(32)          NULL
+   • validatedby                    character varying(255) NULL
+   • section                        integer(32)          NULL
+   • conductorsize                  character varying(255) NULL
+   • phasechange                    integer(32)          NULL
+   • phasesenergized                integer(32)          NULL
+   • notes                          character varying(255) NULL
+   • shape_length                   double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricLine_LowVoltageUndergroundConductor_ligne_bt_soute_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricLine_MediumVoltageOverheadConductor_ligne_hta_aerien
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 72 kB
+   - Taille des données: 24 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (31):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricLine_MediumVoltageOverheadConductor_ligne_hta_ae_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • commonconductortype            integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • qualityverified                integer(32)          NULL
+   • sourceoffunding                character varying(255) NULL
+   • conductorstatus                integer(32)          NULL
+   • typeofmaterial                 integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • feederscode                    character varying(255) NULL
+   • notes                          character varying(255) NULL
+   • assetid                        character varying(255) NULL
+   • numphasesconstructed           integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • section                        integer(32)          NULL
+   • conductorsize                  character varying(255) NULL
+   • installdate                    timestamp without time zone NULL
+   • phasechange                    integer(32)          NULL
+   • phasesenergized                integer(32)          NULL
+   • shape_length                   double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricLine_MediumVoltageOverheadConductor_ligne_hta_aeri_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_souter
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (30):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assettype                      integer(32)          NULL
+   • commonconductortype            integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • nominalvoltage                 integer(32)          NULL
+   • phasesnormal                   integer(32)          NULL
+   • qualityverified                integer(32)          NULL
+   • conductorstatus                integer(32)          NULL
+   • conductorsize                  character varying(255) NULL
+   • ownedby                        integer(32)          NULL
+   • typeofmaterial                 integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • sourceoffunding                character varying(255) NULL
+   • notes                          character varying(255) NULL
+   • assetid                        character varying(255) NULL
+   • numphasesconstructed           integer(32)          NULL
+   • section                        integer(32)          NULL
+   • phasechange                    integer(32)          NULL
+   • phasesenergized                integer(32)          NULL
+   • shape_length                   double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_s_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: Meters_compteur
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 2008 kB
+   - Taille des données: 1776 kB
+   - Taille des index: 192 kB
+
+📋 Colonnes (40):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"Meters_compteur_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • globalid                       character varying    NULL
+   • subscriptionnumber             character varying(255) NULL
+   • counternumber                  character varying(255) NULL
+   • policeno                       character varying(255) NULL
+   • name                           character varying(255) NULL
+   • firstname                      character varying(255) NULL
+   • customernature                 character varying(255) NULL
+   • useofotherenergysource         character varying(255) NULL
+   • otherenergysources             character varying(255) NULL
+   • customertype                   character varying(255) NULL
+   • subscribedpower                integer(32)          NULL
+   • use_                           character varying(255) NULL
+   • administrationcategory         character varying(255) NULL
+   • administrationtypeofbuilding   character varying(255) NULL
+   • administrationequipment        character varying(255) NULL
+   • institutioncategory            character varying(255) NULL
+   • institutiontypeofbuilding      character varying(255) NULL
+   • institutionequipment           character varying(255) NULL
+   • socioprofessionalcategory      character varying(255) NULL
+   • housekeepingtypeofbuilding     character varying(255) NULL
+   • housekeepingequipment          character varying(255) NULL
+   • secondaryuseforactivity        character varying(255) NULL
+   • companytypeofbuilding          character varying(255) NULL
+   • activities                     character varying(255) NULL
+   • created_user                   character varying(255) NULL
+   • created_date                   timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • meternumber                    character varying(255) NULL
+   • billing                        character varying(255) NULL
+   • stickercode                    character varying(255) NULL
+   • notes                          character varying(255) NULL
+   • metertype                      integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • accessibility                  integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• Meters_compteur_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: StructueBoundary_ElectricdistributionstationBoundary_limite_po
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 64 kB
+   - Taille des données: 16 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (23):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"StructueBoundary_ElectricdistributionstationBoundary_lim_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • globalid                       character varying    NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • materialcode                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • ownedby                        integer(32)          NULL
+   • maintby                        integer(32)          NULL
+   • grouding                       integer(32)          NULL
+   • notes                          character varying(255) NULL
+   • shape_length                   double precision(53) NULL
+   • shape_area                     double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• StructueBoundary_ElectricdistributionstationBoundary_limit_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: StructureBoundary_ElectricSubstationBoundary_limite_poste_sourc
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (24):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"StructureBoundary_ElectricSubstationBoundary_limite_post_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • materialcode                   integer(32)          NULL
+   • username                       character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • maintby                        integer(32)          NULL
+   • ownedby                        integer(32)          NULL
+   • notes                          character varying(255) NULL
+   • operation                      character varying(1) NULL
+   • otherequipments                integer(32)          NULL
+   • shape_length                   double precision(53) NULL
+   • shape_area                     double precision(53) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• StructureBoundary_ElectricSubstationBoundary_limite_poste__pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: StructureJunction_ElectricJunctionBox_coffret
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (30):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"StructureJunction_ElectricJunctionBox_coffret_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • height                         integer(32)          NULL
+   • installdate                    timestamp without time zone NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • materialcode                   integer(32)          NULL
+   • qualityverified                integer(32)          NULL
+   • junctionhtatype                integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • boxtype                        integer(32)          NULL
+   • metetype                       integer(32)          NULL
+   • metermodel                     integer(32)          NULL
+   • distributionstationcode        character varying(255) NULL
+   • metersize                      character varying(255) NULL
+   • meternumber                    character varying(255) NULL
+   • manufacturer                   integer(32)          NULL
+   • section                        character varying(255) NULL
+   • assignedvoltage                integer(32)          NULL
+   • material                       integer(32)          NULL
+   • notes                          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• StructureJunction_ElectricJunctionBox_coffret_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: StructureJunction_ElectricLowVoltagePole_poteau_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 728 kB
+   - Taille des données: 616 kB
+   - Taille des index: 72 kB
+
+📋 Colonnes (41):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"StructureJunction_ElectricLowVoltagePole_poteau_bt_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • OBJECTID                       bigint(64)           NULL
+   • accessoryfunction              character varying(255) NULL
+   • accessorymaterial              character varying(255) NULL
+   • accessorytype                  character varying(255) NULL
+   • ASSETGROUP                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • ASSETTYPE                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • crossarmmaterial               character varying(255) NULL
+   • crossarmposition               character varying(255) NULL
+   • crossarmtype                   character varying(255) NULL
+   • GlobalID                       character varying    NULL
+   • hardwarematerial               character varying(255) NULL
+   • hardwaretype                   character varying(255) NULL
+   • height_metric                  integer(32)          NULL
+   • insulatormaterial              character varying(255) NULL
+   • insulatortype                  character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • maintby                        integer(32)          NULL
+   • materialcode                   integer(32)          NULL
+   • ownedby                        integer(32)          NULL
+   • typeofimplantation             character varying(255) NULL
+   • QualityVerified                integer(32)          NULL
+   • Earthing                       integer(32)          NULL
+   • EquipmentTypeOrClass           integer(32)          NULL
+   • Grounding                      integer(32)          NULL
+   • PresenceOfAStreetLamp          integer(32)          NULL
+   • Username                       character varying(255) NULL
+   • Validator                      character varying(255) NULL
+   • Height                         integer(32)          NULL
+   • Notes                          character varying(255) NULL
+   • Pa25                           character varying(255) NULL
+   • SuspensionClampWithBracket     character varying(255) NULL
+   • TensionClampWithBracket        character varying(255) NULL
+   • AngleChampRA25                 character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• StructureJunction_ElectricLowVoltagePole_poteau_bt_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: StructureJunction_ElectricMediumVoltagePole_poteau_hta
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 168 kB
+   - Taille des données: 120 kB
+   - Taille des index: 16 kB
+
+📋 Colonnes (58):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"StructureJunction_ElectricMediumVoltagePole_poteau_hta_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • accessoryfunction              character varying(255) NULL
+   • accessorymaterial              character varying(255) NULL
+   • accessorytype                  character varying(255) NULL
+   • assembly                       character varying(255) NULL
+   • assetgroup                     integer(32)          NULL
+   • assetid                        character varying(64) NULL
+   • assettype                      integer(32)          NULL
+   • constructionstatus             integer(32)          NULL
+   • created_date                   timestamp without time zone NULL
+   • created_user                   character varying(255) NULL
+   • crossarmmaterial               character varying(255) NULL
+   • crossarmposition               character varying(255) NULL
+   • crossarmtype                   character varying(255) NULL
+   • globalid                       character varying    NULL
+   • hardwarematerial               character varying(255) NULL
+   • hardwaretype                   character varying(255) NULL
+   • insulatormaterial              character varying(255) NULL
+   • insulatortype                  character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • lifecyclestatus                integer(32)          NULL
+   • maintby                        integer(32)          NULL
+   • manufacturer                   integer(32)          NULL
+   • materialcode                   integer(32)          NULL
+   • ownedby                        integer(32)          NULL
+   • typeofinstallation             character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • earthing                       integer(32)          NULL
+   • template                       double precision(53) NULL
+   • equipmenttypeorclass           integer(32)          NULL
+   • grounding                      integer(32)          NULL
+   • accessorylv                    character varying(255) NULL
+   • presenceofastreetlamp          integer(32)          NULL
+   • validator                      character varying(255) NULL
+   • notes                          character varying(255) NULL
+   • fittingtype                    character varying(255) NULL
+   • height                         integer(32)          NULL
+   • username                       character varying(255) NULL
+   • flag                           integer(32)          NULL
+   • archedcrossarm                 integer(32)          NULL
+   • alternatingorstaggered         integer(32)          NULL
+   • triangle                       integer(32)          NULL
+   • canadianstylecrossarm          integer(32)          NULL
+   • horizontalcrossarm             integer(32)          NULL
+   • others                         integer(32)          NULL
+   • pa25                           integer(32)          NULL
+   • suspensionclampwithbracket     integer(32)          NULL
+   • tensionclampwithbracket        integer(32)          NULL
+   • anglechampra25                 integer(32)          NULL
+   • crossarm                       integer(32)          NULL
+   • sidearm                        integer(32)          NULL
+   • inclinedarm                    integer(32)          NULL
+   • deadendarm                     integer(32)          NULL
+   • anglearm                       integer(32)          NULL
+   • doublearm                      integer(32)          NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• StructureJunction_ElectricMediumVoltagePole_poteau_hta_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: SubscriberForm_abonne
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 2640 kB
+   - Taille des données: 2416 kB
+   - Taille des index: 184 kB
+
+📋 Colonnes (43):
+--------------------------------------------------------------------------------
+   • id                             integer(32)          [PK] NOT NULL DEFAULT nextval('"SubscriberForm_abonné_id_seq"'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid                       bigint(64)           NULL
+   • section                        character varying(255) NULL
+   • batch                          character varying(255) NULL
+   • plot                           character varying(255) NULL
+   • rank                           character varying(255) NULL
+   • meternumber                    character varying(255) NULL
+   • subscribernumber               character varying(255) NULL
+   • gpsposition                    integer(32)          NULL
+   • phonenumber                    integer(32)          NULL
+   • codesticker                    integer(32)          NULL
+   • subscribedpower                integer(32)          NULL
+   • amperage                       integer(32)          NULL
+   • exploitation                   character varying(255) NULL
+   • customernature                 character varying(255) NULL
+   • useofotherenergysource         character varying(255) NULL
+   • otherenergysource              character varying(255) NULL
+   • customertype                   character varying(255) NULL
+   • use_                           character varying(255) NULL
+   • institutioncategory            character varying(255) NULL
+   • typeofframe                    character varying(255) NULL
+   • administrationcategory         character varying(255) NULL
+   • activities                     character varying(255) NULL
+   • globalid                       character varying    NULL
+   • created_user                   character varying(255) NULL
+   • created_date                   timestamp without time zone NULL
+   • last_edited_user               character varying(255) NULL
+   • last_edited_date               timestamp without time zone NULL
+   • notes                          character varying(255) NULL
+   • lot                            integer(32)          NULL
+   • secondaryueofactivity          integer(32)          NULL
+   • username                       character varying(255) NULL
+   • validator                      character varying(255) NULL
+   • qualityverified                integer(32)          NULL
+   • accessibility                  integer(32)          NULL
+   • nameofsubcriber                character varying(255) NULL
+   • policeno                       character varying(255) NULL
+   • firstname                      character varying(255) NULL
+   • socioprofessionalcategory      character varying(255) NULL
+   • administrationequipment        character varying(255) NULL
+   • institutionequipment           character varying(255) NULL
+   • housekeepingequipment          character varying(255) NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• SubscriberForm_abonné_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: lignes
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 1560 kB
+   - Taille des données: 1328 kB
+   - Taille des index: 192 kB
+
+📋 Colonnes (3):
+--------------------------------------------------------------------------------
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+   • id                             bigint(64)           [PK] NOT NULL
+
+🔑 Clé primaire: id
+
+📇 Index:
+• lignes_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: point_connecte
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 2792 kB
+   - Taille des données: 2752 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (3):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+
+
+================================================================================
+TABLE: points
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 2800 kB
+   - Taille des données: 2760 kB
+   - Taille des index: 0 bytes
+
+📋 Colonnes (3):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           NULL
+   • geom                           USER-DEFINED         NULL
+   • t                              text                 NULL
+
+
+================================================================================
+TABLE: spatial_ref_sys
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 7144 kB
+   - Taille des données: 6896 kB
+   - Taille des index: 208 kB
+
+📋 Colonnes (5):
+--------------------------------------------------------------------------------
+   • srid                           integer(32)          [PK] NOT NULL
+   • auth_name                      character varying(256) NULL
+   • auth_srid                      integer(32)          NULL
+   • srtext                         character varying(2048) NULL
+   • proj4text                      character varying(2048) NULL
+
+🔑 Clé primaire: srid
+
+📇 Index:
+• spatial_ref_sys_pkey (srid) UNIQUE PRIMARY

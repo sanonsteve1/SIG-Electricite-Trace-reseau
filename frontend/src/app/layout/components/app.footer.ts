@@ -12,9 +12,9 @@ import {Image} from "primeng/image";
 	template: `
 		<div class="flex justify-start">
 			<span class="font-medium text-lg text-muted-color">
-				<p-image src="/images/logo/logo-abstock.png" width="40"/>
+				<p-image src="/images/logo/logo-ab-un.png" width="40"/>
 			</span>
-			<span class="titre-logo" [ngClass]="{'text-white': layoutService.isDarkTheme(), 'text-blue-700': !layoutService.isDarkTheme()}"><b>ABstock</b></span>
+			<span class="titre-logo" [ngClass]="{'text-white': layoutService.isDarkTheme(), 'text-blue-700': !layoutService.isDarkTheme()}"><b>AB-UN</b></span>
 		</div>
 		<div class="flex gap-0 items-center">
 			<button pButton icon="fa fa-code-fork" rounded text severity="secondary"></button>

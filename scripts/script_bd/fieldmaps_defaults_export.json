@@ -1,0 +1,77 @@
+{
+  "description": "Valeurs par défaut pour pré-remplissage des formulaires (API GIS ABUN). À utiliser pour configurer les valeurs par défaut dans ArcGIS Field Maps (propriétés du champ ou règles d'attribut) ou pour la synchro vers l'API.",
+  "source": "form_defaults.json / GET /gis/form-defaults/export",
+  "layers": [
+    {
+      "slug": "distributionpanel-branchement",
+      "table": "DistributionPanel_branchement",
+      "defaults": {
+        "notes": "Créé via formulaire",
+        "connectiontype": 1,
+        "existencedecompteur": "Non",
+        "transformationreport": 0
+      }
+    },
+    {
+      "slug": "electricline-lowvoltageoverheadconductor-ligne-bt-aerien",
+      "table": "ElectricLine_LowVoltageOverheadConductor_ligne_bt_aerien",
+      "defaults": {
+        "lifecyclestatus": 1,
+        "phasesnormal": 1
+      }
+    },
+    {
+      "slug": "electricline-lowvoltageservice-ligne-branchement-bt",
+      "table": "ElectricLine_LowVoltageService_ligne_branchement_bt",
+      "defaults": {
+        "notes": "Créé via formulaire",
+        "lifecyclestatus": 1,
+        "phasesnormal": 1,
+        "qualityverified": 0
+      }
+    },
+    {
+      "slug": "electricline-lowvoltageundergroundconductor-ligne-bt-souterrain",
+      "table": "ElectricLine_LowVoltageUndergroundConductor_ligne_bt_souterrain",
+      "defaults": {
+        "lifecyclestatus": 1,
+        "phasesnormal": 1
+      }
+    },
+    {
+      "slug": "electricline-mediumvoltageoverheadconductor-ligne-hta-aerien",
+      "table": "ElectricLine_MediumVoltageOverheadConductor_ligne_hta_aerien",
+      "defaults": {
+        "lifecyclestatus": 1,
+        "phasesnormal": 1
+      }
+    },
+    {
+      "slug": "electricline-mediumvoltageundergroundconductor-ligne-hta-souter",
+      "table": "ElectricLine_MediumVoltageUndergroundConductor_ligne_hta_souter",
+      "defaults": {
+        "lifecyclestatus": 1,
+        "phasesnormal": 1
+      }
+    },
+    {
+      "slug": "structurejunction-electriclowvoltagepole-poteau-bt",
+      "table": "StructureJunction_ElectricLowVoltagePole_poteau_bt",
+      "defaults": {
+        "constructionstatus": 1
+      }
+    },
+    {
+      "slug": "structurejunction-electricmediumvoltagepole-poteau-hta",
+      "table": "StructureJunction_ElectricMediumVoltagePole_poteau_hta",
+      "defaults": {
+        "constructionstatus": 1
+      }
+    }
+  ],
+  "instructions_fieldmaps": [
+    "Dans ArcGIS Online / Portal : ouvrir la couche (Feature Service).",
+    "Pour chaque champ listé dans 'defaults', définir la valeur par défaut dans le formulaire (Form Builder) ou dans les propriétés du champ.",
+    "Alternative : utiliser le script sync_from_arcgis.py pour synchroniser les données collectées vers l'API ; les défauts sont alors appliqués côté API lors de l'import."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "api_base_url": "http://localhost:8000",
+  "arcgis_feature_service_url": "https://services.arcgis.com/YOUR_ORG/arcgis/rest/services/YOUR_SERVICE/FeatureServer",
+  "layers": [
+    {
+      "arcgis_layer_id": 0,
+      "table_slug": "distributionpanel-branchement",
+      "field_mapping": {
+        "OBJECTID": "objectid",
+        "SubscriberName": "subscribername",
+        "ConnectionType": "connectiontype",
+        "Notes": "notes"
+      },
+      "geometry_field": "geometry",
+      "apply_defaults_from_api": true
+    }
+  ],
+  "sync_options": {
+    "where_clause": "1=1",
+    "batch_size": 100,
+    "only_new": false
+  }
+}

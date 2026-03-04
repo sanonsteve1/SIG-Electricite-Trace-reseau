@@ -17,7 +17,7 @@
 				"build": {
 					"builder": "@angular-devkit/build-angular:application",
 					"options": {
-						"outputPath": "dist/abstock",
+						"outputPath": "dist/ab-un",
 						"index": "src/index.html",
 						"browser": "src/main.ts",
 						"polyfills": [
@@ -33,7 +33,8 @@
 						],
 						"styles": [
 							"src/styles.scss",
-							"node_modules/font-awesome/css/font-awesome.css"
+							"node_modules/font-awesome/css/font-awesome.css",
+							"node_modules/leaflet/dist/leaflet.css"
 						],
 						"scripts": []
 					},

@@ -14,23 +14,23 @@ import static io.swagger.v3.oas.annotations.enums.SecuritySchemeType.APIKEY;
 
 @SpringBootApplication
 @SecurityScheme(name = "Authorization", scheme = "basic", type = APIKEY, in = HEADER)
-public class AbstockApplication extends SpringBootServletInitializer {
-	public static final Logger log = LoggerFactory.getLogger(AbstockApplication.class);
+public class AbUnApplication extends SpringBootServletInitializer {
+	public static final Logger log = LoggerFactory.getLogger(AbUnApplication.class);
 
 	public static void main(String[] args) {
 
-		SpringApplication.run(AbstockApplication.class, args);
+		SpringApplication.run(AbUnApplication.class, args);
 		log.info("""
 
 				================================================================================================
-				                                   ABPROJECT started...
+				                                   AB-UN started...
 				================================================================================================"""
 		);
 	}
 
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-		return application.sources(AbstockApplication.class);
+		return application.sources(AbUnApplication.class);
 	}
 
 }

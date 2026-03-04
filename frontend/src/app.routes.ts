@@ -31,6 +31,11 @@ export const appRoutes: Routes = [
 				path: 'mouvement',
 				data: {breadcrumb: 'Mouvements'},
 				loadChildren: () => import('@/mouvement/mouvement.routes')
+			},
+			{
+				path: 'reseau',
+				data: {breadcrumb: 'Réseau'},
+				loadChildren: () => import('@/reseau/reseau.routes')
 			}
 		]
 	},

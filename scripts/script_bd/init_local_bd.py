@@ -2,9 +2,9 @@ import psycopg2
 
 POSTGRES_HOST = "51.195.42.17"
 POSTGRES_PORT = "5432"
-TARGET_DB = "abstock"
-TARGET_ROLE = "abstock"
-TARGET_PASSWORD = "abstock"
+TARGET_DB = "ab-un"
+TARGET_ROLE = "ab-un"
+TARGET_PASSWORD = "ab-un"
 
 def init_db():
     try:

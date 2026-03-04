@@ -1,0 +1,1223 @@
+$primary: #ea580c;
+$primary-hover: #c2410c;
+$sidebar-width: 280px;
+$header-height: 56px;
+
+.modelisation {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	background: #fff;
+}
+
+.modelisation-header {
+	display: flex;
+	align-items: center;
+	padding: 0 1.25rem;
+	height: $header-height;
+	background: #fff;
+	border-bottom: 1px solid #e5e7eb;
+	flex-shrink: 0;
+}
+
+.modelisation-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: #1f2937;
+}
+
+.modelisation-title i {
+	color: $primary;
+	font-size: 1.1rem;
+}
+
+.modelisation-body {
+	display: flex;
+	flex: 1;
+	min-height: 72vh;
+	position: relative;
+}
+
+.modelisation-sidebar {
+	width: $sidebar-width;
+	min-width: $sidebar-width;
+	background: #f9fafb;
+	border-right: 1px solid #e5e7eb;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	position: relative;
+	transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.modelisation-sidebar--collapsed {
+	width: 0;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.modelisation-sidebar-toggle {
+	position: absolute;
+	top: 50%;
+	left: $sidebar-width;
+	transform: translate(-50%, -50%);
+	width: 24px;
+	height: 48px;
+	background: #f3f4f6;
+	border: 1px solid #e5e7eb;
+	border-radius: 0 6px 6px 0;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 20;
+	color: #6b7280;
+	font-size: 0.7rem;
+	transition: left 0.2s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.modelisation-sidebar-toggle--collapsed {
+	left: 0;
+	border-radius: 0 6px 6px 0;
+	box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+}
+
+.modelisation-sidebar-toggle:hover {
+	background: #e5e7eb;
+	color: $primary;
+}
+
+.modelisation-block {
+	padding: 1rem 1.25rem;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.modelisation-block-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0 0 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #6b7280;
+}
+
+.modelisation-block-title i {
+	font-size: 0.85rem;
+	color: #9ca3af;
+}
+
+.modelisation-block-desc {
+	font-size: 0.8rem;
+	color: #6b7280;
+	margin: 0 0 0.5rem;
+	line-height: 1.4;
+}
+
+.modelisation-form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.modelisation-label {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: #374151;
+}
+
+.modelisation-layers {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.modelisation-layer-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.35rem 0;
+	cursor: pointer;
+	font-size: 0.875rem;
+	color: #374151;
+	border-radius: 4px;
+	transition: background 0.15s ease;
+}
+
+.modelisation-layer-item:hover {
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.modelisation-layer-item input {
+	accent-color: $primary;
+}
+
+.modelisation-layer-symbol {
+	width: 12px;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--layer-color, #6b7280);
+	flex-shrink: 0;
+}
+
+.modelisation-layer-label {
+	flex: 1;
+}
+
+.modelisation-empty {
+	font-size: 0.8rem;
+	color: #9ca3af;
+	margin: 0;
+}
+
+.modelisation-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.modelisation-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	padding: 0.5rem 1rem;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.modelisation-btn--primary {
+	background: $primary;
+	color: #fff;
+	border-color: $primary;
+}
+
+.modelisation-btn--primary:hover:not(:disabled) {
+	background: $primary-hover;
+	border-color: $primary-hover;
+	color: #fff;
+}
+
+.modelisation-btn--secondary {
+	background: #fff;
+	color: #6b7280;
+	border-color: #d1d5db;
+}
+
+.modelisation-btn--secondary:hover:not(:disabled) {
+	background: #f3f4f6;
+	color: #374151;
+}
+
+.modelisation-btn--outline {
+	background: #fff;
+	color: #374151;
+	border-color: #d1d5db;
+}
+
+.modelisation-btn--outline:hover:not(:disabled) {
+	background: #f9fafb;
+	border-color: #9ca3af;
+}
+
+.modelisation-btn--block {
+	width: 100%;
+}
+
+.modelisation-btn:disabled {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+.modelisation-result {
+	margin-top: 0.75rem;
+	padding: 0.6rem 0.75rem;
+	background: #f0fdf4;
+	border: 1px solid #bbf7d0;
+	border-radius: 6px;
+	font-size: 0.8rem;
+}
+
+.modelisation-result--error {
+	background: #fef2f2;
+	border-color: #fecaca;
+}
+
+.modelisation-result-msg {
+	margin: 0;
+	color: #166534;
+}
+
+.modelisation-result--error .modelisation-result-msg {
+	color: #b91c1c;
+}
+
+.modelisation-map-wrapper {
+	flex: 1;
+	min-width: 0;
+	position: relative;
+	background: #e5e7eb;
+}
+
+/** Mode dessin (style QGIS) : curseur en croix sur la carte */
+.modelisation-map-wrapper--drawing .modelisation-map {
+	cursor: crosshair;
+}
+
+/** Bouton flottant Légende sur la carte */
+/* Marqueurs de suggestion (cercle + distance à la ligne) — rendus par Leaflet dans le pane */
+:host ::ng-deep .suggestion-marker-icon {
+	background: none !important;
+	border: none !important;
+}
+:host ::ng-deep .suggestion-marker-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+:host ::ng-deep .suggestion-marker-dot {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 2px solid #fff;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	flex-shrink: 0;
+}
+:host ::ng-deep .suggestion-marker-distance {
+	font-size: 10px;
+	font-weight: 700;
+	color: #1f2937;
+	white-space: nowrap;
+	text-shadow: 0 0 2px #fff, 0 1px 2px #fff;
+	background: rgba(255, 255, 255, 0.9);
+	padding: 1px 4px;
+	border-radius: 4px;
+}
+
+/** Clignotement des lignes et points suggérés (même rythme) */
+:host ::ng-deep .modelisation-suggest-pane path.leaflet-interactive {
+	animation: suggestion-blink 0.8s ease-in-out infinite alternate;
+}
+:host ::ng-deep .modelisation-suggest-pane .suggestion-marker-wrap {
+	animation: suggestion-blink 0.8s ease-in-out infinite alternate;
+}
+@keyframes suggestion-blink {
+	from {
+		opacity: 1;
+		stroke-opacity: 1;
+	}
+	to {
+		opacity: 0.35;
+		stroke-opacity: 0.35;
+	}
+}
+
+.modelisation-map-legend {
+	position: absolute;
+	bottom: 20px;
+	left: 12px;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.modelisation-map-legend-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.85rem;
+	background: $primary;
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	transition: background 0.2s, box-shadow 0.2s;
+	&:hover {
+		background: $primary-hover;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+	&.modelisation-map-legend-btn--open {
+		border-radius: 8px 8px 0 0;
+	}
+	.fa-info-circle {
+		font-size: 1rem;
+		opacity: 0.95;
+	}
+}
+
+.modelisation-map-legend-panel {
+	background: #fff;
+	border-radius: 0 0 8px 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+	border: 1px solid #e5e7eb;
+	border-top: none;
+	padding: 0.6rem 0.85rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	min-width: 160px;
+}
+
+.modelisation-map-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+}
+
+.modelisation-map-legend-symbol {
+	flex-shrink: 0;
+	&--line {
+		width: 28px;
+		height: 5px;
+		border-radius: 2px;
+		background: var(--legend-color, #666);
+	}
+	&--point {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.75rem;
+		color: #fff;
+		&.modelisation-map-legend-symbol--poteau {
+			background: #3b82f6;
+		}
+		&.modelisation-map-legend-symbol--transfo {
+			background: $primary;
+			border-radius: 4px;
+		}
+		&.modelisation-map-legend-symbol--poste {
+			background: #8b5cf6;
+			border-radius: 4px;
+		}
+	}
+}
+
+.modelisation-map-legend-label {
+	font-size: 0.85rem;
+	color: #374151;
+	font-weight: 500;
+}
+
+.modelisation-map-legend-empty {
+	margin: 0;
+	font-size: 0.8rem;
+	color: #6b7280;
+	font-style: italic;
+}
+
+/** Panneau flottant sur la carte : compact, ne pas occuper tout l'écran */
+.modelisation-map-panel {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 1000;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e5e7eb;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	min-width: auto;
+	max-width: 260px;
+	max-height: 70vh;
+}
+
+/** En-tête + boutons d'action toujours visibles (non scrollables) */
+.modelisation-map-panel-header,
+.modelisation-map-panel-actions {
+	flex-shrink: 0;
+}
+
+/** Zone scrollable : instructions de dessin + formulaire attributs (les boutons restent visibles au-dessus) */
+.modelisation-map-panel-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.modelisation-map-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.35rem;
+	padding: 0.4rem 0.5rem;
+	background: #f9fafb;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.modelisation-map-panel-geom-type {
+	font-size: 0.7rem;
+	padding: 0.15rem 0.4rem;
+	background: $primary;
+	color: #fff;
+	border-radius: 4px;
+	font-weight: 500;
+	text-transform: capitalize;
+	margin-right: auto;
+}
+
+.modelisation-map-panel-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	border-radius: 6px;
+	color: #6b7280;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+	&:hover {
+		background: #e5e7eb;
+		color: $primary;
+	}
+}
+
+.modelisation-map-panel-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	padding: 0.4rem 0.5rem;
+}
+
+/** Boutons : en panneau déplié, icône + texte visibles ; en réduit, icône seule (texte au survol) */
+.modelisation-map-panel-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	width: 32px;
+	min-width: 32px;
+	height: 32px;
+	padding: 0 0.45rem;
+	border-radius: 6px;
+	border: 1px solid transparent;
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition: width 0.2s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+	overflow: hidden;
+	&:hover {
+		width: auto;
+		min-width: 36px;
+		.modelisation-map-panel-btn-text {
+			opacity: 1;
+			margin-left: 0;
+		}
+	}
+}
+
+/** Panneau déplié : texte des boutons toujours visible */
+.modelisation-map-panel:not(.modelisation-map-panel--collapsed) .modelisation-map-panel-btn {
+	width: auto;
+	min-width: 32px;
+	height: 32px;
+}
+.modelisation-map-panel:not(.modelisation-map-panel--collapsed) .modelisation-map-panel-btn-text {
+	opacity: 1;
+	margin-left: 0;
+}
+
+/** Tous les boutons d’action : même style neutre par défaut, un seul style « sélectionné » */
+.modelisation-map-panel-btn--outline {
+	background: #fff;
+	color: #374151;
+	border: 1px solid #e5e7eb;
+	&:hover {
+		background: #f3f4f6;
+		border-color: #d1d5db;
+		color: #111;
+	}
+	/** Un seul bouton peut être sélectionné : contour orange + fond léger */
+	&.modelisation-map-panel-btn--selected {
+		background: rgba($primary, 0.12);
+		border: 2px solid $primary;
+		color: $primary;
+		box-shadow: 0 0 0 1px $primary;
+		&:hover {
+			background: rgba($primary, 0.18);
+			border-color: $primary;
+			color: $primary;
+		}
+	}
+}
+
+.modelisation-map-panel-btn-text {
+	opacity: 0;
+	margin-left: -0.35rem;
+	white-space: nowrap;
+	transition: opacity 0.15s ease, margin-left 0.15s ease;
+	font-size: 0.8rem;
+}
+
+/** Phase dessin sur la carte */
+.modelisation-map-panel-draw {
+	padding: 0.5rem 0.5rem 0.5rem;
+	border-top: 1px solid #e5e7eb;
+	background: #f9fafb;
+}
+
+.modelisation-map-panel-draw-hint {
+	margin: 0 0 0.5rem;
+	padding: 0.35rem 0.5rem;
+	background: #fef3c7;
+	border-radius: 6px;
+	font-size: 0.8rem;
+	color: #92400e;
+	line-height: 1.35;
+	.fa-lightbulb-o { margin-right: 0.35rem; color: #d97706; }
+	.fa-spinner { margin-right: 0.35rem; }
+	&--empty {
+		background: #eff6ff;
+		color: #1e40af;
+		.fa-info-circle { margin-right: 0.35rem; color: #3b82f6; }
+	}
+}
+
+.modelisation-map-panel-draw-msg {
+	margin: 0 0 0.4rem;
+	font-size: 0.78rem;
+	color: #374151;
+	line-height: 1.35;
+}
+
+.modelisation-map-panel-draw-icon {
+	margin-right: 0.3rem;
+	color: $primary;
+}
+
+.modelisation-map-panel-draw-count {
+	margin: 0 0 0.35rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: $primary;
+}
+
+.modelisation-map-panel-draw-msg kbd {
+	display: inline-block;
+	padding: 0.1rem 0.35rem;
+	font-size: 0.75rem;
+	background: #e5e7eb;
+	border-radius: 4px;
+	border: 1px solid #d1d5db;
+}
+
+.modelisation-map-panel-draw-actions {
+	display: flex;
+	gap: 0.35rem;
+	flex-wrap: wrap;
+}
+
+.modelisation-map-panel-draw-actions .modelisation-btn {
+	flex: 1;
+	min-width: 80px;
+	padding: 0.35rem 0.5rem;
+	font-size: 0.8rem;
+}
+
+/** Formulaire création dans le panneau */
+.modelisation-map-panel-form {
+	border-top: 1px solid #e5e7eb;
+	padding: 0.5rem 0.5rem;
+	max-height: 45vh;
+	overflow-y: auto;
+}
+
+.modelisation-map-panel-form-title {
+	margin: 0 0 0.5rem;
+	font-size: 0.88rem;
+	font-weight: 600;
+	color: #1f2937;
+}
+
+.modelisation-suggested-connection {
+	margin: 0 0 0.5rem;
+	padding: 0.35rem 0.5rem;
+	background: #dcfce7;
+	border-radius: 6px;
+	font-size: 0.8rem;
+	color: #166534;
+	line-height: 1.35;
+	.fa-lightbulb-o { margin-right: 0.35rem; color: #16a34a; }
+}
+
+.modelisation-panel-edit-section {
+	margin-top: 0.6rem;
+	&:first-of-type { margin-top: 0; }
+}
+
+.modelisation-panel-edit-section-title {
+	margin: 0 0 0.35rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: #4b5563;
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	.fa { color: #6b7280; }
+}
+
+.modelisation-panel-form-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.modelisation-panel-form-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+}
+
+.modelisation-panel-form-field .modelisation-dialog-input {
+	width: 100%;
+	padding: 0.4rem 0.5rem;
+	font-size: 0.875rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+}
+
+.modelisation-panel-form-field textarea.modelisation-dialog-input {
+	min-height: 48px;
+	resize: vertical;
+}
+
+.modelisation-map-panel-form-actions {
+	display: flex;
+	gap: 0.35rem;
+	justify-content: flex-end;
+	margin-top: 0.5rem;
+	padding-top: 0.4rem;
+	border-top: 1px solid #e5e7eb;
+}
+
+.modelisation-map-panel-form-actions .modelisation-btn {
+	padding: 0.35rem 0.5rem;
+	font-size: 0.8rem;
+}
+
+/** Vue « Consulter » dans le panneau flottant */
+.modelisation-map-panel-view {
+	.modelisation-dialog-view-header { margin-bottom: 0.35rem; }
+	.modelisation-dialog-view-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+	.modelisation-panel-view-section {
+		padding: 0.5rem 0.6rem;
+		margin-top: 0.4rem;
+		&:first-of-type { margin-top: 0; }
+	}
+	.modelisation-dialog-view-section-title { font-size: 0.75rem; margin-bottom: 0.35rem; padding-bottom: 0.35rem; }
+	.modelisation-dialog-view-row { padding: 0.2rem 0; font-size: 0.8rem; }
+	.modelisation-dialog-view-label { font-size: 0.75rem; }
+	.modelisation-dialog-view-value { font-size: 0.8rem; }
+	.modelisation-dialog-geom { font-size: 0.7rem; max-height: 80px; overflow: auto; padding: 0.35rem; }
+}
+
+/** En mode réduit, masquer la zone scrollable (dessin + formulaire création + formulaire modification + vue) */
+.modelisation-map-panel--collapsed .modelisation-map-panel-scroll {
+	display: none;
+}
+
+/** Panneau réduit : une seule ligne, toggle + icônes seules (texte au survol via title) */
+.modelisation-map-panel--collapsed {
+	flex-direction: row;
+	align-items: center;
+	.modelisation-map-panel-header {
+		border-bottom: none;
+		padding: 0.35rem 0.25rem;
+		gap: 0;
+		flex: 0 0 auto;
+	}
+	.modelisation-map-panel-actions {
+		flex-direction: row;
+		padding: 0.35rem 0.35rem 0.35rem 0.1rem;
+		gap: 0.2rem;
+		border-left: 1px solid #e5e7eb;
+	}
+	.modelisation-map-panel-btn {
+		width: 32px;
+		min-width: 32px;
+		height: 32px;
+		padding: 0;
+		&:hover {
+			width: 32px;
+			min-width: 32px;
+			.modelisation-map-panel-btn-text {
+				display: none;
+			}
+		}
+	}
+	.modelisation-map-panel-btn-text {
+		display: none;
+	}
+}
+
+.modelisation-map {
+	width: 100%;
+	height: 100%;
+	min-height: 72vh;
+}
+
+.modelisation-ouvrages-list {
+	max-height: 280px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	margin-top: 0.5rem;
+}
+
+.modelisation-ouvrage-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.5rem 0.6rem;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 0.8rem;
+}
+
+.modelisation-ouvrage-preview {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.modelisation-ouvrage-preview-item {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 120px;
+	color: #374151;
+}
+
+.modelisation-ouvrage-actions {
+	display: flex;
+	gap: 0.2rem;
+	flex-shrink: 0;
+}
+
+/* Modale Consulter / CRUD */
+::ng-deep .modelisation-dialog.p-dialog {
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+	border-radius: 12px;
+	overflow: hidden;
+}
+::ng-deep .modelisation-dialog .p-dialog-header {
+	background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+	color: #f8fafc;
+	border-radius: 12px 12px 0 0;
+	padding: 1rem 1.25rem;
+}
+::ng-deep .modelisation-dialog .p-dialog-title {
+	font-weight: 600;
+	font-size: 1.1rem;
+}
+::ng-deep .modelisation-dialog .p-dialog-header-icon {
+	color: #94a3b8;
+	&:hover {
+		color: #fff;
+		background: rgba(255, 255, 255, 0.1);
+	}
+}
+::ng-deep .modelisation-dialog .p-dialog-content {
+	padding: 1.25rem;
+	background: #f8fafc;
+}
+::ng-deep .modelisation-dialog .p-dialog-footer {
+	padding: 1rem 1.25rem;
+	border-top: 1px solid #e2e8f0;
+	background: #fff;
+	gap: 0.5rem;
+}
+
+.modelisation-delete-confirm {
+	padding: 0.5rem 0;
+	.modelisation-delete-confirm-icon {
+		color: #dc2626;
+		margin-right: 0.5rem;
+	}
+	.modelisation-delete-confirm-preview {
+		margin: 0.75rem 0 0;
+		font-size: 0.875rem;
+		color: #64748b;
+	}
+}
+
+.modelisation-dialog-view,
+.modelisation-dialog-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	max-height: 65vh;
+	overflow-y: auto;
+}
+
+.modelisation-dialog-view-header {
+	margin-bottom: 0.25rem;
+}
+
+.modelisation-dialog-view-badge {
+	display: inline-block;
+	padding: 0.35rem 0.75rem;
+	background: $primary;
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: 600;
+	border-radius: 8px;
+	letter-spacing: 0.02em;
+}
+
+.modelisation-dialog-view-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	background: #fff;
+	border-radius: 10px;
+	padding: 1rem;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+	border: 1px solid #e2e8f0;
+}
+
+.modelisation-dialog-view-section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0 0 0.5rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: #475569;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding-bottom: 0.5rem;
+	border-bottom: 2px solid #e2e8f0;
+}
+.modelisation-dialog-view-section-title i {
+	color: $primary;
+	font-size: 0.9rem;
+	opacity: 0.9;
+}
+
+.modelisation-dialog-edit-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	background: #fff;
+	border-radius: 10px;
+	padding: 1rem;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+	border: 1px solid #e2e8f0;
+}
+
+.modelisation-dialog-edit-section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0 0 0.5rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: #475569;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding-bottom: 0.5rem;
+	border-bottom: 2px solid #e2e8f0;
+}
+.modelisation-dialog-edit-section-title i {
+	color: $primary;
+	font-size: 0.9rem;
+	opacity: 0.9;
+}
+
+.modelisation-dialog-view-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+}
+
+.modelisation-dialog-view-row {
+	display: grid;
+	grid-template-columns: 150px 1fr;
+	gap: 1rem;
+	align-items: baseline;
+	padding: 0.6rem 0.9rem;
+	font-size: 0.875rem;
+	background: #fff;
+	border-bottom: 1px solid #f1f5f9;
+	transition: background 0.15s ease;
+	&:nth-child(even) {
+		background: #fafbfc;
+	}
+	&:last-child {
+		border-bottom: none;
+	}
+}
+
+.modelisation-dialog-view-label {
+	font-weight: 500;
+	color: #64748b;
+	flex-shrink: 0;
+	font-size: 0.8125rem;
+}
+
+.modelisation-dialog-view-value {
+	color: #1e293b;
+	word-break: break-word;
+	min-width: 0;
+	font-size: 0.875rem;
+}
+
+.modelisation-dialog-geom {
+	margin: 0;
+	padding: 0.9rem;
+	font-size: 0.72rem;
+	line-height: 1.4;
+	font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+	background: #1e293b;
+	color: #e2e8f0;
+	border: 1px solid #334155;
+	border-radius: 8px;
+	max-height: 180px;
+	overflow: auto;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.modelisation-dialog-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.modelisation-dialog-value {
+	font-size: 0.9rem;
+	color: #374151;
+	word-break: break-word;
+}
+
+.modelisation-dialog-input {
+	width: 100%;
+	border-radius: 6px;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid #d1d5db;
+}
+
+::ng-deep .modelisation .modelisation-select .p-inputtext,
+::ng-deep .modelisation .p-select .p-select-label {
+	border-radius: 6px !important;
+	border-color: #d1d5db !important;
+	padding: 0.5rem 0.75rem !important;
+}
+
+/* Popup carte au clic sur un ouvrage */
+::ng-deep .modelisation .leaflet-popup-content-wrapper {
+	border-radius: 12px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+	border: 1px solid #e2e8f0;
+	overflow: hidden;
+}
+
+::ng-deep .modelisation .leaflet-popup-content {
+	margin: 0;
+	min-width: 260px;
+	max-width: 380px;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup {
+	font-family: inherit;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+	margin: 0;
+	padding: 0.75rem 1rem;
+	background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+	color: #f8fafc;
+	border-radius: 12px 12px 0 0;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-icon {
+	color: #fbbf24;
+	font-size: 1rem;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-body {
+	font-size: 0.8125rem;
+	padding: 0.6rem 1rem 0.85rem;
+	max-height: 320px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	background: #fff;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-body::-webkit-scrollbar {
+	width: 6px;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-body::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 3px;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-row {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	margin: 0.35rem 0;
+	word-break: break-word;
+	line-height: 1.35;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-row--even {
+	background: #f8fafc;
+	margin-left: -0.5rem;
+	margin-right: -0.5rem;
+	padding: 0.25rem 0.5rem;
+	border-radius: 6px;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-key {
+	flex: 0 0 auto;
+	min-width: 10rem;
+	color: #64748b;
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+::ng-deep .modelisation .leaflet-popup-content .map-popup-val {
+	flex: 1;
+	min-width: 0;
+	color: #1e293b;
+	font-weight: 500;
+}
+
+/* Overlay plein écran : succès (confettis) / échec (animation) */
+@keyframes crud-overlay-shake {
+	0%, 100% { transform: translateX(0); }
+	10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+	20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+@keyframes crud-overlay-fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes crud-overlay-scale-in {
+	from { opacity: 0; transform: scale(0.9); }
+	to { opacity: 1; transform: scale(1); }
+}
+
+.crud-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: crud-overlay-fade-in 0.25s ease-out;
+}
+
+.crud-overlay-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.crud-overlay--success .crud-overlay-backdrop {
+	background: rgba(0, 0, 0, 0.35);
+}
+
+.crud-overlay--failure .crud-overlay-backdrop {
+	background: rgba(127, 29, 29, 0.4);
+}
+
+.crud-overlay-card {
+	position: relative;
+	z-index: 1;
+	background: #fff;
+	border-radius: 16px;
+	padding: 2rem 2.5rem;
+	text-align: center;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	animation: crud-overlay-scale-in 0.3s ease-out;
+	min-width: 280px;
+	max-width: 90vw;
+}
+
+.crud-overlay-card--shake {
+	animation: crud-overlay-scale-in 0.3s ease-out, crud-overlay-shake 0.6s ease-in-out 0.3s;
+}
+
+.crud-overlay-icon {
+	width: 72px;
+	height: 72px;
+	margin: 0 auto 1rem;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 2.25rem;
+}
+
+.crud-overlay-icon--success {
+	background: #dcfce7;
+	color: #16a34a;
+}
+
+.crud-overlay-icon--failure {
+	background: #fee2e2;
+	color: #dc2626;
+}
+
+.crud-overlay-title {
+	margin: 0 0 0.5rem;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: #1f2937;
+}
+
+.crud-overlay-message {
+	margin: 0 0 1.25rem;
+	font-size: 1rem;
+	color: #4b5563;
+	line-height: 1.5;
+}
+
+.crud-overlay-btn {
+	margin-top: 0.25rem;
+}

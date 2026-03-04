@@ -1,0 +1,422 @@
+<div class="modelisation">
+	<header class="modelisation-header">
+		<div class="modelisation-title">
+			<i class="fa fa-cube"></i>
+			<span>Modélisation du réseau</span>
+		</div>
+	</header>
+
+	<div class="modelisation-body">
+		<button type="button" class="modelisation-sidebar-toggle" [class.modelisation-sidebar-toggle--collapsed]="sidebarCollapsed" (click)="sidebarCollapsed = !sidebarCollapsed" [attr.aria-expanded]="!sidebarCollapsed" [title]="sidebarCollapsed ? 'Ouvrir le panneau' : 'Fermer le panneau'">
+			<i class="fa" [class.fa-chevron-left]="!sidebarCollapsed" [class.fa-chevron-right]="sidebarCollapsed"></i>
+		</button>
+		<aside class="modelisation-sidebar" [class.modelisation-sidebar--collapsed]="sidebarCollapsed">
+			@if (!sidebarCollapsed) {
+				<!-- Périmètre du modèle (commenté)
+				<section class="modelisation-block">
+					<h2 class="modelisation-block-title"><i class="fa fa-crosshairs"></i> Périmètre du modèle</h2>
+					<div class="modelisation-form">
+						<label class="modelisation-label">Poste source</label>
+						<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste" styleClass="modelisation-select w-full" />
+						<label class="modelisation-label">Niveau de tension</label>
+						<p-select [(ngModel)]="paramTension" [options]="tensionOptions" optionLabel="label" optionValue="value" styleClass="modelisation-select w-full" />
+						<label class="modelisation-label">Type de réseau</label>
+						<p-select [(ngModel)]="paramTypeReseau" [options]="typeReseauOptions" optionLabel="label" optionValue="value" styleClass="modelisation-select w-full" />
+					</div>
+				</section>
+				-->
+				<!-- Couches du modèle (commenté)
+				<section class="modelisation-block">
+					<h2 class="modelisation-block-title"><i class="fa fa-layer-group"></i> Couches du modèle</h2>
+					<p class="modelisation-block-desc">Cochez les couches à inclure dans le modèle.</p>
+					<div class="modelisation-layers">
+						@for (couche of couchesModele; track couche.id) {
+							<label class="modelisation-layer-item">
+								<input type="checkbox" [checked]="couche.included" (change)="toggleCouche(couche)" />
+								<span class="modelisation-layer-symbol" [style.--layer-color]="couche.color"></span>
+								<span class="modelisation-layer-label">{{ couche.label }}</span>
+							</label>
+						}
+						@if (couchesModele.length === 0) {
+							<p class="modelisation-empty">Chargement des couches…</p>
+						}
+					</div>
+				</section>
+				-->
+				<!-- Actions (commenté)
+				<section class="modelisation-block">
+					<h2 class="modelisation-block-title"><i class="fa fa-wrench"></i> Actions</h2>
+					<div class="modelisation-actions">
+						<button type="button" class="modelisation-btn modelisation-btn--primary modelisation-btn--block" (click)="construireModele()" [disabled]="buildLoading">
+							@if (buildLoading) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Construction…
+							} @else {
+								<i class="fa fa-cube"></i>
+								Construire le modèle
+							}
+						</button>
+						<button type="button" class="modelisation-btn modelisation-btn--outline modelisation-btn--block" (click)="exporterModele()" [disabled]="exportLoading">
+							@if (exportLoading) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Export…
+							} @else {
+								<i class="fa fa-download"></i>
+								Exporter le modèle
+							}
+						</button>
+						<button type="button" class="modelisation-btn modelisation-btn--secondary modelisation-btn--block" (click)="lancerCalcul()" [disabled]="calcLoading">
+							@if (calcLoading) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Calcul…
+							} @else {
+								<i class="fa fa-calculator"></i>
+								Lancer un calcul
+							}
+						</button>
+					</div>
+					@if (modelResult) {
+						<div class="modelisation-result" [class.modelisation-result--error]="!modelResult.success">
+							<p class="modelisation-result-msg">{{ modelResult.message }}</p>
+						</div>
+					}
+				</section>
+				-->
+				<!-- Gestion des ouvrages (CRUD) -->
+				<section class="modelisation-block">
+					<h2 class="modelisation-block-title"><i class="fa fa-database"></i> Gestion des ouvrages</h2>
+					<p class="modelisation-block-desc">Création, lecture, mise à jour et suppression des équipements par couche.</p>
+					<div class="modelisation-form">
+						<label class="modelisation-label">Couche</label>
+						<p-select [(ngModel)]="selectedLayerSlug" [options]="couchesIncludedList" optionLabel="label" optionValue="id" placeholder="Choisir une couche" styleClass="modelisation-select w-full" appendTo="body" (ngModelChange)="onLayerSlugChange($event)" />
+						<button type="button" class="modelisation-btn modelisation-btn--outline modelisation-btn--block" (click)="loadOuvragesForLayer()" [disabled]="!selectedLayerSlug || ouvragesLoading">
+							@if (ouvragesLoading) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Chargement…
+							} @else {
+								<i class="fa fa-list"></i>
+								Charger la liste
+							}
+						</button>
+						@if (selectedLayerSlug && ouvragesList.length >= 0 && !ouvragesLoading) {
+							<div class="modelisation-ouvrages-list">
+								@if (ouvragesList.length === 0) {
+									<p class="modelisation-empty">Aucun enregistrement pour cette couche.</p>
+								} @else {
+									@for (ouvrage of ouvragesList; track getPkValue(ouvrage)) {
+										<div class="modelisation-ouvrage-row">
+											<div class="modelisation-ouvrage-preview">
+												@for (key of getListColumns(ouvrage).slice(0, 3); track key) {
+													<span class="modelisation-ouvrage-preview-item">{{ key }}: {{ ouvrage[key] }}</span>
+												}
+											</div>
+											<div class="modelisation-ouvrage-actions">
+												<button type="button" pButton icon="pi pi-eye" pRipple class="p-button-text p-button-sm" (click)="openView(ouvrage)" title="Consulter"></button>
+												<button type="button" pButton icon="pi pi-pencil" pRipple class="p-button-text p-button-sm" (click)="openEdit(ouvrage)" title="Modifier"></button>
+												<button type="button" pButton icon="pi pi-trash" pRipple class="p-button-text p-button-sm p-button-danger" (click)="openDeleteConfirm(ouvrage)" [disabled]="crudLoading" title="Supprimer"></button>
+											</div>
+										</div>
+									}
+								}
+							</div>
+						}
+					</div>
+				</section>
+			}
+		</aside>
+		<div class="modelisation-map-wrapper" [class.modelisation-map-wrapper--drawing]="createDrawingMode">
+			@if (selectedLayerSlug) {
+				<div class="modelisation-map-panel" [class.modelisation-map-panel--collapsed]="mapPanelCollapsed && !createDrawingMode && !createFormInPanel && !editFormInPanel && !viewFormInPanel">
+					<div class="modelisation-map-panel-header">
+						@if (!mapPanelCollapsed && selectedLayerGeometryType) {
+							<span class="modelisation-map-panel-geom-type">{{ selectedLayerGeometryType }}</span>
+						}
+						<button type="button" class="modelisation-map-panel-toggle" (click)="mapPanelCollapsed = !mapPanelCollapsed" [title]="mapPanelCollapsed ? 'Développer le panneau' : 'Réduire le panneau'">
+							<i class="fa" [class.fa-chevron-right]="mapPanelCollapsed" [class.fa-chevron-down]="!mapPanelCollapsed"></i>
+						</button>
+					</div>
+					<div class="modelisation-map-panel-actions">
+						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'create'" (click)="openCreate()" title="Créer" [disabled]="createDrawingMode || createFormInPanel">
+							<i class="fa fa-plus"></i>
+							<span class="modelisation-map-panel-btn-text">Créer</span>
+						</button>
+						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'modify'" (click)="actionModify()" title="Modifier">
+							<i class="fa fa-pencil"></i>
+							<span class="modelisation-map-panel-btn-text">Modifier</span>
+						</button>
+						<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'delete'" (click)="actionDelete()" title="Supprimer">
+							<i class="fa fa-trash"></i>
+							<span class="modelisation-map-panel-btn-text">Supprimer</span>
+						</button>
+					</div>
+					<div class="modelisation-map-panel-scroll">
+					@if (viewFormInPanel && ouvrageModalMode === 'view') {
+						<div class="modelisation-map-panel-form modelisation-map-panel-view">
+							<h3 class="modelisation-map-panel-form-title">Consulter l'ouvrage</h3>
+							<div class="modelisation-dialog-view">
+								<div class="modelisation-dialog-view-header">
+									<span class="modelisation-dialog-view-badge">Ouvrage #{{ ouvrageForm['objectid'] ?? ouvrageForm['id'] ?? '—' }}</span>
+								</div>
+								@for (section of getOuvrageViewSections(); track section.title) {
+									<section class="modelisation-dialog-view-section modelisation-panel-view-section">
+										<h3 class="modelisation-dialog-view-section-title"><i class="fa {{ section.icon }}"></i> {{ section.title }}</h3>
+										<div class="modelisation-dialog-view-grid">
+											@for (key of section.keys; track key) {
+												<div class="modelisation-dialog-view-row">
+													<span class="modelisation-dialog-view-label">{{ formatOuvrageLabel(key) }}</span>
+													<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+												</div>
+											}
+										</div>
+									</section>
+								}
+								@if (hasOuvrageGeom()) {
+									<section class="modelisation-dialog-view-section modelisation-panel-view-section">
+										<h3 class="modelisation-dialog-view-section-title"><i class="fa fa-map-marker"></i> Géométrie (WKT)</h3>
+										<pre class="modelisation-dialog-geom">{{ getOuvrageGeomValue() }}</pre>
+									</section>
+								}
+							</div>
+							<div class="modelisation-map-panel-form-actions">
+								<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="closeViewFormInPanel()">Fermer</button>
+								<button type="button" class="modelisation-btn modelisation-btn--primary" (click)="switchToEdit()"><i class="fa fa-pencil"></i> Modifier</button>
+							</div>
+						</div>
+					}
+					@if (createDrawingMode) {
+						<div class="modelisation-map-panel-draw">
+							@if (createSuggestionsLoading) {
+								<p class="modelisation-map-panel-draw-hint"><i class="fa fa-spinner fa-spin"></i> Chargement des suggestions…</p>
+							}
+							@if (createSuggestionsLoaded && createSuggestions.length > 0) {
+								<p class="modelisation-map-panel-draw-hint"><i class="fa fa-lightbulb-o"></i> Cliquez sur un point <strong>suggéré</strong> (vert/bleu) pour placer ici, ou sur la carte pour un emplacement libre.</p>
+								@if (isBranchementLayer) {
+									<p class="modelisation-map-panel-draw-hint modelisation-map-panel-draw-hint--bt"><i class="fa fa-bolt"></i> Points verts : raccordement aux <strong>lignes branchement BT</strong> (basse tension). Déplacez la carte pour mettre à jour les suggestions.</p>
+								}
+							}
+							@if (createSuggestionsLoaded && createSuggestions.length === 0) {
+								<p class="modelisation-map-panel-draw-hint modelisation-map-panel-draw-hint--empty"><i class="fa fa-info-circle"></i> Aucune suggestion à proximité (zoomez sur le réseau ou déplacez la carte). Cliquez sur la carte pour placer.</p>
+							}
+							<p class="modelisation-map-panel-draw-msg">
+								@switch ((selectedLayerGeometryType || '').toLowerCase()) {
+									@case ('point') {
+										<i class="fa fa-crosshairs modelisation-map-panel-draw-icon"></i>
+										Cliquez sur la carte pour placer le point. <kbd>Échap</kbd> pour annuler.
+									}
+									@case ('linestring') {
+										<i class="fa fa-road modelisation-map-panel-draw-icon"></i>
+										Clic pour ajouter un sommet. Clic droit ou double-clic pour terminer. <kbd>Échap</kbd> pour annuler.
+									}
+									@default {
+										<i class="fa fa-vector-square modelisation-map-panel-draw-icon"></i>
+										Clic pour ajouter un sommet. Clic droit ou double-clic pour terminer. <kbd>Échap</kbd> pour annuler.
+									}
+								}
+							</p>
+							@if ((selectedLayerGeometryType || '').toLowerCase() !== 'point' && createDrawingPoints.length > 0) {
+								<p class="modelisation-map-panel-draw-count">{{ createDrawingPoints.length }} sommet(s)</p>
+							}
+							@if ((selectedLayerGeometryType || '').toLowerCase() !== 'point') {
+								<div class="modelisation-map-panel-draw-actions">
+									<button type="button" class="modelisation-btn modelisation-btn--primary" (click)="finishCreateDrawing()" [disabled]="canFinishDrawing() === false">
+										<i class="fa fa-check"></i> Terminer
+									</button>
+									<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="cancelCreateDrawing()">
+										<i class="fa fa-times"></i> Annuler
+									</button>
+								</div>
+							}
+						</div>
+					}
+					@if (createFormInPanel && selectedMapPanelAction === 'create') {
+						<div class="modelisation-map-panel-form">
+							<h3 class="modelisation-map-panel-form-title">Nouvel ouvrage – attributs</h3>
+							@if (suggestedConnectionLabel) {
+								<p class="modelisation-suggested-connection"><i class="fa fa-lightbulb-o"></i> Raccordement suggéré : {{ suggestedConnectionLabel }}</p>
+							}
+							<form class="modelisation-panel-form-fields" (ngSubmit)="saveOuvrage()">
+								@for (section of getOuvrageEditSections(); track section.title) {
+									<section class="modelisation-panel-edit-section">
+										<h4 class="modelisation-panel-edit-section-title"><i class="fa {{ section.icon }}"></i> {{ section.title }}</h4>
+										@for (key of section.keys; track key) {
+											<div class="modelisation-panel-form-field">
+												<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
+												@if (isGeomKey(key)) {
+													<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="'panel_' + key" rows="2" class="modelisation-dialog-input" readonly></textarea>
+												} @else {
+													<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="'panel_' + key" class="modelisation-dialog-input" />
+												}
+											</div>
+										}
+									</section>
+								}
+								<div class="modelisation-map-panel-form-actions">
+									<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="cancelCreateDrawing()">Annuler</button>
+									<button type="submit" class="modelisation-btn modelisation-btn--primary" [disabled]="crudLoading">
+										@if (crudLoading) { <i class="fa fa-spinner fa-spin"></i> } @else { <i class="fa fa-check"></i> } Enregistrer
+									</button>
+								</div>
+							</form>
+						</div>
+					}
+					@if (editFormInPanel && selectedMapPanelAction === 'modify' && ouvrageModalMode === 'edit') {
+						<div class="modelisation-map-panel-form">
+							<h3 class="modelisation-map-panel-form-title">Modifier l'ouvrage</h3>
+							<form class="modelisation-panel-form-fields" (ngSubmit)="saveOuvrage()">
+								@for (section of getOuvrageEditSections(); track section.title) {
+									<section class="modelisation-panel-edit-section">
+										<h4 class="modelisation-panel-edit-section-title"><i class="fa {{ section.icon }}"></i> {{ section.title }}</h4>
+										@for (key of section.keys; track key) {
+											<div class="modelisation-panel-form-field">
+												<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
+												@if (isGeomKey(key)) {
+													<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="'edit_panel_' + key" rows="2" class="modelisation-dialog-input"></textarea>
+												} @else {
+													<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="'edit_panel_' + key" class="modelisation-dialog-input" />
+												}
+											</div>
+										}
+									</section>
+								}
+								<div class="modelisation-map-panel-form-actions">
+									<button type="button" class="modelisation-btn modelisation-btn--outline" (click)="closeEditFormInPanel()">Annuler</button>
+									<button type="submit" class="modelisation-btn modelisation-btn--primary" [disabled]="crudLoading">
+										@if (crudLoading) { <i class="fa fa-spinner fa-spin"></i> } @else { <i class="fa fa-check"></i> } Enregistrer
+									</button>
+								</div>
+							</form>
+						</div>
+					}
+					</div>
+				</div>
+			}
+			<!-- Bouton flottant Légende -->
+			<div class="modelisation-map-legend">
+				<button type="button" class="modelisation-map-legend-btn" (click)="legendPanelOpen = !legendPanelOpen" [class.modelisation-map-legend-btn--open]="legendPanelOpen" [title]="legendPanelOpen ? 'Fermer la légende' : 'Afficher la légende'">
+					<i class="fa fa-info-circle"></i>
+					<span>Légende</span>
+				</button>
+				@if (legendPanelOpen) {
+					<div class="modelisation-map-legend-panel">
+						@for (couche of couchesModele; track couche.id) {
+							<div class="modelisation-map-legend-item">
+								<span class="modelisation-map-legend-symbol modelisation-map-legend-symbol--line" [style.--legend-color]="couche.color"></span>
+								<span class="modelisation-map-legend-label">{{ couche.label }}</span>
+							</div>
+						}
+						@if (couchesModele.length === 0) {
+							<p class="modelisation-map-legend-empty">Chargement des couches…</p>
+						}
+					</div>
+				}
+			</div>
+			<div #mapContainer class="modelisation-map"></div>
+		</div>
+	</div>
+
+	<!-- Modale CRUD ouvrage -->
+	<p-dialog
+		[(visible)]="ouvrageModalVisible"
+		[header]="ouvrageModalMode === 'view' ? 'Consulter l\'ouvrage' : (ouvrageModalMode === 'edit' ? 'Modifier l\'ouvrage' : 'Nouvel ouvrage')"
+		[modal]="true"
+		[closable]="true"
+		[style]="{ width: 'min(90vw, 520px)' }"
+		(onHide)="closeOuvrageModal()"
+		styleClass="modelisation-dialog"
+	>
+		@if (ouvrageModalMode === 'view') {
+			<div class="modelisation-dialog-view">
+				<div class="modelisation-dialog-view-header">
+					<span class="modelisation-dialog-view-badge">Ouvrage #{{ ouvrageForm['objectid'] ?? ouvrageForm['id'] ?? '—' }}</span>
+				</div>
+				@for (section of getOuvrageViewSections(); track section.title) {
+					<section class="modelisation-dialog-view-section">
+						<h3 class="modelisation-dialog-view-section-title"><i class="fa {{ section.icon }}"></i> {{ section.title }}</h3>
+						<div class="modelisation-dialog-view-grid">
+							@for (key of section.keys; track key) {
+								<div class="modelisation-dialog-view-row">
+									<span class="modelisation-dialog-view-label">{{ formatOuvrageLabel(key) }}</span>
+									<span class="modelisation-dialog-view-value">{{ formatOuvrageValueDisplay(key) }}</span>
+								</div>
+							}
+						</div>
+					</section>
+				}
+				@if (hasOuvrageGeom()) {
+					<section class="modelisation-dialog-view-section">
+						<h3 class="modelisation-dialog-view-section-title"><i class="fa fa-map-marker"></i> Géométrie (WKT)</h3>
+						<pre class="modelisation-dialog-geom">{{ getOuvrageGeomValue() }}</pre>
+					</section>
+				}
+			</div>
+		} @else {
+			<form class="modelisation-dialog-form" (ngSubmit)="saveOuvrage()">
+				@for (section of getOuvrageEditSections(); track section.title) {
+					<section class="modelisation-dialog-edit-section">
+						<h3 class="modelisation-dialog-edit-section-title"><i class="fa {{ section.icon }}"></i> {{ section.title }}</h3>
+						@for (key of section.keys; track key) {
+							<div class="modelisation-dialog-field">
+								<label class="modelisation-label">{{ formatOuvrageLabel(key) }}</label>
+								@if (isGeomKey(key)) {
+									<textarea pInputTextarea [(ngModel)]="ouvrageForm[key]" [name]="key" rows="3" class="modelisation-dialog-input"></textarea>
+								} @else {
+									<input pInputText type="text" [(ngModel)]="ouvrageForm[key]" [name]="key" class="modelisation-dialog-input" />
+								}
+							</div>
+						}
+					</section>
+				}
+			</form>
+		}
+		<ng-template pTemplate="footer">
+			@if (ouvrageModalMode === 'view') {
+				<button pButton label="Fermer" (click)="closeOuvrageModal()"></button>
+				<button pButton label="Modifier" icon="pi pi-pencil" (click)="switchToEdit()"></button>
+			} @else {
+				<button pButton label="Annuler" (click)="closeOuvrageModal()" class="p-button-text"></button>
+				<button pButton label="{{ ouvrageModalMode === 'create' ? 'Créer' : 'Enregistrer' }}" icon="pi pi-check" (click)="saveOuvrage()" [loading]="crudLoading" [disabled]="crudLoading"></button>
+			}
+		</ng-template>
+	</p-dialog>
+
+	<!-- Modale de confirmation de suppression -->
+	<p-dialog
+		[(visible)]="deleteConfirmVisible"
+		header="Confirmer la suppression"
+		[modal]="true"
+		[closable]="true"
+		[style]="{ width: 'min(90vw, 400px)' }"
+		(onHide)="closeDeleteConfirm()"
+		styleClass="modelisation-dialog modelisation-dialog--delete"
+	>
+		<div class="modelisation-delete-confirm">
+			<p><i class="fa fa-exclamation-triangle modelisation-delete-confirm-icon"></i> Supprimer cet équipement ? Cette action est irréversible.</p>
+			@if (ouvrageToDelete) {
+				<p class="modelisation-delete-confirm-preview">Ouvrage #{{ ouvrageToDelete['objectid'] ?? ouvrageToDelete['id'] ?? getPkValue(ouvrageToDelete) }}</p>
+			}
+		</div>
+		<ng-template pTemplate="footer">
+			<button pButton label="Annuler" class="p-button-text" (click)="closeDeleteConfirm()"></button>
+			<button pButton label="Supprimer" icon="pi pi-trash" class="p-button-danger" (click)="confirmDeleteOuvrage()" [loading]="crudLoading" [disabled]="crudLoading"></button>
+		</ng-template>
+	</p-dialog>
+
+	<!-- Overlay plein écran : succès (confettis) / échec (animation) -->
+	@if (crudOverlayVisible) {
+		<div class="crud-overlay" [class.crud-overlay--success]="crudOverlaySuccess" [class.crud-overlay--failure]="!crudOverlaySuccess">
+			<div class="crud-overlay-backdrop"></div>
+			<div class="crud-overlay-card" [class.crud-overlay-card--shake]="!crudOverlaySuccess">
+				@if (crudOverlaySuccess) {
+					<div class="crud-overlay-icon crud-overlay-icon--success"><i class="fa fa-check"></i></div>
+					<h2 class="crud-overlay-title">Succès</h2>
+					<p class="crud-overlay-message">{{ crudOverlayMessage }}</p>
+				} @else {
+					<div class="crud-overlay-icon crud-overlay-icon--failure"><i class="fa fa-times"></i></div>
+					<h2 class="crud-overlay-title">Échec</h2>
+					<p class="crud-overlay-message">{{ crudOverlayMessage }}</p>
+					<button type="button" class="modelisation-btn modelisation-btn--primary crud-overlay-btn" (click)="closeCrudOverlay()">Fermer</button>
+				}
+			</div>
+		</div>
+	}
+</div>

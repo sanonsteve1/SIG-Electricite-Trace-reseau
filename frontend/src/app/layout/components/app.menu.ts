@@ -23,87 +23,36 @@ export class AppMenu {
 
 	model: MenuItem[] = [
 		{
-			label: 'Gestion du stock',
+			label: 'Tableau de bord',
+			icon: 'fa fa-pie-chart',
 			items: [
 				{
-					label: 'Tableau de bord',
-					icon: 'fa fa-pie-chart',
+					label: 'Vue d\'ensemble',
+					icon: 'fa fa-dashboard',
 					routerLink: ['/stock/tableau-de-bord']
-				},
+				}
+				/*
 				{
 					label: 'Situation de stock',
 					icon: 'fa fa-archive',
 					routerLink: ['/stock/situation-de-stock']
-				}
+				}7
+				*/
 			]
 		},
 		{
-			label: 'Gestion des emplacements',
+			label: 'Tracé du réseau',
+			icon: 'fa fa-map',
 			items: [
 				{
-					label: 'Entrepôts',
-					icon: 'fa fa-home',
-					routerLink: ['/emplacement/entrepot']
-				},
-				{
-					label: 'Zones',
-					icon: 'fa fa-th-large',
-					routerLink: ['/emplacement/zone']
-				},
-				{
-					label: 'Allées',
-					icon: 'fa fa-th',
-					routerLink: ['/emplacement/allee']
-				},
-				{
-					label: 'Quais',
-					icon: 'fa fa-truck',
-					routerLink: ['/emplacement/quai']
-				},
-				{
-					label: 'Emplacements',
+					label: 'Carte du réseau',
 					icon: 'fa fa-map-marker',
-					routerLink: ['/emplacement/liste-emplacement']
-				}
-			]
-		},
-		{
-			label: 'Gestion des mouvements',
-			items: [
-				{
-					label: 'Entrées',
-					icon: 'fa fa-sign-in',
-					routerLink: ['/mouvement/entree']
+					routerLink: ['/reseau/trace-reseau']
 				},
 				{
-					label: 'Sorties',
-					icon: 'fa fa-sign-out',
-					routerLink: ['/mouvement/sortie']
-				}
-			]
-		},
-		{
-			label: 'Référentiel produit',
-			items: [
-				{
-					label: 'Produits',
-					icon: 'fa fa-sign-in',
-					routerLink: ['/referentiel/produit']
-				},
-				{
-					label: 'Catégories',
-					icon: 'fa fa-sign-out',
-					routerLink: ['/referentiel/categorie']
-				}
-			]
-		},
-		{
-			label: 'Administration',
-			items: [
-				{
-					label: 'Version',
-					icon: 'fa fa-code-fork',
-					routerLink: ['/administration/version']
+					label: 'Modélisation',
+					icon: 'fa fa-cube',
+					routerLink: ['/reseau/modelisation']
 				}
 			]
 		}

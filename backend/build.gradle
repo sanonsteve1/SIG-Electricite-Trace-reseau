@@ -169,5 +169,5 @@ sonar {
 }
 
 bootWar {
-	archiveFileName = 'abstock.war'
+	archiveFileName = 'ab-un.war'
 }

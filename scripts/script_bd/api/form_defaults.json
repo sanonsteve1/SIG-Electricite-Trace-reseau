@@ -1,0 +1,49 @@
+{
+  "distributionpanel-branchement": {
+    "connectiontype": 1,
+    "existencedecompteur": "Non",
+    "transformationreport": 0,
+    "notes": "Créé via formulaire"
+  },
+  "electricline-lowvoltageservice-ligne-branchement-bt": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1,
+    "qualityverified": 0
+  },
+  "electricline-lowvoltageoverheadconductor-ligne-bt-aerien": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "electricline-lowvoltageundergroundconductor-ligne-bt-souterrain": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "electricline-mediumvoltageoverheadconductor-ligne-hta-aerien": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "electricline-mediumvoltageundergroundconductor-ligne-hta-souter": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "structurejunction-electriclowvoltagepole-poteau-bt": {
+    "constructionstatus": 1
+  },
+  "structurejunction-electricmediumvoltagepole-poteau-hta": {
+    "constructionstatus": 1
+  },
+  "ligne-bt*": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "ligne-hta*": {
+    "lifecyclestatus": 1,
+    "phasesnormal": 1
+  },
+  "poteau*": {
+    "constructionstatus": 1
+  },
+  "branchement*": {
+    "notes": "Créé via formulaire"
+  }
+}

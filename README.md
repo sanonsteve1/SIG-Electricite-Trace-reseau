@@ -1,4 +1,4 @@
-# abstock
+# AB-UN
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin http://51.68.188.201:8000/eburtis/stock/abstock.git
+git remote add origin http://51.68.188.201:8000/eburtis/stock/ab-un.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](http://51.68.188.201:8000/eburtis/stock/abstock/-/settings/integrations)
+- [ ] [Set up project integrations](http://51.68.188.201:8000/eburtis/stock/ab-un/-/settings/integrations)
 
 ## Collaborate with your team
 

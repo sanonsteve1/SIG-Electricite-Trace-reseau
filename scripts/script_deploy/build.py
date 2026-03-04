@@ -10,7 +10,7 @@ if COMPILE_BACKEND:
     print("Compilation de Backend")
     os.chdir(os.path.join('..', '..', 'backend'))
     subprocess.run(['gradlew', 'bootWar', '--stacktrace'], shell=True, check=True)
-    subprocess.run(['copy', os.path.join('build', 'libs', 'abstock.war'), os.path.join('..', 'scripts', 'script_deploy', 'deploy')], shell=True, check=True)
+    subprocess.run(['copy', os.path.join('build', 'libs', 'ab-un.war'), os.path.join('..', 'scripts', 'script_deploy', 'deploy')], shell=True, check=True)
     os.chdir(os.path.join('..', 'scripts', 'script_deploy'))
 
 if COMPILE_FRONTEND:
@@ -28,13 +28,13 @@ if os.path.exists(os.path.join(deploy_path, "frontend")):
     rmtree(os.path.join(deploy_path, "frontend"))
 
 # Copier le build Angular vers le dossier deploy
-copytree(os.path.join('..', 'frontend', 'dist', 'abstock', 'browser'), os.path.join(deploy_path, "abstock"))
+copytree(os.path.join('..', 'frontend', 'dist', 'ab-un', 'browser'), os.path.join(deploy_path, "ab-un"))
 
 # Créer une archive ZIP du frontend
-make_archive(os.path.join(deploy_path, "abstock"), 'zip', os.path.join(deploy_path, "abstock"))
+make_archive(os.path.join(deploy_path, "ab-un"), 'zip', os.path.join(deploy_path, "ab-un"))
 
 # Supprimer le dossier après zip (si tu veux garder uniquement le zip)
-rmtree(os.path.join(deploy_path, "abstock"))
+rmtree(os.path.join(deploy_path, "ab-un"))
 
 # Se replacer dans le dossier de script
 os.chdir(os.path.join('scripts', 'script_deploy'))

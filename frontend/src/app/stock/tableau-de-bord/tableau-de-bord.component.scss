@@ -1,0 +1,414 @@
+.dashboard-sonabel {
+	--dash-bg: #1e293b;
+	--dash-card: #334155;
+	--dash-text: #f1f5f9;
+	--dash-muted: #94a3b8;
+}
+
+.dashboard-sonabel .dashboard-header {
+	background: var(--dash-bg);
+	color: var(--dash-text);
+	padding: 1rem 1.5rem;
+	border-radius: 0.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.dashboard-sonabel .logo-sonabel {
+	font-weight: 700;
+	font-size: 1.25rem;
+	color: #facc15;
+	text-shadow: 0 0 1px #22c55e;
+}
+
+.dashboard-sonabel .dashboard-title {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: var(--dash-text);
+}
+
+.dashboard-sonabel .stat-card {
+	background: var(--dash-card);
+	border-radius: 0.5rem;
+	padding: 1rem;
+	color: var(--dash-text);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-sonabel .stat-card .stat-value {
+	font-size: 1.75rem;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.dashboard-sonabel .stat-card .stat-label {
+	font-size: 0.8rem;
+	color: var(--dash-text);
+	margin-bottom: 0.25rem;
+}
+
+.dashboard-sonabel .stat-card .stat-subtitle {
+	font-size: 0.7rem;
+	color: var(--dash-muted);
+}
+
+// Une seule row flex : colonne gauche (3 cartes + chart) + carte à droite
+.dashboard-sonabel .dashboard-map-row {
+	min-height: 520px;
+}
+
+.dashboard-sonabel .map-container.map-fill-space {
+	position: relative;
+	background: var(--dash-card);
+	border-radius: 0.5rem;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	min-height: 480px;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.dashboard-sonabel .map-leaflet {
+	flex: 1;
+	width: 100%;
+	min-height: 480px;
+	background: var(--dash-card);
+	z-index: 1;
+}
+
+// Bouton réinitialiser la carte
+.dashboard-sonabel .map-reset-btn {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--dash-card);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.5rem;
+	color: var(--dash-text);
+	font-size: 0.8rem;
+	font-weight: 500;
+	cursor: pointer;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-sonabel .map-reset-btn:hover {
+	background: #475569;
+	color: #facc15;
+}
+
+.dashboard-sonabel .map-reset-btn i {
+	font-size: 0.9rem;
+}
+
+// Légende : symbologie par ouvrage
+.dashboard-sonabel .map-legend {
+	position: absolute;
+	bottom: 2rem;
+	left: 0.5rem;
+	z-index: 1000;
+	background: var(--dash-card);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 0.5rem;
+	padding: 0.75rem 1rem;
+	max-height: 60vh;
+	overflow-y: auto;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-sonabel .map-legend-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	width: 100%;
+	font-size: 0.8rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding: 0.35rem 0;
+	margin: 0;
+	border: none;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	background: transparent;
+	cursor: pointer;
+	color: var(--dash-text);
+	transition: color 0.15s ease;
+}
+
+.dashboard-sonabel .map-legend-title:hover {
+	color: var(--dash-muted);
+}
+
+.dashboard-sonabel .map-legend-chevron {
+	font-size: 0.7rem;
+	opacity: 0.8;
+}
+
+.dashboard-sonabel .map-legend--collapsed .map-legend-title {
+	border-bottom: none;
+}
+
+.dashboard-sonabel .map-legend-list {
+	margin-top: 0.5rem;
+	max-height: 50vh;
+	overflow-y: auto;
+}
+
+.dashboard-sonabel .map-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	padding: 0.35rem 0;
+	font-size: 0.8rem;
+	color: var(--dash-text);
+	background: none;
+	border: none;
+	cursor: pointer;
+	text-align: left;
+	transition: opacity 0.15s ease, background 0.15s ease;
+	border-radius: 0.25rem;
+}
+
+.dashboard-sonabel .map-legend-item:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-sonabel .map-legend-item--hidden {
+	opacity: 0.5;
+}
+
+.dashboard-sonabel .map-legend-item--hidden .map-legend-symbol {
+	opacity: 0.7;
+}
+
+.dashboard-sonabel .map-legend-check {
+	width: 1.25rem;
+	flex-shrink: 0;
+	color: var(--dash-muted);
+	font-size: 0.75rem;
+}
+
+.dashboard-sonabel .map-legend-item:hover .map-legend-check,
+.dashboard-sonabel .map-legend-item:not(.map-legend-item--hidden) .map-legend-check {
+	color: #22c55e;
+}
+
+.dashboard-sonabel .map-legend-symbol {
+	flex-shrink: 0;
+}
+
+.dashboard-sonabel .map-legend-line {
+	display: inline-block;
+	width: 20px;
+	height: 0;
+	border-bottom: 3px solid var(--legend-color, #94a3b8);
+}
+
+.dashboard-sonabel .map-legend-point {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: var(--legend-color, #94a3b8);
+	border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+// Popup carte (Leaflet) : design amélioré
+::ng-deep .dashboard-sonabel .leaflet-popup-content-wrapper {
+	border-radius: 10px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08);
+	overflow: hidden;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content {
+	margin: 0;
+	min-width: 260px;
+	max-width: 360px;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup {
+	background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+	color: #f1f5f9;
+	font-family: inherit;
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	font-weight: 600;
+	font-size: 0.95rem;
+	color: #facc15;
+	text-shadow: 0 0 1px rgba(250, 204, 21, 0.3);
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-icon {
+	opacity: 0.9;
+	font-size: 1rem;
+	flex-shrink: 0;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-body {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 0.25rem 0;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-row {
+	display: grid;
+	grid-template-columns: 1fr 1.4fr;
+	gap: 0.75rem;
+	align-items: baseline;
+	padding: 0.4rem 1rem;
+	font-size: 0.8rem;
+	word-break: break-word;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-row--even {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-key {
+	color: #94a3b8;
+	font-weight: 500;
+	flex-shrink: 0;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-content .map-popup-val {
+	color: #e2e8f0;
+	font-weight: 400;
+}
+
+::ng-deep .dashboard-sonabel .leaflet-popup-tip {
+	background: #0f172a;
+}
+
+.dashboard-sonabel .map-container.map-fill-space iframe,
+.dashboard-sonabel .map-container iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+	border: none;
+	display: block;
+}
+
+// Carte graphique — Nature client
+.dashboard-sonabel .chart-card {
+	background: var(--dash-card);
+	border-radius: 0.75rem;
+	padding: 0;
+	color: var(--dash-text);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-header {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 1rem 1.25rem;
+	background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-header-icon {
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 0.5rem;
+	background: rgba(250, 204, 21, 0.2);
+	color: #facc15;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-header-icon i {
+	font-size: 1.1rem;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-header-text {
+	min-width: 0;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-title {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: var(--dash-text);
+	line-height: 1.3;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-subtitle {
+	margin: 0.2rem 0 0;
+	font-size: 0.75rem;
+	color: var(--dash-muted);
+	line-height: 1.3;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-summary {
+	display: flex;
+	align-items: baseline;
+	gap: 0.35rem;
+	padding: 0 1.25rem 0.5rem;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-total {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: #22c55e;
+	line-height: 1;
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-total-label {
+	font-size: 0.8rem;
+	color: var(--dash-muted);
+}
+
+.dashboard-sonabel .chart-card--nature .chart-card-canvas {
+	flex: 1;
+	min-height: 220px;
+	padding: 0 0.75rem 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.dashboard-sonabel .selector-label {
+	font-size: 0.75rem;
+	color: var(--dash-muted);
+	margin-top: 0.25rem;
+}
+
+::ng-deep .dashboard-sonabel .p-datepicker,
+::ng-deep .dashboard-sonabel .p-select {
+	background: var(--dash-card) !important;
+	border-color: rgba(255, 255, 255, 0.1) !important;
+	color: var(--dash-text) !important;
+}
+
+::ng-deep .dashboard-sonabel .p-inputtext {
+	background: var(--dash-card) !important;
+	border-color: rgba(255, 255, 255, 0.1) !important;
+	color: var(--dash-text) !important;
+}
+
+::ng-deep .dashboard-sonabel .p-select-label {
+	color: var(--dash-text) !important;
+}

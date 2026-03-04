@@ -28,15 +28,15 @@ RESET_REMOTE_BD = bool(args.RESET_REMOTE_BD)
 EXECUTE_COMMANDS_AFTER_UPLOAD = bool(args.EXECUTE_COMMANDS_AFTER_UPLOAD)
 
 # Configuration base de données cible
-TARGET_DB = "abstock"
-TARGET_ROLE = "abstock"
+TARGET_DB = "ab-un"
+TARGET_ROLE = "ab-un"
 
 # -----------------------
 # Fichiers locaux à envoyer
 # -----------------------
 LOCAL_FILES = [
-    'deploy/abstock.zip',
-    'deploy/abstock.war'
+    'deploy/ab-un.zip',
+    'deploy/ab-un.war'
 ]
 
 # -----------------------
@@ -44,8 +44,8 @@ LOCAL_FILES = [
 # (sauvegarde des anciens fichiers)
 # -----------------------
 COMMANDS_TO_RUN_BEFORE_UPLOAD = [
-    f'mv -f abstock.war abstock-old.war > /dev/null 2>&1',
-    f'mv -f abstock abstock-old > /dev/null 2>&1',
+    f'mv -f ab-un.war ab-un-old.war > /dev/null 2>&1',
+    f'mv -f ab-un ab-un-old > /dev/null 2>&1',
 ]
 
 # -----------------------
@@ -53,11 +53,11 @@ COMMANDS_TO_RUN_BEFORE_UPLOAD = [
 # (déploiement des nouveaux fichiers)
 # -----------------------
 COMMANDS_TO_RUN_AFTER_UPLOAD = [
-    "sudo rm -rf abstock",
-    "sudo unzip -o abstock.zip -d .",
-    "sudo cp -f abstock.war /opt/tomcat/webapps",
-    "sudo rm -rf /app/abstock/*",
-    "sudo cp -rf abstock/* /app/abstock/"
+    "sudo rm -rf ab-un",
+    "sudo unzip -o ab-un.zip -d .",
+    "sudo cp -f ab-un.war /opt/tomcat/webapps",
+    "sudo rm -rf /app/ab-un/*",
+    "sudo cp -rf ab-un/* /app/ab-un/"
 ]
 
 # -----------------------

@@ -1,0 +1,181 @@
+<div class="trace-reseau">
+	<header class="trace-reseau-header">
+		<div class="trace-reseau-title">
+			<i class="fa fa-map"></i>
+			<span>Tracé du réseau électrique</span>
+		</div>
+	</header>
+
+	<div class="trace-reseau-body">
+		<button type="button" class="trace-reseau-sidebar-toggle" [class.trace-reseau-sidebar-toggle--collapsed]="sidebarCollapsed" (click)="sidebarCollapsed = !sidebarCollapsed" [attr.aria-expanded]="!sidebarCollapsed" [title]="sidebarCollapsed ? 'Ouvrir le panneau' : 'Fermer le panneau'">
+			<i class="fa" [class.fa-chevron-left]="!sidebarCollapsed" [class.fa-chevron-right]="sidebarCollapsed"></i>
+		</button>
+		<aside class="trace-reseau-sidebar" [class.trace-reseau-sidebar--collapsed]="sidebarCollapsed">
+			@if (!sidebarCollapsed) {
+				<!-- Paramètres du tracé -->
+				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-cog"></i> Paramètres du tracé</h2>
+					<div class="trace-reseau-form">
+						<label class="trace-reseau-label">Type de point de départ</label>
+						<p-select [(ngModel)]="paramTypePoint" [options]="typePointOptions" optionLabel="label" optionValue="value" placeholder="Choisir un type" styleClass="trace-reseau-select w-full" (onChange)="onTypePointChange()" />
+						@if (paramTypePoint === 'poste_source') {
+							<label class="trace-reseau-label">Poste source</label>
+							<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste source" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+						}
+						@if (paramTypePoint === 'poste_transformation') {
+							<label class="trace-reseau-label">Poste de transformation</label>
+							<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste de transformation" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+						}
+						@if (paramTypePoint === 'abonne') {
+							<label class="trace-reseau-label">Abonné</label>
+							<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un abonné" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+						}
+					</div>
+				</section>
+				<!-- Correction de topologie -->
+				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-link"></i> Correction de topologie</h2>
+					<p class="trace-reseau-topology-desc">Rapproche les extrémités des lignes vers les nœuds (poteaux, transformateurs, postes) dans une tolérance donnée.</p>
+					<div class="trace-reseau-form">
+						<label class="trace-reseau-label">Tolérance (mètres)</label>
+						<input type="number" class="trace-reseau-input" [(ngModel)]="topologyTolerance" min="0.5" max="50" step="0.5" />
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="lancerCorrectionTopologie()" [disabled]="topologyCorrecting">
+							@if (topologyCorrecting) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Correction en cours…
+							} @else {
+								<i class="fa fa-magic"></i>
+								Lancer la correction
+							}
+						</button>
+						@if (topologyResult) {
+							<div class="trace-reseau-topology-result" [class.trace-reseau-topology-result--error]="topologyResult.error">
+								@if (topologyResult.error) {
+									<p class="trace-reseau-topology-msg">{{ topologyResult.error }}</p>
+								} @else {
+									<p class="trace-reseau-topology-msg">{{ topologyResult.message }}</p>
+									@if (topologyResult.corrected > 0 && topologyResult.by_table) {
+										<ul class="trace-reseau-topology-details">
+											@for (item of getTopologyDetails(); track item.slug) {
+												<li><span class="trace-reseau-topology-slug">{{ item.slug }}</span> : {{ item.updated }} corrigé(s)</li>
+											}
+										</ul>
+									}
+								}
+							</div>
+						}
+					</div>
+				</section>
+				<!-- Outils de tracé -->
+				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-pencil-square-o"></i> Tracé</h2>
+					<div class="trace-reseau-tools">
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="tracerAmont()" [disabled]="!hasSelection()">
+							<i class="fa fa-arrow-up"></i>
+							Tracé Amont
+						</button>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="tracerAval()" [disabled]="!hasSelection()">
+							<i class="fa fa-arrow-down"></i>
+							Tracé Aval
+						</button>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="effacerTrace()">
+							<i class="fa fa-eraser"></i>
+							Effacer le tracé
+						</button>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--outline trace-reseau-btn--block" (click)="exporterTrace()">
+							<i class="fa fa-download"></i>
+							Exporter le tracé
+						</button>
+					</div>
+				</section>
+			}
+		</aside>
+		<div class="trace-reseau-map-wrapper">
+			<div #mapContainer class="trace-reseau-map"></div>
+			@if (mapLoading) {
+				<div class="trace-reseau-map-loading">Chargement des ouvrages…</div>
+			}
+			<!-- Boutons flottants (Couches, Résumé, Légende) -->
+			<div class="trace-reseau-map-floats">
+				<div class="trace-reseau-layers-float">
+					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="layersOpen" (click)="layersOpen = !layersOpen" [attr.aria-expanded]="layersOpen" [title]="layersOpen ? 'Masquer les couches' : 'Afficher les couches'">
+						<i class="fa fa-layer-group"></i>
+						<span>Couches visibles</span>
+					</button>
+					@if (layersOpen) {
+						<div class="trace-reseau-legend-panel trace-reseau-layers-panel">
+							<div class="trace-reseau-layers">
+								@for (layer of couchesReseau; track layer.id) {
+									<label class="trace-reseau-layer-item">
+										<input type="checkbox" [(ngModel)]="layer.visible" (ngModelChange)="toggleCouche(layer)" />
+										<span class="trace-reseau-layer-symbol" [style.--layer-color]="layer.color"></span>
+										<span class="trace-reseau-layer-label">{{ layer.label }}</span>
+									</label>
+								}
+							</div>
+						</div>
+					}
+				</div>
+				<div class="trace-reseau-resume-float">
+					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="resumeOpen" (click)="resumeOpen = !resumeOpen" [attr.aria-expanded]="resumeOpen" [title]="resumeOpen ? 'Masquer le résumé' : 'Afficher le résumé'">
+						<i class="fa fa-bar-chart"></i>
+						<span>Résumé du tracé</span>
+					</button>
+					@if (resumeOpen) {
+						<div class="trace-reseau-legend-panel trace-reseau-resume-panel">
+							<div class="trace-reseau-stats">
+								<div class="trace-reseau-stat">
+									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--blue"><i class="fa fa-arrows-h"></i></span>
+									<span class="trace-reseau-stat-value">{{ resumeLongueurKm }}</span>
+									<span class="trace-reseau-stat-label">km</span>
+								</div>
+								<div class="trace-reseau-stat">
+									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--green"><i class="fa fa-bolt"></i></span>
+									<span class="trace-reseau-stat-value">{{ resumePoteaux }}</span>
+									<span class="trace-reseau-stat-label">Poteaux</span>
+								</div>
+								<div class="trace-reseau-stat">
+									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--purple"><i class="fa fa-sitemap"></i></span>
+									<span class="trace-reseau-stat-value">{{ resumeOuvrages }}</span>
+									<span class="trace-reseau-stat-label">Ouvrages</span>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+				<div class="trace-reseau-legend-float">
+				<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="legendOpen" (click)="legendOpen = !legendOpen" [attr.aria-expanded]="legendOpen" [title]="legendOpen ? 'Masquer la légende' : 'Afficher la légende'">
+					<i class="fa fa-info-circle"></i>
+					<span>Légende</span>
+				</button>
+				@if (legendOpen) {
+					<div class="trace-reseau-legend-panel">
+						<ul class="trace-reseau-legend">
+							<li class="trace-reseau-legend-item">
+								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--hta"></span>
+								<span>Ligne HTA</span>
+							</li>
+							<li class="trace-reseau-legend-item">
+								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--bt"></span>
+								<span>Ligne BT</span>
+							</li>
+							<li class="trace-reseau-legend-item">
+								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--pole"><i class="fa fa-bolt"></i></span>
+								<span>Poteau</span>
+							</li>
+							<li class="trace-reseau-legend-item">
+								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--transfo"><i class="fa fa-cog"></i></span>
+								<span>Transformateur</span>
+							</li>
+							<li class="trace-reseau-legend-item">
+								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--poste"><i class="fa fa-building"></i></span>
+								<span>Poste source</span>
+							</li>
+						</ul>
+					</div>
+				}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

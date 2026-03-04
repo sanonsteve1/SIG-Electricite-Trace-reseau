@@ -24,10 +24,14 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 	};
 
 
-	// Clone the request and add the authorization header
+	// Requêtes vers l'API GIS (script_bd) : ne pas envoyer credentials pour éviter CORS avec *
+	const gisApiUrl = (environment as { gisApiUrl?: string }).gisApiUrl;
+	const isGisApi = gisApiUrl && typeof req.url === 'string' && req.url.startsWith(gisApiUrl);
+	const withCreds = !isGisApi;
+
 	const authReq = req.clone({
 		url: preparerUrl(req.url),
-		withCredentials: true,
+		withCredentials: withCreds,
 		setHeaders: {
 			'Authorization': token ?? '',
 			'Access-Control-Allow-Credentials': 'true',
