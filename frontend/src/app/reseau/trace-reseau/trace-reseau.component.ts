@@ -62,6 +62,13 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	lastTraceDirection: 'amont' | 'aval' | 'tous' | null = null;
 	traceDetails: { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] = [];
 	traceTypeCounts: { slug: string; count: number; color: string }[] = [];
+	coupureActive = false;
+	coupureStartLabel = '';
+	coupureStartType = '';
+	coupureImpactedAbonnes = 0;
+	coupureImpactedLignes = 0;
+	coupureImpactedPoints = 0;
+	coupureExecutedAt = '';
 
 	canUndo = false;
 	canRedo = false;
@@ -252,6 +259,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	onTypePointChange(): void {
 		this.selectedMapStart = null;
 		this.showStartSelectors = true;
+		this.resetCoupureState();
 		this.cdr.markForCheck();
 		this.onSelectionChange();
 	}
@@ -282,6 +290,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.selectedMapStart = null;
 		}
 		this.showStartSelectors = !this.hasSelection();
+		this.resetCoupureState();
 		console.log('[Trace réseau] Sélection changée', {
 			type: this.paramTypePoint,
 			id: this.getSelectedId(),
@@ -488,8 +497,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.runTrace('tous');
 	}
 
+	simulerCoupure(): void {
+		this.runTrace('tous', 'coupure');
+	}
+
 	/** Lance le tracé et affiche les ouvrages connectés */
-	private runTrace(direction: 'amont' | 'aval' | 'tous'): void {
+	private runTrace(direction: 'amont' | 'aval' | 'tous', mode: 'trace' | 'coupure' = 'trace'): void {
 		const refId = this.getSelectedRefId();
 		if (!refId) return;
 		const traceType = this.selectedMapStart ? 'ouvrage' : this.paramTypePoint;
@@ -501,6 +514,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			next: (res) => {
 				this.mapLoading = false;
 				this.applyTraceResult(res.ouvrage_ids || [], direction);
+				if (mode === 'coupure') {
+					this.applyCoupureResult(res.ouvrage_ids || []);
+				}
 				this.cdr.markForCheck();
 			},
 			error: () => {
@@ -516,6 +532,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.runTrace(direction);
 	}
 
+	private simulateCoupureFromMapSelection(slug: string, id: string, label: string): void {
+		this.selectedMapStart = { slug, id, label: label || `${slug}:${id}` };
+		this.showStartSelectors = false;
+		this.runTrace('tous', 'coupure');
+	}
+
 	showSelectionDropdowns(): void {
 		this.showStartSelectors = true;
 		this.cdr.markForCheck();
@@ -527,7 +549,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.paramPosteTransfo = null;
 		this.paramAbonne = null;
 		this.showStartSelectors = true;
+		this.resetCoupureState();
 		this.cdr.markForCheck();
+	}
+
+	resetSimulationCoupure(): void {
+		this.effacerTrace();
 	}
 
 	/** Affiche sur la carte uniquement les ouvrages du tracé (ou tous si liste vide). */
@@ -575,6 +602,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	private isLineSlug(slug: string): boolean {
 		return /ligne|electricline/.test((slug || '').toLowerCase());
+	}
+
+	private isAbonneSlug(slug: string): boolean {
+		return /point-raccord|point_raccord/.test((slug || '').toLowerCase());
 	}
 
 	get traceLineCount(): number {
@@ -857,7 +888,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			const slug = layerSlug.get(layer) ?? '';
 			const isLine = this.isLineSlug(slug);
 			const isPoint = this.isPointSlug(slug);
+			const baseColor = this.getColorForSlug(slug);
 			const normal: Record<string, unknown> = {
+				color: baseColor,
+				fillColor: baseColor,
 				opacity: 0.95,
 				fillOpacity: 0.5,
 				weight: isLine ? 5 : 3,
@@ -866,6 +900,19 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			};
 			if (!hasTrace || !isHighlighted) {
 				setStyle.call(layer, normal);
+				return;
+			}
+			if (this.coupureActive) {
+				const coupureStyle: Record<string, unknown> = {
+					color: '#111111',
+					fillColor: '#111111',
+					opacity: 1,
+					fillOpacity: 0.85,
+					weight: isLine ? 7 : 5,
+					dashArray: null,
+					dashOffset: null
+				};
+				setStyle.call(layer, coupureStyle);
 				return;
 			}
 			const highlight: Record<string, unknown> = { opacity: 1, fillOpacity: 0.7, weight: 6 };
@@ -877,6 +924,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				highlight['dashOffset'] = String(this.flowDashOffset);
 			} else if (isPoint) {
 				// Pulsation des points impactés pour visualiser les nœuds du tracé.
+				highlight['color'] = baseColor;
+				highlight['fillColor'] = baseColor;
 				highlight['dashArray'] = null;
 				highlight['weight'] = this.pointPulsePhase ? 7 : 4;
 				highlight['fillOpacity'] = this.pointPulsePhase ? 0.95 : 0.45;
@@ -945,8 +994,31 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.pointPulsePhase = false;
 		this.stopFlowAnimation();
 		this.clearTracePointClusters();
+		this.resetCoupureState();
 		this.applyTraceStyleToMap();
 		this.cdr.markForCheck();
+	}
+
+	private applyCoupureResult(ouvrageIds: { slug: string; id: string }[]): void {
+		this.coupureActive = true;
+		this.coupureStartLabel = this.getCurrentStartLabel();
+		this.coupureStartType = this.selectedMapStart ? 'ouvrage carte' : this.paramTypePoint;
+		this.coupureImpactedLignes = ouvrageIds.filter((o) => this.isLineSlug(o.slug)).length;
+		this.coupureImpactedPoints = ouvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
+		this.coupureImpactedAbonnes = ouvrageIds.filter((o) => this.isAbonneSlug(o.slug)).length;
+		this.coupureExecutedAt = new Date().toLocaleString('fr-FR');
+		this.stopFlowAnimation();
+		this.applyTraceStyleToMap();
+	}
+
+	private resetCoupureState(): void {
+		this.coupureActive = false;
+		this.coupureStartLabel = '';
+		this.coupureStartType = '';
+		this.coupureImpactedAbonnes = 0;
+		this.coupureImpactedLignes = 0;
+		this.coupureImpactedPoints = 0;
+		this.coupureExecutedAt = '';
 	}
 
 	/** Exporte la liste des ouvrages du tracé courant en JSON. */
@@ -1002,6 +1074,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-amont" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-up"></i> Tracé amont</button>`;
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-aval" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-down"></i> Tracé aval</button>`;
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-all" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-sitemap"></i> Tous connectés</button>`;
+			html += `<button type="button" class="map-popup-btn map-popup-btn--outage" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-power-off"></i> Simuler coupure</button>`;
 			html += '</div>';
 		}
 		html += '</div>';
@@ -1080,12 +1153,16 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			this.traceClusterLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			this.popupButtonsClickListener = (e: Event): void => {
-				const traceTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--trace-amont, .map-popup-btn--trace-aval, .map-popup-btn--trace-all');
+				const traceTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--trace-amont, .map-popup-btn--trace-aval, .map-popup-btn--trace-all, .map-popup-btn--outage');
 				if (traceTarget && traceTarget instanceof HTMLElement) {
 					const slug = traceTarget.getAttribute('data-slug') ?? '';
 					const id = traceTarget.getAttribute('data-id') ?? '';
 					const label = traceTarget.getAttribute('data-label') ?? '';
 					if (!slug || !id) return;
+					if (traceTarget.classList.contains('map-popup-btn--outage')) {
+						this.simulateCoupureFromMapSelection(slug, id, label);
+						return;
+					}
 					const direction: 'amont' | 'aval' | 'tous' =
 						traceTarget.classList.contains('map-popup-btn--trace-amont') ? 'amont'
 							: traceTarget.classList.contains('map-popup-btn--trace-aval') ? 'aval'

@@ -794,6 +794,176 @@ def _trace_points_from_node_ids(cur, node_ids: set[str]) -> list[tuple[str, str]
     return pairs
 
 
+def _trace_points_raccordement_from_lines(cur, line_pairs: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """
+    Ajoute les points de raccordement impactés à partir des lignes de branchement tracées.
+    Règle métier: un point de raccordement est impacté si sa id_ligne_brcht appartient
+    aux lignes de branchement présentes dans le tracé.
+    """
+    branchement_line_ids = sorted({
+        _canon_id(gid)
+        for slug, gid in (line_pairs or [])
+        if slug == "ligne-brcht" and _canon_id(gid)
+    })
+    if not branchement_line_ids:
+        return []
+
+    pairs: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    # Peut varier selon les jeux de données; on cible tous les slugs contenant "point" + "raccord".
+    candidate_slugs = [s for s in sorted(TABLE_BY_SLUG.keys()) if ("point" in s and "raccord" in s)]
+    if not candidate_slugs:
+        return []
+
+    for slug in candidate_slugs:
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not (_table_has_column(meta, "gid") and _table_has_column(meta, "id_ligne_brcht")):
+            continue
+        try:
+            qtable = quote_ident(table_name)
+            placeholders = ", ".join(["%s"] * len(branchement_line_ids))
+            cur.execute(
+                f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('id_ligne_brcht')} IN ({placeholders})",
+                tuple(branchement_line_ids),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is None:
+                    continue
+                key = (slug, str(gid_val))
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append(key)
+        except Exception:
+            continue
+    return pairs
+
+
+def _trace_postes_transfos_from_node_ids(cur, node_ids: set[str]) -> list[tuple[str, str]]:
+    """
+    Retrouve les postes/transfos impactés à partir des nœuds visités.
+    Les lignes référencent des nœuds de type depart/depart_bt; ces nœuds portent ensuite
+    les clés vers poste_source, poste_cabine et transfo_*.
+    """
+    canon_nodes = sorted({_canon_id(n) for n in node_ids if _canon_id(n)})
+    if not canon_nodes:
+        return []
+
+    poste_source_ids: set[str] = set()
+    poste_cabine_ids: set[str] = set()
+    transfo_poteau_ids: set[str] = set()
+    transfo_ht_bt_ids: set[str] = set()
+
+    # 1) Depuis les départs HTA visités -> id_poste_source
+    try:
+        dep_meta = TABLE_BY_SLUG.get("depart", (None, {}))[1] or {}
+        if _table_has_column(dep_meta, "gid") and _table_has_column(dep_meta, "id_poste_source"):
+            placeholders = ", ".join(["%s"] * len(canon_nodes))
+            cur.execute(
+                f"SELECT id_poste_source FROM depart WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                tuple(canon_nodes),
+            )
+            for row in cur.fetchall() or []:
+                v = row.get("id_poste_source")
+                vv = _canon_id(v)
+                if vv:
+                    poste_source_ids.add(vv)
+    except Exception:
+        pass
+
+    # 2) Depuis les départs BT visités -> id_poste_cabine / id_poste_sur_poteau / id_transfo_*
+    try:
+        dep_bt_meta = TABLE_BY_SLUG.get("depart-bt", (None, {}))[1] or {}
+        candidate_cols = [
+            "id_poste_cabine",
+            "id_poste_sur_poteau",
+            "id_transfo_ht_bt",
+            "id_transfo_poteau",
+        ]
+        existing_cols = [c for c in candidate_cols if _table_has_column(dep_bt_meta, c)]
+        if _table_has_column(dep_bt_meta, "gid") and existing_cols:
+            placeholders = ", ".join(["%s"] * len(canon_nodes))
+            cur.execute(
+                f"SELECT {', '.join(quote_ident(c) for c in existing_cols)} "
+                f"FROM depart_bt WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                tuple(canon_nodes),
+            )
+            for row in cur.fetchall() or []:
+                if "id_poste_cabine" in existing_cols:
+                    vv = _canon_id(row.get("id_poste_cabine"))
+                    if vv:
+                        poste_cabine_ids.add(vv)
+                if "id_poste_sur_poteau" in existing_cols:
+                    vv = _canon_id(row.get("id_poste_sur_poteau"))
+                    if vv:
+                        transfo_poteau_ids.add(vv)
+                if "id_transfo_poteau" in existing_cols:
+                    vv = _canon_id(row.get("id_transfo_poteau"))
+                    if vv:
+                        transfo_poteau_ids.add(vv)
+                if "id_transfo_ht_bt" in existing_cols:
+                    vv = _canon_id(row.get("id_transfo_ht_bt"))
+                    if vv:
+                        transfo_ht_bt_ids.add(vv)
+    except Exception:
+        pass
+
+    def _collect_pairs_for_slugs(ids_set: set[str], slug_matcher) -> list[tuple[str, str]]:
+        ids = sorted({_canon_id(x) for x in ids_set if _canon_id(x)})
+        if not ids:
+            return []
+        out: list[tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        for slug in sorted(TABLE_BY_SLUG.keys()):
+            if not slug_matcher(slug):
+                continue
+            table_name, meta = TABLE_BY_SLUG[slug]
+            if not _table_has_column(meta, "gid"):
+                continue
+            try:
+                placeholders = ", ".join(["%s"] * len(ids))
+                cur.execute(
+                    f"SELECT gid FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                    tuple(ids),
+                )
+                for row in cur.fetchall() or []:
+                    gid_val = row.get("gid")
+                    if gid_val is None:
+                        continue
+                    key = (slug, str(gid_val))
+                    if key not in seen:
+                        seen.add(key)
+                        out.append(key)
+            except Exception:
+                continue
+        return out
+
+    poste_source_pairs = _collect_pairs_for_slugs(
+        poste_source_ids,
+        lambda s: ("poste-source" in s) or ("limite-poste" in s),
+    )
+    poste_cabine_pairs = _collect_pairs_for_slugs(
+        poste_cabine_ids,
+        lambda s: "poste-cabine" in s,
+    )
+    transfo_poteau_pairs = _collect_pairs_for_slugs(
+        transfo_poteau_ids,
+        lambda s: ("transfo-poteau" in s) or ("poste-sur-poteau" in s),
+    )
+    transfo_ht_bt_pairs = _collect_pairs_for_slugs(
+        transfo_ht_bt_ids,
+        lambda s: "transfo-ht-bt" in s,
+    )
+
+    merged: list[tuple[str, str]] = []
+    seen_merged: set[tuple[str, str]] = set()
+    for item in (poste_source_pairs + poste_cabine_pairs + transfo_poteau_pairs + transfo_ht_bt_pairs):
+        if item not in seen_merged:
+            seen_merged.add(item)
+            merged.append(item)
+    return merged
+
+
 def _trace_nearby_points_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120) -> list[tuple[str, str]]:
     """Fallback spatial pour points : ouvrages ponctuels proches du point de référence."""
     wkt = _get_ref_point_wkt(trace_type, ref_id)
@@ -877,16 +1047,20 @@ def trace_ouvrages(
                         except Exception:
                             continue
                 point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
+                equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
+                raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
                 links_count = _trace_directional_links_count(cur)
                 used_spatial_fallback = False
                 if not pairs and links_count == 0:
                     # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
                     pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
                     point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+                    equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
+                    raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
                     used_spatial_fallback = len(pairs) > 0
                 merged: list[tuple[str, str]] = []
                 seen_merged: set[tuple[str, str]] = set()
-                for item in (pairs + point_pairs):
+                for item in (pairs + point_pairs + equip_pairs + raccord_pairs):
                     if item not in seen_merged:
                         seen_merged.add(item)
                         merged.append(item)
@@ -924,6 +1098,7 @@ def _is_point_table(slug: str) -> bool:
         "poteau" in s or "pole" in s or "transfo" in s or "poste" in s
         or "abonne" in s or "branchement" in s or "limite-poste" in s
         or "findeligne" in s or "electricjunction" in s or "noeud" in s
+        or "point-raccord" in s or "point_raccord" in s
     )
 
 

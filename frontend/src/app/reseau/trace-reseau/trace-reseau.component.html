@@ -45,7 +45,7 @@
 						}
 					</div>
 				</section>
-				<!-- Correction de topologie -->
+				<!-- Correction de topologie (masquée temporairement)
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-link"></i> Correction de topologie</h2>
 					<p class="trace-reseau-topology-desc">Rapproche les extrémités des lignes vers les nœuds (poteaux, transformateurs, postes) dans une tolérance donnée.</p>
@@ -79,6 +79,7 @@
 						}
 					</div>
 				</section>
+				-->
 				<!-- Outils de tracé -->
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-pencil-square-o"></i> Tracé</h2>
@@ -103,6 +104,34 @@
 							<i class="fa fa-download"></i>
 							Exporter le tracé
 						</button>
+					</div>
+				</section>
+				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-power-off"></i> Simulation de coupure</h2>
+					<div class="trace-reseau-form">
+						<p class="trace-reseau-topology-desc">Simule l'impact d'une coupure sur un point ou une ligne : tous les éléments connectés à l'élément coupé sont impactés.</p>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--danger trace-reseau-btn--block" (click)="simulerCoupure()" [disabled]="!hasSelection() || mapLoading">
+							@if (mapLoading) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Simulation en cours…
+							} @else {
+								<i class="fa fa-bolt"></i>
+								Simuler la coupure
+							}
+						</button>
+						@if (coupureActive) {
+							<div class="trace-reseau-coupure-result">
+								<p><strong>Point de coupure :</strong> {{ coupureStartLabel }}</p>
+								<p><strong>Lignes impactées :</strong> {{ coupureImpactedLignes }}</p>
+								<p><strong>Points impactés :</strong> {{ coupureImpactedPoints }}</p>
+								<p><strong>Points de raccordement impactés :</strong> {{ coupureImpactedAbonnes }}</p>
+								<p><strong>Exécutée le :</strong> {{ coupureExecutedAt }}</p>
+								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationCoupure()">
+									<i class="fa fa-undo"></i>
+									Réinitialiser la simulation
+								</button>
+							</div>
+						}
 					</div>
 				</section>
 			}

@@ -200,6 +200,35 @@ $header-height: 56px;
 	border-color: #9ca3af;
 }
 
+.trace-reseau-btn--danger {
+	background: #dc2626;
+	color: #fff;
+	border-color: #dc2626;
+}
+
+.trace-reseau-btn--danger:hover {
+	background: #b91c1c;
+	border-color: #b91c1c;
+	color: #fff;
+}
+
+.trace-reseau-coupure-result {
+	margin-top: 0.5rem;
+	padding: 0.55rem 0.65rem;
+	background: #fff1f2;
+	border: 1px solid #fecdd3;
+	border-radius: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.trace-reseau-coupure-result p {
+	margin: 0;
+	font-size: 0.78rem;
+	color: #881337;
+}
+
 // Éléments utilisables pour les tracés
 .trace-reseau-elements .trace-reseau-block-title {
 	margin-bottom: 0.5rem;
@@ -988,4 +1017,10 @@ $header-height: 56px;
 	background: #dbeafe;
 	border-color: #93c5fd;
 	color: #1d4ed8;
+}
+
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn--outage:hover {
+	background: #fee2e2;
+	border-color: #fca5a5;
+	color: #b91c1c;
 }
