@@ -508,19 +508,22 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
         elif trace_type == "poste_transformation":
             # Le point de départ peut être poste_cabine/transfo_poteau ; on essaie de retrouver
             # les nœuds BT associés (depart_bt) pour entrer dans le graphe des lignes.
-            for q, p in [
-                ("SELECT gid FROM depart_bt WHERE id_poste_cabine = %s AND gid IS NOT NULL", (ref_id,)),
-                ("SELECT gid FROM depart_bt WHERE id_transfo_ht_bt = %s AND gid IS NOT NULL", (ref_id,)),
-                ("SELECT gid FROM depart_bt WHERE id_transfo_poteau = %s AND gid IS NOT NULL", (ref_id,)),
-            ]:
-                try:
-                    cur.execute(q, p)
-                    for row in cur.fetchall() or []:
-                        if row.get("gid"):
-                            start.add(str(row["gid"]).strip())
-                except Exception:
-                    # Colonnes/table possiblement absentes selon le schéma : ignorer
-                    continue
+            dep_bt_meta = TABLE_BY_SLUG.get("depart-bt", (None, {}))[1] or {}
+            candidate_cols = [
+                "id_poste_cabine",
+                "id_poste_sur_poteau",
+                "id_transfo_ht_bt",
+                "id_transfo_poteau",
+            ]
+            existing_cols = [c for c in candidate_cols if _table_has_column(dep_bt_meta, c)]
+            for col in existing_cols:
+                cur.execute(
+                    f"SELECT gid FROM depart_bt WHERE {_canon_sql_expr(col)} = %s AND gid IS NOT NULL",
+                    (ref_canon,),
+                )
+                for row in cur.fetchall() or []:
+                    if row.get("gid"):
+                        start.add(str(row["gid"]).strip())
         elif trace_type == "abonne":
             # Point de raccordement : s'il porte un id_ligne_brcht, on prend ses nœuds
             # de ligne branchement comme points de départ (amont/aval directionnel ensuite).
@@ -546,6 +549,76 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
             except Exception:
                 # fallback: garder ref_id seulement
                 pass
+        elif trace_type == "ouvrage":
+            # Départ libre depuis un ouvrage cliqué (point ou ligne).
+            # 1) Si ref_id est une ligne, injecter ses nœuds (id_depart_*, id_poteau_*).
+            for table_name, _slug, node_cols in _TRACE_EDGE_TABLES:
+                try:
+                    cur.execute(
+                        f"SELECT {', '.join(quote_ident(c) for c in node_cols)} "
+                        f"FROM {quote_ident(table_name)} "
+                        f"WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                        (ref_canon,),
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        for c in node_cols:
+                            v = row.get(c)
+                            if v is not None and str(v).strip():
+                                start.add(str(v).strip())
+                except Exception:
+                    continue
+            # 2) Si ref_id pointe un poste source, récupérer ses départs HTA.
+            try:
+                cur.execute(
+                    "SELECT gid FROM depart "
+                    "WHERE REPLACE(REPLACE(LOWER(CAST(id_poste_source AS TEXT)), '{', ''), '}', '') = %s "
+                    "AND gid IS NOT NULL",
+                    (ref_canon,),
+                )
+                for row in cur.fetchall() or []:
+                    if row.get("gid"):
+                        start.add(str(row["gid"]).strip())
+            except Exception:
+                pass
+            # 3) Si ref_id pointe un poste transfo, récupérer ses départs BT.
+            dep_bt_meta = TABLE_BY_SLUG.get("depart-bt", (None, {}))[1] or {}
+            for col in ["id_poste_cabine", "id_poste_sur_poteau", "id_transfo_ht_bt", "id_transfo_poteau"]:
+                if not _table_has_column(dep_bt_meta, col):
+                    continue
+                try:
+                    cur.execute(
+                        f"SELECT gid FROM depart_bt WHERE {_canon_sql_expr(col)} = %s AND gid IS NOT NULL",
+                        (ref_canon,),
+                    )
+                    for row in cur.fetchall() or []:
+                        if row.get("gid"):
+                            start.add(str(row["gid"]).strip())
+                except Exception:
+                    continue
+            # 4) Si ref_id pointe un point de raccordement, suivre sa ligne branchement.
+            try:
+                cur.execute(
+                    "SELECT id_ligne_brcht FROM point_raccordement "
+                    "WHERE REPLACE(REPLACE(LOWER(CAST(gid AS TEXT)), '{', ''), '}', '') = %s",
+                    (ref_canon,),
+                )
+                row = cur.fetchone()
+                line_id = str(row.get("id_ligne_brcht")).strip() if row and row.get("id_ligne_brcht") else ""
+                if line_id:
+                    cur.execute(
+                        "SELECT id_depart_bt, id_poteau_bt, id_poteau_hta FROM ligne_brcht "
+                        f"WHERE {_canon_sql_expr('gid')} = %s",
+                        (_canon_id(line_id),),
+                    )
+                    line = cur.fetchone()
+                    if line:
+                        for k in ("id_depart_bt", "id_poteau_bt", "id_poteau_hta"):
+                            v = line.get(k)
+                            if v is not None and str(v).strip():
+                                start.add(str(v).strip())
+            except Exception:
+                pass
     except Exception as e:
         _log.debug("Résolution nœuds de départ: %s", e)
     return start
@@ -557,12 +630,13 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
     Retourne ([(slug, gid), ...], {node_ids_visités}).
     - aval : suit upstream -> downstream (id_depart_* vers id_poteau_*)
     - amont : suit downstream -> upstream
+    - tous : composante connectée complète (amont + aval)
     """
     start_ids = {_canon_id(s) for s in start_ids if s and str(s).strip()}
     if not start_ids:
         return [], set()
     direction = (direction or "aval").strip().lower()
-    if direction not in {"amont", "aval"}:
+    if direction not in {"amont", "aval", "tous"}:
         direction = "aval"
     visited = set(start_ids)
     frontier = set(start_ids)
@@ -582,6 +656,9 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
             if direction == "aval":
                 conditions = f"{_canon_sql_expr(upstream_col)} IN ({placeholders})"
                 params = frontier_list
+            elif direction == "tous":
+                conditions = " OR ".join(f"{_canon_sql_expr(c)} IN ({placeholders})" for c in node_cols)
+                params = frontier_list * len(node_cols)
             else:
                 conditions = " OR ".join(f"{_canon_sql_expr(c)} IN ({placeholders})" for c in downstream_cols)
                 params = frontier_list * len(downstream_cols)
@@ -603,6 +680,8 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
                     result.append((slug, gid_str))
                 if direction == "aval":
                     candidates = [row.get(c) for c in downstream_cols]
+                elif direction == "tous":
+                    candidates = [row.get(c) for c in node_cols]
                 else:
                     candidates = [row.get(upstream_col)]
                 for v in candidates:
@@ -765,28 +844,45 @@ def trace_ouvrages(
 ):
     """
     Tracé amont/aval : retourne les ouvrages (lignes BT, HTA, branchement) connectés à un point de départ.
-    type: poste_source | poste_transformation | abonne.
-    direction: amont | aval (parcours directionnel du graphe ligne_bt / ligne_hta / ligne_brcht).
+    type: poste_source | poste_transformation | abonne | ouvrage.
+    direction: amont | aval | tous (tous les ouvrages connectés).
     """
     ref_id = (ref_id or "").strip()
     if not ref_id:
         return {"ouvrage_ids": [], "message": "ref_id requis."}
     direction = (direction or "aval").strip().lower()
-    if direction not in {"amont", "aval"}:
-        return {"ouvrage_ids": [], "message": "direction invalide (amont|aval)."}
+    if direction not in {"amont", "aval", "tous"}:
+        return {"ouvrage_ids": [], "message": "direction invalide (amont|aval|tous)."}
+    trace_type = (type or "").strip().lower()
+    if trace_type not in {"poste_source", "poste_transformation", "abonne", "ouvrage"}:
+        return {"ouvrage_ids": [], "message": "type invalide (poste_source|poste_transformation|abonne|ouvrage)."}
 
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
-                start_nodes = _trace_resolve_start_nodes(cur, type, ref_id)
+                start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
                 pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, direction)
+                if trace_type == "ouvrage":
+                    ref_canon = _canon_id(ref_id)
+                    for _table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+                        try:
+                            qtable = quote_ident(_table_name)
+                            cur.execute(
+                                f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                                (ref_canon,),
+                            )
+                            row = cur.fetchone()
+                            if row and row.get("gid") is not None:
+                                pairs.append((slug, str(row["gid"])))
+                        except Exception:
+                            continue
                 point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
                 links_count = _trace_directional_links_count(cur)
                 used_spatial_fallback = False
                 if not pairs and links_count == 0:
                     # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
-                    pairs = _trace_nearby_lines_fallback(cur, type, ref_id, radius_m=120)
-                    point_pairs = _trace_nearby_points_fallback(cur, type, ref_id, radius_m=150)
+                    pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
+                    point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
                     used_spatial_fallback = len(pairs) > 0
                 merged: list[tuple[str, str]] = []
                 seen_merged: set[tuple[str, str]] = set()

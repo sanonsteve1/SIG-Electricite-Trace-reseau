@@ -59,7 +59,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	resumePoteaux = 0;
 	resumeOuvrages = 0;
 	traceInsightsOpen = false;
-	lastTraceDirection: 'amont' | 'aval' | null = null;
+	lastTraceDirection: 'amont' | 'aval' | 'tous' | null = null;
 	traceDetails: { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] = [];
 	traceTypeCounts: { slug: string; count: number; color: string }[] = [];
 
@@ -91,6 +91,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private flowDashOffset = 0;
 	private pointPulsePhase = false;
 	selectedTraceRowKey: string | null = null;
+	private popupButtonsClickListener: ((e: Event) => void) | null = null;
+	selectedMapStart: { slug: string; id: string; label: string } | null = null;
+	showStartSelectors = true;
 
 	constructor(
 		private gisApi: GisApiService,
@@ -109,6 +112,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.stopBlink();
 		this.stopFlowAnimation();
 		this.clearTracePointClusters();
+		if (this.popupButtonsClickListener && this.mapContainer?.nativeElement) {
+			this.mapContainer.nativeElement.removeEventListener('click', this.popupButtonsClickListener);
+			this.popupButtonsClickListener = null;
+		}
 		if (this.map && typeof (this.map as { remove?: () => void }).remove === 'function') {
 			(this.map as { remove: () => void }).remove();
 			this.map = null;
@@ -131,21 +138,49 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					this.cdr.markForCheck();
 				});
 			}
-			// Poste transformation : prioriser poste-cabine puis transfo-poteau, sinon fallback transfo-ht-bt
-			const transfoSlug =
-				bySlug.has('poste-cabine') ? 'poste-cabine'
-					: bySlug.has('transfo-poteau') ? 'transfo-poteau'
-						: bySlug.has('transfo-ht-bt') ? 'transfo-ht-bt'
-							: [...bySlug.keys()].find((s) =>
-								(s.includes('poste') && s.includes('cabine'))
-								|| (s.includes('transfo') && s.includes('poteau'))
-								|| (s.includes('transfo') && s.includes('ht') && s.includes('bt'))
-							);
-			if (transfoSlug && !this.slugPosteTransfo) {
-				const t = bySlug.get(transfoSlug)!;
-				this.slugPosteTransfo = t.slug;
-				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
-					this.posteTransfoOptions = this.buildOptionsFromRows(rows, ['numero', 'code_poste', 'code_transfo', 'distributionstationcode', 'transformercode', 'name', 'gid'], 'Poste transfo');
+			// Poste transformation : fusionner poste-cabine + transfo-poteau (+ fallback transfo-ht-bt)
+			const transfoSlugKeys: string[] = [];
+			if (bySlug.has('poste-cabine')) transfoSlugKeys.push('poste-cabine');
+			if (bySlug.has('transfo-poteau')) transfoSlugKeys.push('transfo-poteau');
+			if (bySlug.has('transfo-ht-bt')) transfoSlugKeys.push('transfo-ht-bt');
+			if (transfoSlugKeys.length === 0) {
+				const fallback = [...bySlug.keys()].find((s) =>
+					(s.includes('poste') && s.includes('cabine'))
+					|| (s.includes('transfo') && s.includes('poteau'))
+					|| (s.includes('transfo') && s.includes('ht') && s.includes('bt'))
+				);
+				if (fallback) transfoSlugKeys.push(fallback);
+			}
+			if (transfoSlugKeys.length > 0) {
+				this.slugPosteTransfo = bySlug.get(transfoSlugKeys[0])!.slug;
+				forkJoin(
+					transfoSlugKeys.map((k) => {
+						const slug = bySlug.get(k)!.slug;
+						return this.gisApi.getList(slug, 200, 0).pipe(
+							map((rows) => ({ slug, rows })),
+							catchError(() => of({ slug, rows: [] as Record<string, unknown>[] }))
+						);
+					})
+				).subscribe((packs) => {
+					const merged: { label: string; value: string }[] = [];
+					for (const pack of packs) {
+						const sourceLabel =
+							pack.slug.includes('poste-cabine') ? 'Poste cabine'
+								: pack.slug.includes('transfo-poteau') ? 'Transfo poteau'
+									: 'Transfo';
+						const opts = this.buildOptionsFromRows(pack.rows, ['numero', 'code_poste', 'code_transfo', 'distributionstationcode', 'transformercode', 'name', 'gid'], sourceLabel);
+						for (const o of opts) {
+							merged.push({
+								label: `${sourceLabel} - ${o.label}`,
+								value: this.encodeSelectionValue(pack.slug, o.value)
+							});
+						}
+					}
+					const uniq = new Map<string, { label: string; value: string }>();
+					for (const o of merged) {
+						if (!uniq.has(o.value)) uniq.set(o.value, o);
+					}
+					this.posteTransfoOptions = Array.from(uniq.values());
 					if (this.posteTransfoOptions.length > 0) this.paramPosteTransfo = this.posteTransfoOptions[0].value;
 					this.cdr.markForCheck();
 				});
@@ -200,7 +235,23 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			});
 	}
 
+	private encodeSelectionValue(slug: string, id: string): string {
+		return `${slug}||${id}`;
+	}
+
+	private decodeSelectionValue(value: string | null): { slug: string; id: string } | null {
+		if (!value) return null;
+		const idx = value.indexOf('||');
+		if (idx < 0) return null;
+		const slug = value.slice(0, idx).trim();
+		const id = value.slice(idx + 2).trim();
+		if (!slug || !id) return null;
+		return { slug, id };
+	}
+
 	onTypePointChange(): void {
+		this.selectedMapStart = null;
+		this.showStartSelectors = true;
 		this.cdr.markForCheck();
 		this.onSelectionChange();
 	}
@@ -227,6 +278,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	/** Appelé quand l’utilisateur change le poste source, poste transfo ou abonné sélectionné → clignoter sur la carte */
 	onSelectionChange(): void {
+		if (this.paramTypePoint !== 'poste_transformation' || !this.paramPosteTransfo?.includes('||')) {
+			this.selectedMapStart = null;
+		}
+		this.showStartSelectors = !this.hasSelection();
 		console.log('[Trace réseau] Sélection changée', {
 			type: this.paramTypePoint,
 			id: this.getSelectedId(),
@@ -237,14 +292,21 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	private getSlugForCurrentType(): string {
 		if (this.paramTypePoint === 'poste_source') return this.slugPosteSource;
-		if (this.paramTypePoint === 'poste_transformation') return this.slugPosteTransfo;
+		if (this.paramTypePoint === 'poste_transformation') {
+			const decoded = this.decodeSelectionValue(this.paramPosteTransfo);
+			return decoded?.slug ?? this.slugPosteTransfo;
+		}
 		if (this.paramTypePoint === 'abonne') return this.slugAbonne;
 		return '';
 	}
 
 	private getSelectedId(): string {
+		if (this.selectedMapStart) return this.selectedMapStart.id;
 		if (this.paramTypePoint === 'poste_source' && this.paramPosteSource) return this.paramPosteSource;
-		if (this.paramTypePoint === 'poste_transformation' && this.paramPosteTransfo) return this.paramPosteTransfo;
+		if (this.paramTypePoint === 'poste_transformation' && this.paramPosteTransfo) {
+			const decoded = this.decodeSelectionValue(this.paramPosteTransfo);
+			return decoded?.id ?? this.paramPosteTransfo;
+		}
 		if (this.paramTypePoint === 'abonne' && this.paramAbonne) return this.paramAbonne;
 		return '';
 	}
@@ -368,6 +430,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	/** True si un point de départ est sélectionné selon le type */
 	hasSelection(): boolean {
+		if (this.selectedMapStart) return true;
 		if (this.paramTypePoint === 'poste_source') return this.paramPosteSource != null && this.paramPosteSource !== '';
 		if (this.paramTypePoint === 'poste_transformation') return this.paramPosteTransfo != null && this.paramPosteTransfo !== '';
 		if (this.paramTypePoint === 'abonne') return this.paramAbonne != null && this.paramAbonne !== '';
@@ -376,8 +439,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	/** Retourne l’identifiant du point sélectionné selon le type */
 	private getSelectedRefId(): string {
+		if (this.selectedMapStart) return this.selectedMapStart.id;
 		if (this.paramTypePoint === 'poste_source' && this.paramPosteSource) return this.paramPosteSource;
-		if (this.paramTypePoint === 'poste_transformation' && this.paramPosteTransfo) return this.paramPosteTransfo;
+		if (this.paramTypePoint === 'poste_transformation' && this.paramPosteTransfo) {
+			const decoded = this.decodeSelectionValue(this.paramPosteTransfo);
+			return decoded?.id ?? this.paramPosteTransfo;
+		}
 		if (this.paramTypePoint === 'abonne' && this.paramAbonne) return this.paramAbonne;
 		return '';
 	}
@@ -417,13 +484,18 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.runTrace('aval');
 	}
 
-	/** Lance le tracé amont ou aval et affiche les ouvrages connectés */
-	private runTrace(direction: 'amont' | 'aval'): void {
+	tracerTousConnectes(): void {
+		this.runTrace('tous');
+	}
+
+	/** Lance le tracé et affiche les ouvrages connectés */
+	private runTrace(direction: 'amont' | 'aval' | 'tous'): void {
 		const refId = this.getSelectedRefId();
 		if (!refId) return;
+		const traceType = this.selectedMapStart ? 'ouvrage' : this.paramTypePoint;
 		this.mapLoading = true;
 		this.cdr.markForCheck();
-		this.gisApi.getTrace(this.paramTypePoint, refId, direction).pipe(
+		this.gisApi.getTrace(traceType, refId, direction).pipe(
 			catchError(() => of({ ouvrage_ids: [] }))
 		).subscribe({
 			next: (res) => {
@@ -438,8 +510,28 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		});
 	}
 
+	private traceFromMapSelection(slug: string, id: string, label: string, direction: 'amont' | 'aval' | 'tous'): void {
+		this.selectedMapStart = { slug, id, label: label || `${slug}:${id}` };
+		this.showStartSelectors = false;
+		this.runTrace(direction);
+	}
+
+	showSelectionDropdowns(): void {
+		this.showStartSelectors = true;
+		this.cdr.markForCheck();
+	}
+
+	clearCurrentSelection(): void {
+		this.selectedMapStart = null;
+		this.paramPosteSource = null;
+		this.paramPosteTransfo = null;
+		this.paramAbonne = null;
+		this.showStartSelectors = true;
+		this.cdr.markForCheck();
+	}
+
 	/** Affiche sur la carte uniquement les ouvrages du tracé (ou tous si liste vide). */
-	private applyTraceResult(ouvrageIds: { slug: string; id: string }[], direction: 'amont' | 'aval'): void {
+	private applyTraceResult(ouvrageIds: { slug: string; id: string }[], direction: 'amont' | 'aval' | 'tous'): void {
 		// Pour l’instant : si le backend renvoie des IDs, on pourrait masquer les couches non concernées ou surligner.
 		// Ici on garde l’affichage actuel ; à étendre quand le backend renverra les géométries ou IDs.
 		this.traceOuvrageIds = new Set(ouvrageIds.map((o) => `${o.slug}:${o.id}`));
@@ -519,18 +611,54 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	get traceAnalysisLines(): string[] {
-		if (this.resumeOuvrages === 0) return ['Aucun ouvrage dans le tracé courant.'];
-		const top = this.traceTypeCounts[0];
-		const lines: string[] = [];
-		if (this.lastTraceDirection) {
-			lines.push(`Sens demandé: ${this.lastTraceDirection === 'amont' ? 'amont' : 'aval'}.`);
+		if (this.resumeOuvrages === 0 || !this.lastTraceDirection) return [];
+		const mode =
+			this.lastTraceDirection === 'amont' ? 'Amont'
+				: this.lastTraceDirection === 'aval' ? 'Aval'
+					: 'Tous connectés';
+		return [`Mode de tracé: ${mode}.`];
+	}
+
+	private getTraceUsedLabel(): string {
+		const typeLabel =
+			this.paramTypePoint === 'poste_source' ? 'Poste source'
+				: this.paramTypePoint === 'poste_transformation' ? 'Poste transformation'
+					: 'Point de raccordement';
+		const selectedLabel = this.getSelectedOptionLabel();
+		const directionLabel =
+			this.lastTraceDirection === 'amont' ? 'amont'
+				: this.lastTraceDirection === 'aval' ? 'aval'
+					: 'tous connectés';
+		return `${directionLabel} depuis ${typeLabel}${selectedLabel ? ` (${selectedLabel})` : ''}`;
+	}
+
+	private getTraceRuleLabel(): string {
+		if (this.lastTraceDirection === 'amont') {
+			return "parcours directionnel inverse du flux (nœud aval -> nœud amont) sur les identifiants de connectivité.";
 		}
-		lines.push(`${this.traceLineCount} lignes, ${this.tracePointCount} points, ${this.traceOtherCount} autres ouvrages.`);
-		if (top) lines.push(`Couche dominante: ${this.formatOuvrageLabel(top.slug)} (${top.count} ouvrage(s)).`);
-		if (this.traceLinePercent >= 75) lines.push('Tracé majoritairement linéaire (forte part de conducteurs).');
-		else if (this.tracePointPercent >= 60) lines.push('Tracé fortement concentré sur les nœuds/équipements.');
-		else lines.push('Tracé mixte avec équilibre lignes / équipements.');
-		return lines;
+		if (this.lastTraceDirection === 'aval') {
+			return "parcours directionnel du flux (nœud amont -> nœud aval) sur les identifiants de connectivité.";
+		}
+		return "parcours de la composante connectée complète (amont + aval) pour récupérer tous les points et lignes reliés.";
+	}
+
+	private getTraceNodeMeaningLine(): string {
+		return "Correspondance des nœuds: nœud amont = champs id_depart_hta/id_depart_bt (départ HTA ou départ BT, donc source de la ligne) ; nœud aval = champs id_poteau_hta/id_poteau_bt (poteau/ouvrage d'arrivée de la ligne).";
+	}
+
+	getSelectedOptionLabel(): string {
+		if (this.paramTypePoint === 'poste_source') {
+			return this.posteSourceOptions.find((o) => o.value === this.paramPosteSource)?.label ?? '';
+		}
+		if (this.paramTypePoint === 'poste_transformation') {
+			return this.posteTransfoOptions.find((o) => o.value === this.paramPosteTransfo)?.label ?? '';
+		}
+		return this.abonneOptions.find((o) => o.value === this.paramAbonne)?.label ?? '';
+	}
+
+	getCurrentStartLabel(): string {
+		if (this.selectedMapStart) return this.selectedMapStart.label;
+		return this.getSelectedOptionLabel() || 'Sélection courante';
 	}
 
 	onTraceRowClick(item: { slug: string; id: string }): void {
@@ -713,34 +841,41 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	private applyTraceStyleToMap(): void {
-		const dimmed: Record<string, unknown> = { opacity: 0.2, fillOpacity: 0.15, weight: 2, dashArray: null };
+		const hasTrace = this.traceOuvrageIds.size > 0;
 		const layerFlags = new Map<unknown, boolean>();
 		const layerSlug = new Map<unknown, string>();
 		this.slugIdToLayer.forEach((layer, key) => {
-			if (!layerFlags.has(layer)) layerFlags.set(layer, this.traceOuvrageIds.size === 0);
+			if (!layerFlags.has(layer)) layerFlags.set(layer, false);
 			if (!layerSlug.has(layer)) layerSlug.set(layer, this.getSlugFromLayerKey(key));
-			if (this.traceOuvrageIds.size > 0 && this.traceOuvrageIds.has(key)) {
+			if (hasTrace && this.traceOuvrageIds.has(key)) {
 				layerFlags.set(layer, true);
 			}
 		});
 		layerFlags.forEach((isHighlighted, layer) => {
 			const setStyle = (layer as { setStyle?: (s: object) => void }).setStyle;
 			if (!setStyle) return;
-			if (!isHighlighted) {
-				setStyle.call(layer, dimmed);
-				return;
-			}
 			const slug = layerSlug.get(layer) ?? '';
 			const isLine = this.isLineSlug(slug);
 			const isPoint = this.isPointSlug(slug);
+			const normal: Record<string, unknown> = {
+				opacity: 0.95,
+				fillOpacity: 0.5,
+				weight: isLine ? 5 : 3,
+				dashArray: null,
+				dashOffset: null
+			};
+			if (!hasTrace || !isHighlighted) {
+				setStyle.call(layer, normal);
+				return;
+			}
 			const highlight: Record<string, unknown> = { opacity: 1, fillOpacity: 0.7, weight: 6 };
-			if (isLine && this.traceOuvrageIds.size > 0 && this.lastTraceDirection) {
+			if (isLine && this.lastTraceDirection) {
 				highlight['color'] = '#fde047';
 				highlight['fillColor'] = '#fde047';
 				highlight['weight'] = 7;
 				highlight['dashArray'] = '14 10';
 				highlight['dashOffset'] = String(this.flowDashOffset);
-			} else if (isPoint && this.traceOuvrageIds.size > 0) {
+			} else if (isPoint) {
 				// Pulsation des points impactés pour visualiser les nœuds du tracé.
 				highlight['dashArray'] = null;
 				highlight['weight'] = this.pointPulsePhase ? 7 : 4;
@@ -852,13 +987,24 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					: String(v).length > 80 ? String(v).slice(0, 77) + '…' : String(v)
 			}));
 		const ordered = this.orderPopupEntries(rawEntries);
+		const slug = _layerSlug != null ? String(_layerSlug) : '';
+		const id = String(props['gid'] ?? props['id'] ?? props['objectid'] ?? '').trim();
+		const idKey = props['gid'] != null ? 'gid' : props['id'] != null ? 'id' : 'objectid';
 		let html = '<div class="map-popup">';
 		if (title) html += `<div class="map-popup-header"><i class="fa fa-info-circle map-popup-icon"></i><span>${this.escapeHtml(title)}</span></div>`;
 		html += '<div class="map-popup-body">';
 		ordered.forEach((e, i) => {
 			html += `<div class="map-popup-row ${i % 2 === 0 ? 'map-popup-row--even' : ''}"><span class="map-popup-key">${this.escapeHtml(e.label)}</span><span class="map-popup-val">${this.escapeHtml(e.val)}</span></div>`;
 		});
-		html += '</div></div>';
+		html += '</div>';
+		if (slug && id) {
+			html += '<div class="map-popup-actions">';
+			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-amont" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-up"></i> Tracé amont</button>`;
+			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-aval" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-down"></i> Tracé aval</button>`;
+			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-all" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-sitemap"></i> Tous connectés</button>`;
+			html += '</div>';
+		}
+		html += '</div>';
 		return html;
 	}
 
@@ -933,6 +1079,22 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void };
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			this.traceClusterLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
+			this.popupButtonsClickListener = (e: Event): void => {
+				const traceTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--trace-amont, .map-popup-btn--trace-aval, .map-popup-btn--trace-all');
+				if (traceTarget && traceTarget instanceof HTMLElement) {
+					const slug = traceTarget.getAttribute('data-slug') ?? '';
+					const id = traceTarget.getAttribute('data-id') ?? '';
+					const label = traceTarget.getAttribute('data-label') ?? '';
+					if (!slug || !id) return;
+					const direction: 'amont' | 'aval' | 'tous' =
+						traceTarget.classList.contains('map-popup-btn--trace-amont') ? 'amont'
+							: traceTarget.classList.contains('map-popup-btn--trace-aval') ? 'aval'
+								: 'tous';
+					this.traceFromMapSelection(slug, id, label, direction);
+					return;
+				}
+			};
+			this.mapContainer.nativeElement.addEventListener('click', this.popupButtonsClickListener);
 			setTimeout(() => this.loadGeometries(), 150);
 		});
 	}

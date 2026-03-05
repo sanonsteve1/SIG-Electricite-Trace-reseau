@@ -16,19 +16,32 @@
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-cog"></i> Paramètres du tracé</h2>
 					<div class="trace-reseau-form">
-						<label class="trace-reseau-label">Type de point de départ</label>
-						<p-select [(ngModel)]="paramTypePoint" [options]="typePointOptions" optionLabel="label" optionValue="value" placeholder="Choisir un type" styleClass="trace-reseau-select w-full" (onChange)="onTypePointChange()" />
-						@if (paramTypePoint === 'poste_source') {
-							<label class="trace-reseau-label">Poste source</label>
-							<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste source" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
-						}
-						@if (paramTypePoint === 'poste_transformation') {
-							<label class="trace-reseau-label">Poste cabine / Transfo poteau</label>
-							<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste cabine ou un transfo poteau" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
-						}
-						@if (paramTypePoint === 'abonne') {
-							<label class="trace-reseau-label">Point de raccordement</label>
-							<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un point de raccordement" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+						@if (showStartSelectors) {
+							<label class="trace-reseau-label">Type de point de départ</label>
+							<p-select [(ngModel)]="paramTypePoint" [options]="typePointOptions" optionLabel="label" optionValue="value" placeholder="Choisir un type" styleClass="trace-reseau-select w-full" (onChange)="onTypePointChange()" />
+							@if (paramTypePoint === 'poste_source') {
+								<label class="trace-reseau-label">Poste source</label>
+								<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste source" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+							}
+							@if (paramTypePoint === 'poste_transformation') {
+								<label class="trace-reseau-label">Poste cabine / Transfo poteau</label>
+								<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste cabine ou un transfo poteau" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+							}
+							@if (paramTypePoint === 'abonne') {
+								<label class="trace-reseau-label">Point de raccordement</label>
+								<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un point de raccordement" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
+							}
+						} @else {
+							<div class="trace-reseau-selected-start">
+								<strong>Départ sélectionné :</strong>
+								<span>{{ getCurrentStartLabel() }}</span>
+								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="showSelectionDropdowns()">
+									<i class="fa fa-pencil"></i>
+								</button>
+								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="clearCurrentSelection()">
+									<i class="fa fa-times"></i>
+								</button>
+							</div>
 						}
 					</div>
 				</section>
@@ -78,6 +91,10 @@
 							<i class="fa fa-arrow-down"></i>
 							Tracé Aval
 						</button>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="tracerTousConnectes()" [disabled]="!hasSelection()">
+							<i class="fa fa-sitemap"></i>
+							Tous connectés
+						</button>
 						<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="effacerTrace()">
 							<i class="fa fa-eraser"></i>
 							Effacer le tracé
@@ -97,6 +114,12 @@
 			}
 			<!-- Boutons flottants (Couches, Résumé, Légende) -->
 			<div class="trace-reseau-map-floats">
+				<div class="trace-reseau-home-float">
+					<button type="button" class="trace-reseau-legend-toggle" (click)="resetMapView()" title="Revenir à l'état initial de la carte">
+						<i class="fa fa-home"></i>
+						<span>Home</span>
+					</button>
+				</div>
 				<div class="trace-reseau-layers-float">
 					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="layersOpen" (click)="layersOpen = !layersOpen" [attr.aria-expanded]="layersOpen" [title]="layersOpen ? 'Masquer les couches' : 'Afficher les couches'">
 						<i class="fa fa-layer-group"></i>

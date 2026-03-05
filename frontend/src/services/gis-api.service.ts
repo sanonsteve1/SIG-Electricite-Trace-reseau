@@ -149,12 +149,12 @@ export class GisApiService {
 	/**
 	 * Tracé amont/aval : ouvrages connectés à un point (poste source, poste de transformation ou abonné).
 	 * type: 'poste_source' | 'poste_transformation' | 'abonne'
-	 * direction: 'amont' | 'aval'
+	 * direction: 'amont' | 'aval' | 'tous'
 	 */
 	getTrace(
 		type: string,
 		refId: string,
-		direction: 'amont' | 'aval'
+		direction: 'amont' | 'aval' | 'tous'
 	): Observable<{ ouvrage_ids: { slug: string; id: string }[] }> {
 		const url = `${this.baseUrl}/gis/trace?type=${encodeURIComponent(type)}&ref_id=${encodeURIComponent(refId)}&direction=${encodeURIComponent(direction)}`;
 		return this.http.get<{ ouvrage_ids: { slug: string; id: string }[] }>(url);

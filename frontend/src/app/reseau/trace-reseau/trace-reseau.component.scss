@@ -122,6 +122,18 @@ $header-height: 56px;
 	gap: 0.5rem;
 }
 
+.trace-reseau-selected-start {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.4rem 0.5rem;
+	background: #fff7ed;
+	border: 1px solid #fed7aa;
+	border-radius: 8px;
+	font-size: 0.78rem;
+	color: #9a3412;
+}
+
 .trace-reseau-label {
 	font-size: 0.8rem;
 	font-weight: 500;
@@ -550,7 +562,8 @@ $header-height: 56px;
 .trace-reseau-resume-float,
 .trace-reseau-legend-float,
 .trace-reseau-layers-float,
-.trace-reseau-insights-float {
+.trace-reseau-insights-float,
+.trace-reseau-home-float {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -937,4 +950,42 @@ $header-height: 56px;
 	min-width: 0;
 	color: #1e293b;
 	font-weight: 500;
+}
+
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-actions {
+	padding: 0.5rem 1rem 0.75rem;
+	border-top: 1px solid #e2e8f0;
+	background: #f8fafc;
+	border-radius: 0 0 10px 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.38rem 0.65rem;
+	border-radius: 6px;
+	border: 1px solid #cbd5e1;
+	background: #fff;
+	color: #334155;
+	font-size: 0.78rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn:hover {
+	background: #ffedd5;
+	border-color: #fdba74;
+	color: #9a3412;
+}
+
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn--trace-amont:hover,
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn--trace-aval:hover,
+::ng-deep .trace-reseau .leaflet-popup-content .map-popup-btn--trace-all:hover {
+	background: #dbeafe;
+	border-color: #93c5fd;
+	color: #1d4ed8;
 }
