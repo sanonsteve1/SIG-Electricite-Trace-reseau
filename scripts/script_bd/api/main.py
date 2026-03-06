@@ -104,6 +104,52 @@ def get_existing_table_names() -> set[str] | None:
         return None
 
 
+def get_table_columns_from_db(table_name: str) -> list[dict] | None:
+    """
+    Retourne les colonnes réelles d'une table (information_schema) pour rester
+    aligné avec les évolutions de schéma faites directement en base.
+    """
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        column_name,
+                        data_type,
+                        udt_name,
+                        is_nullable,
+                        column_default
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = %s
+                    ORDER BY ordinal_position
+                    """,
+                    (table_name,),
+                )
+                rows = cur.fetchall() or []
+        if not rows:
+            return None
+        out: list[dict] = []
+        for r in rows:
+            data_type = str(r.get("data_type") or "").strip()
+            udt_name = str(r.get("udt_name") or "").strip().lower()
+            # Conserver "USER-DEFINED" pour les géométries afin de rester
+            # compatible avec get_geometry_columns().
+            col_type = "USER-DEFINED" if data_type == "USER-DEFINED" and udt_name == "geometry" else data_type
+            out.append(
+                {
+                    "Field": r.get("column_name"),
+                    "Type": col_type,
+                    "Null": "YES" if str(r.get("is_nullable") or "").upper() == "YES" else "NO",
+                    "Default": r.get("column_default"),
+                    "Extra": "",
+                }
+            )
+        return out
+    except Exception:
+        return None
+
+
 # Chargement du schéma au démarrage
 STRUCTURE = load_structure()
 # Map slug URL -> (table_name, meta) — uniquement les tables qui existent en base
@@ -123,6 +169,12 @@ if _existing is not None:
         logging.getLogger(__name__).info(
             "API: %d table(s) exclues (absentes de la base): %s", len(_to_drop), sorted(_to_drop)[:10]
         )
+
+# Synchroniser les colonnes avec l'état réel de la base (ex: ALTER TABLE ... ADD COLUMN geom)
+for _slug, (_table_name, _meta) in list(TABLE_BY_SLUG.items()):
+    _db_columns = get_table_columns_from_db(_table_name)
+    if _db_columns:
+        _meta["columns"] = _db_columns
 
 # Valeurs par défaut pour le pré-remplissage des formulaires par couche (module IA)
 FORM_DEFAULTS_PATH = os.path.join(_script_dir, "form_defaults.json")
@@ -484,6 +536,54 @@ def _canon_sql_expr(col_name: str) -> str:
     return f"REPLACE(REPLACE(LOWER(CAST({q} AS TEXT)), '{{', ''), '}}', '')"
 
 
+def _trace_resolve_poste_source_gid(cur, ref_id: str) -> str | None:
+    """
+    Résout ref_id en gid du poste source (table poste_source).
+    Le frontend peut envoyer le gid ou un autre identifiant (numero_poste, name, etc.).
+    Retourne le gid (pk) de l'enregistrement trouvé, ou None si non trouvé.
+    """
+    if not ref_id or not str(ref_id).strip():
+        return None
+    slug = _trace_ref_slug_for_type("poste_source")
+    if not slug:
+        return None
+    try:
+        table_name, meta = get_table_meta(slug)
+    except HTTPException:
+        return None
+    pk = get_primary_key(meta)
+    quoted_table = quote_ident(table_name)
+    ref_canon = _canon_id(ref_id)
+    all_cols = get_all_columns(meta)
+    # Essayer par clé primaire (ex. gid)
+    try:
+        cur.execute(
+            f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(pk)} = %s LIMIT 1",
+            (ref_canon,),
+        )
+        row = cur.fetchone()
+        if row and row.get("resolved") is not None:
+            return str(row["resolved"]).strip()
+    except Exception:
+        pass
+    # Essayer par colonnes alternatives (numero_poste, name, objectid, etc.)
+    alt_candidates = get_alternate_key_columns(meta, pk) + [
+        c for c in ("numero_poste", "name", "numero", "assetid") if c in all_cols
+    ]
+    for alt in alt_candidates:
+        try:
+            cur.execute(
+                f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(alt)} = %s LIMIT 1",
+                (ref_canon,),
+            )
+            row = cur.fetchone()
+            if row and row.get("resolved") is not None:
+                return str(row["resolved"]).strip()
+        except Exception:
+            continue
+    return None
+
+
 def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     """
     Résout le point de départ (poste source, transfo, abonné) en nœuds du graphe.
@@ -495,12 +595,15 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     trace_type = (trace_type or "").strip().lower()
     try:
         if trace_type == "poste_source":
+            # Résoudre ref_id en gid du poste source (au cas où le frontend envoie numero_poste ou autre)
+            poste_source_gid = _trace_resolve_poste_source_gid(cur, ref_id)
+            ref_for_depart = _canon_id(poste_source_gid) if poste_source_gid else ref_canon
             # HTA : ligne_hta.id_depart_hta = depart.gid, et depart.id_poste_source = poste_source.gid
             cur.execute(
                 "SELECT gid FROM depart "
                 "WHERE REPLACE(REPLACE(LOWER(CAST(id_poste_source AS TEXT)), '{', ''), '}', '') = %s "
                 "AND gid IS NOT NULL",
-                (ref_canon,),
+                (ref_for_depart,),
             )
             for row in cur.fetchall() or []:
                 if row.get("gid"):

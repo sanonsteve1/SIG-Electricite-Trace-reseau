@@ -243,6 +243,22 @@ $header-height: 56px;
 	cursor: not-allowed;
 }
 
+.modelisation-btn--danger {
+	background: #dc2626;
+	border-color: #dc2626;
+	color: #fff;
+}
+.modelisation-btn--danger:hover:not(:disabled) {
+	background: #b91c1c;
+	border-color: #b91c1c;
+	color: #fff;
+}
+
+.modelisation-btn-sm {
+	padding: 0.35rem 0.6rem;
+	font-size: 0.75rem;
+}
+
 .modelisation-result {
 	margin-top: 0.75rem;
 	padding: 0.6rem 0.75rem;
@@ -827,12 +843,37 @@ $header-height: 56px;
 }
 
 .modelisation-ouvrages-list {
-	max-height: 280px;
+	max-height: 320px;
 	overflow-y: auto;
 	display: flex;
 	flex-direction: column;
 	gap: 0.35rem;
 	margin-top: 0.5rem;
+}
+
+.modelisation-ouvrages-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+	padding: 0.35rem 0;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.modelisation-ouvrages-toolbar-actions {
+	display: flex;
+	gap: 0.35rem;
+}
+
+.modelisation-ouvrages-toolbar--map-selection {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0.5rem;
+	.modelisation-ouvrages-toolbar-label {
+		font-size: 0.8rem;
+		color: #374151;
+	}
 }
 
 .modelisation-ouvrage-row {
@@ -845,6 +886,25 @@ $header-height: 56px;
 	border: 1px solid #e5e7eb;
 	border-radius: 6px;
 	font-size: 0.8rem;
+	&.modelisation-ouvrage-row--selected {
+		background: #fef3c7;
+		border-color: #f59e0b;
+	}
+}
+
+.modelisation-ouvrage-checkbox {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	cursor: pointer;
+	input {
+		width: 1rem;
+		height: 1rem;
+		cursor: pointer;
+	}
+	.modelisation-ouvrage-checkbox-label {
+		display: none;
+	}
 }
 
 .modelisation-ouvrage-preview {

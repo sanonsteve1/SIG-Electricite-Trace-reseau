@@ -33,7 +33,7 @@
 							}
 						} @else {
 							<div class="trace-reseau-selected-start">
-								<strong>Départ sélectionné :</strong>
+								<strong>Ouvrage sélectionné :</strong>
 								<span>{{ getCurrentStartLabel() }}</span>
 								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="showSelectionDropdowns()">
 									<i class="fa fa-pencil"></i>
@@ -100,16 +100,12 @@
 							<i class="fa fa-eraser"></i>
 							Effacer le tracé
 						</button>
-						<button type="button" class="trace-reseau-btn trace-reseau-btn--outline trace-reseau-btn--block" (click)="exporterTrace()">
-							<i class="fa fa-download"></i>
-							Exporter le tracé
-						</button>
 					</div>
 				</section>
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-power-off"></i> Simulation de coupure</h2>
 					<div class="trace-reseau-form">
-						<p class="trace-reseau-topology-desc">Simule l'impact d'une coupure sur un point ou une ligne : tous les éléments connectés à l'élément coupé sont impactés.</p>
+						<p class="trace-reseau-topology-desc">Simule l'impact d'une coupure sur un point ou une ligne. Une modale s'ouvrira sur la carte pour choisir la cause et valider avant d'exécuter.</p>
 						<button type="button" class="trace-reseau-btn trace-reseau-btn--danger trace-reseau-btn--block" (click)="simulerCoupure()" [disabled]="!hasSelection() || mapLoading">
 							@if (mapLoading) {
 								<i class="fa fa-spinner fa-spin"></i>
@@ -122,10 +118,12 @@
 						@if (coupureActive) {
 							<div class="trace-reseau-coupure-result">
 								<p><strong>Point de coupure :</strong> {{ coupureStartLabel }}</p>
+								<p><strong>Cause :</strong> {{ coupureCauseLabel }}</p>
 								<p><strong>Lignes impactées :</strong> {{ coupureImpactedLignes }}</p>
 								<p><strong>Points impactés :</strong> {{ coupureImpactedPoints }}</p>
 								<p><strong>Points de raccordement impactés :</strong> {{ coupureImpactedAbonnes }}</p>
 								<p><strong>Exécutée le :</strong> {{ coupureExecutedAt }}</p>
+								<p class="trace-reseau-coupure-supply-desc"><i class="fa fa-info-circle"></i> Les lignes pouvant alimenter la zone coupée (ligne de secours) sont mises en évidence en <strong>bleu</strong>. Ouvrez « Réalimentation » pour changer la ligne.</p>
 								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationCoupure()">
 									<i class="fa fa-undo"></i>
 									Réinitialiser la simulation
@@ -141,6 +139,51 @@
 			@if (mapLoading) {
 				<div class="trace-reseau-map-loading">Chargement des ouvrages…</div>
 			}
+			<div class="trace-reseau-reelimentation-float">
+				<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="reelimentationOpen" (click)="toggleReelimentationPanel()" [attr.aria-expanded]="reelimentationOpen" title="Manœuvre de réalimentation">
+					<i class="fa fa-random"></i>
+					<span>Réalimentation</span>
+				</button>
+				@if (reelimentationOpen) {
+					<div class="trace-reseau-legend-panel trace-reseau-reelimentation-panel">
+						<div class="trace-reseau-form">
+							<p class="trace-reseau-topology-desc">Simule la réalimentation de la zone coupée depuis une ligne de secours.</p>
+							@if (ligneSecoursNetworkLabel) {
+								<p class="trace-reseau-topology-desc">{{ ligneSecoursNetworkLabel }}</p>
+							}
+							<label class="trace-reseau-label">{{ ligneSecoursFieldLabel }}</label>
+							<p-select [(ngModel)]="paramLigneSecours" [options]="ligneSecoursOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner une ligne de secours" styleClass="trace-reseau-select w-full" (ngModelChange)="onLigneSecoursChange()" />
+							<button type="button" class="trace-reseau-btn trace-reseau-btn--info trace-reseau-btn--block" (click)="simulerReelimentation()" [disabled]="!hasSelection() || !paramLigneSecours || mapLoading">
+								@if (mapLoading) {
+									<i class="fa fa-spinner fa-spin"></i>
+									Simulation en cours…
+								} @else {
+									<i class="fa fa-random"></i>
+									Simuler la réalimentation
+								}
+							</button>
+							@if (reelimentationActive) {
+								<div class="trace-reseau-reelimentation-result">
+									<!--
+									<p><strong>Ouvrages en zone coupée :</strong> {{ reelimentationImpacted }}</p>
+									<p><strong>Ouvrages réalimentés :</strong> {{ reelimentationBypass }}</p>
+									<p><strong>Ouvrages non réalimentables :</strong> {{ reelimentationImpossible }}</p>
+									-->
+									<p><strong>Exécutée le :</strong> {{ reelimentationExecutedAt }}</p>
+									<p class="trace-reseau-reelimentation-legend">
+										<span class="trace-reseau-legend-chip trace-reseau-legend-chip--green"></span> Zone réalimentée
+										<span class="trace-reseau-legend-chip trace-reseau-legend-chip--blue"></span> Réseau de secours
+									</p>
+									<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationReelimentation()">
+										<i class="fa fa-undo"></i>
+										Réinitialiser la manœuvre
+									</button>
+								</div>
+							}
+						</div>
+					</div>
+				}
+			</div>
 			<!-- Boutons flottants (Couches, Résumé, Légende) -->
 			<div class="trace-reseau-map-floats">
 				<div class="trace-reseau-home-float">
@@ -302,4 +345,35 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Modale cause de la coupure (affichée sur la carte) -->
+	<p-dialog
+		[(visible)]="showCoupureCauseModal"
+		[header]="'Cause de la coupure — ' + coupureOuvrageLabel"
+		[modal]="true"
+		[closable]="true"
+		[closeOnEscape]="true"
+		styleClass="trace-reseau-coupure-cause-dialog"
+		[style]="{ width: 'min(90vw, 520px)' }"
+		(onHide)="annulerCoupureCause()"
+	>
+		<p class="trace-reseau-coupure-cause-intro">Sélectionnez la cause de la coupure pour cet ouvrage, puis validez pour lancer la simulation.</p>
+		<div class="trace-reseau-coupure-cause-list">
+			@for (cause of coupureCauseOptions; track cause.value) {
+				<button
+					type="button"
+					class="trace-reseau-coupure-cause-item"
+					[class.trace-reseau-coupure-cause-item--selected]="coupureCauseSelected === cause.value"
+					(click)="coupureCauseSelected = cause.value"
+				>
+					<span class="trace-reseau-coupure-cause-label">{{ cause.label }}</span>
+					<span class="trace-reseau-coupure-cause-explanation">{{ cause.explanation }}</span>
+				</button>
+			}
+		</div>
+		<ng-template pTemplate="footer">
+			<button pButton label="Annuler" icon="pi pi-times" class="p-button-secondary" (click)="annulerCoupureCause()"></button>
+			<button pButton label="Valider et simuler la coupure" icon="pi pi-bolt" class="p-button-danger" [disabled]="!coupureCauseSelected || mapLoading" (click)="confirmerCoupureAvecCause()"></button>
+		</ng-template>
+	</p-dialog>
 </div>

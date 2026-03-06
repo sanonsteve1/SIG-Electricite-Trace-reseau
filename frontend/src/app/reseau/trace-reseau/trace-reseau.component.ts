@@ -2,9 +2,111 @@ import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetec
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Select } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
 import { GisApiService, TopologyCorrectResponse } from '../../../services/gis-api.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
+
+export interface CoupureCauseOption {
+	label: string;
+	value: string;
+	explanation: string;
+}
+
+/** Causes de coupure par type d'ouvrage (expert métier). */
+const COUPURE_CAUSES_BY_OUVRAGE: Record<string, CoupureCauseOption[]> = {
+	poste_source: [
+		{ label: 'Défaut transformateur de puissance', value: 'defaut_transfo_puissance', explanation: 'Surchauffe, défaut d\'isolement, fuite d\'huile ou foudre sur un transformateur de puissance du poste.' },
+		{ label: 'Défaut disjoncteur / sectionneur', value: 'defaut_disjoncteur_sectionneur', explanation: 'Mauvaise manœuvre, défaillance du circuit de commande ou usure des contacts sur un disjoncteur ou un sectionneur.' },
+		{ label: 'Défaut jeux de barres / connexions', value: 'defaut_jeux_barres', explanation: 'Court-circuit, surtension (foudre) ou vieillissement des isolateurs sur les jeux de barres ou les connexions.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Coup de foudre sur la ligne d\'arrivée HT ou sur les structures du poste ; surtension d\'origine interne (manœuvre, défaut).' },
+		{ label: 'Perte alimentation amont (ligne HT)', value: 'perte_alimentation_amont', explanation: 'Ligne d\'arrivée HT coupée ou défaillante en amont du poste source.' },
+		{ label: 'Défaillance auxiliaires (batteries, SCADA)', value: 'defaillance_auxiliaires', explanation: 'Panne des batteries, du chargeur ou du système SCADA / contrôle-commande empêchant les manœuvres ou la surveillance.' },
+		{ label: 'Erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Mauvaise séquence de manœuvre, non-respect des consignes ou travail sous tension ayant provoqué la coupure.' },
+		{ label: 'Végétation / animal', value: 'vegetation_animal', explanation: 'Arbre ou branche sur la ligne ; animal (oiseau, rongeur) provoquant un court-circuit sur les barres ou câbles.' },
+		{ label: 'Conditions météo (vent, inondation)', value: 'conditions_meteo', explanation: 'Vent fort, inondation du poste ou pollution des isolateurs (poussière, sel, industrie) entraînant un défaut.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée (vol, vandalisme, etc.). À préciser dans le rapport si besoin.' }
+	],
+	ligne_hta: [
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Coup de foudre sur la ligne ou sur un support ; surtension propagée.' },
+		{ label: 'Perte alimentation amont', value: 'perte_alimentation_amont', explanation: 'Coupure ou défaut sur le tronçon amont de la ligne HT.' },
+		{ label: 'Végétation (arbre, branche)', value: 'vegetation_animal', explanation: 'Arbre ou branche en contact avec les conducteurs ; débroussaillage insuffisant.' },
+		{ label: 'Animal (oiseau, rongeur)', value: 'animal', explanation: 'Court-circuit provoqué par un animal sur les isolateurs ou les connexions.' },
+		{ label: 'Défaut câble / connexion', value: 'defaut_cable_connexion', explanation: 'Câble défaillant, mauvaise connexion ou isolateurs dégradés.' },
+		{ label: 'Conditions météo (vent, givre)', value: 'conditions_meteo', explanation: 'Vent fort (balançage, chute de support), givre ou pollution des isolateurs.' },
+		{ label: 'Erreur de manœuvre / travaux', value: 'erreur_manoeuvre', explanation: 'Travaux sur la ligne, mauvaise manœuvre ou engin en contact.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	poste_cabine: [
+		{ label: 'Défaut transformateur MT/BT', value: 'defaut_transfo', explanation: 'Surchauffe, défaut d\'isolement ou surcharge du transformateur de la cabine.' },
+		{ label: 'Défaut disjoncteur / sectionneur', value: 'defaut_disjoncteur_sectionneur', explanation: 'Défaillance du disjoncteur ou du sectionneur MT de la cabine.' },
+		{ label: 'Surcharge', value: 'surcharge', explanation: 'Surcharge prolongée ayant déclenché les protections ou endommagé un équipement.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Coup de foudre sur la cabine ou surtension propagée par la ligne.' },
+		{ label: 'Défaillance auxiliaires', value: 'defaillance_auxiliaires', explanation: 'Panne des auxiliaires de la cabine (éclairage, commandes).' },
+		{ label: 'Erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Mauvaise manœuvre lors d\'un entretien ou d\'un dépannage.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	transformateur: [
+		{ label: 'Défaut transformateur', value: 'defaut_transfo', explanation: 'Surchauffe, défaut d\'isolement, fuite d\'huile ou court-circuit interne.' },
+		{ label: 'Surcharge', value: 'surcharge', explanation: 'Surcharge prolongée ayant déclenché les protections ou endommagé l\'enroulement.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Coup de foudre ou surtension ayant endommagé les enroulements ou les isolateurs.' },
+		{ label: 'Vieillissement / usure', value: 'vieillissement', explanation: 'Usure normale, dégradation de l\'isolation ou des connexions.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	cellule: [
+		{ label: 'Défaut disjoncteur / sectionneur', value: 'defaut_disjoncteur_sectionneur', explanation: 'Défaillance du circuit de commande, usure des contacts ou mauvaise isolation.' },
+		{ label: 'Surcharge / court-circuit', value: 'surcharge', explanation: 'Déclenchement thermique ou magnétique suite à une surcharge ou un court-circuit.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Surtension ayant endommagé les organes de coupure ou les isolateurs.' },
+		{ label: 'Erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Manœuvre sous charge, mauvaise séquence ou travail sous tension.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	parafoudre: [
+		{ label: 'Défaillance parafoudre', value: 'defaillance_parafoudre', explanation: 'Parafoudre en fin de vie ou endommagé après un coup de foudre ; perte de tenue.' },
+		{ label: 'Foudre', value: 'foudre_surtension', explanation: 'Coup de foudre direct ou proche ayant provoqué le déclenchement ou la destruction du parafoudre.' },
+		{ label: 'Vieillissement', value: 'vieillissement', explanation: 'Usure normale des éléments d\'absorption (varistances, éclateurs).' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	arrivee_depart: [
+		{ label: 'Défaut connexion / câble', value: 'defaut_connexion', explanation: 'Mauvaise connexion, câble défaillant ou isolateurs dégradés sur l\'arrivée ou le départ.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Surtension sur l\'arrivée HT ou sur le départ MT.' },
+		{ label: 'Perte alimentation amont (arrivée)', value: 'perte_alimentation_amont', explanation: 'Coupure en amont de l\'arrivée HT (ligne ou poste amont).' },
+		{ label: 'Surcharge (départ)', value: 'surcharge', explanation: 'Surcharge sur le départ ayant déclenché les protections.' },
+		{ label: 'Erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Mauvaise manœuvre sur les cellules d\'arrivée ou de départ.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	poteau: [
+		{ label: 'Végétation', value: 'vegetation_animal', explanation: 'Arbre ou branche en contact avec les conducteurs ou les isolateurs.' },
+		{ label: 'Animal (oiseau, rongeur)', value: 'animal', explanation: 'Court-circuit provoqué par un animal sur le support ou les connexions.' },
+		{ label: 'Foudre', value: 'foudre_surtension', explanation: 'Coup de foudre sur le poteau ou sur la ligne à proximité.' },
+		{ label: 'Accident (choc, chute)', value: 'accident', explanation: 'Choc véhicule, chute d\'objet ou effondrement partiel du support.' },
+		{ label: 'Conditions météo (vent)', value: 'conditions_meteo', explanation: 'Vent fort ayant provoqué balançage excessif, chute de conducteur ou de support.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	ligne_bt: [
+		{ label: 'Défaut câble / connexion', value: 'defaut_cable_connexion', explanation: 'Câble BT défaillant, mauvaise connexion au transfo ou au départ.' },
+		{ label: 'Végétation / animal', value: 'vegetation_animal', explanation: 'Contact végétation ou animal avec les conducteurs BT.' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Surtension propagée sur le réseau BT.' },
+		{ label: 'Surcharge', value: 'surcharge', explanation: 'Surcharge ayant fait déclencher les protections ou surchauffer le câble.' },
+		{ label: 'Travaux / erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Travaux sur la ligne BT ou mauvaise manœuvre.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	raccordement: [
+		{ label: 'Défaut branchement', value: 'defaut_branchement', explanation: 'Câble de branchement défaillant, mauvaise connexion au compteur ou au point de raccordement.' },
+		{ label: 'Surcharge', value: 'surcharge', explanation: 'Surcharge ou court-circuit côté client ayant fait sauter les protections.' },
+		{ label: 'Non-paiement / coupure programmée', value: 'coupure_programmee', explanation: 'Coupure administrative (non-paiement, consignation).' },
+		{ label: 'Travaux / manœuvre', value: 'erreur_manoeuvre', explanation: 'Travaux sur le branchement ou manœuvre lors d\'un raccordement.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	],
+	default: [
+		{ label: 'Défaut équipement', value: 'defaut_equipement', explanation: 'Défaillance technique de l\'ouvrage (isolation, connexion, organe).' },
+		{ label: 'Foudre / surtension', value: 'foudre_surtension', explanation: 'Coup de foudre ou surtension ayant endommagé l\'ouvrage.' },
+		{ label: 'Surcharge', value: 'surcharge', explanation: 'Surcharge ayant déclenché les protections ou endommagé l\'équipement.' },
+		{ label: 'Erreur de manœuvre', value: 'erreur_manoeuvre', explanation: 'Mauvaise manœuvre ou travail sous tension.' },
+		{ label: 'Conditions météo / environnement', value: 'conditions_meteo', explanation: 'Vent, inondation, pollution ou autre cause externe.' },
+		{ label: 'Autre', value: 'autre', explanation: 'Cause non listée. À préciser dans le rapport si besoin.' }
+	]
+};
 
 const MAP_COLORS = [
 	'#ec4899', '#38bdf8', '#22c55e', '#a855f7', '#f97316', '#eab308', '#ef4444', '#3b82f6',
@@ -15,7 +117,7 @@ const MAP_COLORS = [
 @Component({
 	selector: 'app-trace-reseau',
 	standalone: true,
-	imports: [CommonModule, FormsModule, Select],
+	imports: [CommonModule, FormsModule, Select, DialogModule, ButtonModule],
 	templateUrl: './trace-reseau.component.html',
 	styleUrls: ['./trace-reseau.component.scss']
 })
@@ -43,17 +145,31 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	posteSourceOptions: { label: string; value: string }[] = [];
 	posteTransfoOptions: { label: string; value: string }[] = [];
 	abonneOptions: { label: string; value: string }[] = [];
+	/** Lignes de secours pour la réalimentation (à la place des départs) */
+	ligneSecoursHtaOptions: { label: string; value: string }[] = [];
+	ligneSecoursBtOptions: { label: string; value: string }[] = [];
+	ligneSecoursBrchtOptions: { label: string; value: string }[] = [];
+	ligneSecoursOptions: { label: string; value: string }[] = [];
+	paramLigneSecours: string | null = null;
+	ligneSecoursFieldLabel = 'Ligne de secours';
+	ligneSecoursNetworkLabel = '';
 
 	/** Slug de la table utilisée pour chaque type (détecté au chargement) */
 	private slugPosteSource = '';
 	private slugPosteTransfo = '';
 	private slugAbonne = '';
+	private slugLigneHta = '';
+	private slugLigneBt = '';
+	private slugLigneBrcht = '';
+	private slugDepartHta = '';
+	private slugDepartBt = '';
 
 	/** Couches chargées depuis l’API (un ouvrage par table) */
 	couchesReseau: { id: string; label: string; color: string; visible: boolean }[] = [];
 
 	/** Clés (slug:id) des ouvrages du tracé courant pour surligner la carte */
 	private traceOuvrageIds = new Set<string>();
+	private traceOuvrageIdsCanon = new Set<string>();
 
 	resumeLongueurKm = 0;
 	resumePoteaux = 0;
@@ -69,6 +185,48 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	coupureImpactedLignes = 0;
 	coupureImpactedPoints = 0;
 	coupureExecutedAt = '';
+	/** Modale de sélection de la cause (affichée sur la carte) */
+	showCoupureCauseModal = false;
+	coupureCauseSelected: string | null = null;
+	coupureCauseLabel = '';
+	/** Causes possibles pour l’ouvrage courant (selon type d’ouvrage, expert métier). */
+	get coupureCauseOptions(): CoupureCauseOption[] {
+		const slug = (this.selectedMapStart?.slug || this.getSlugForCurrentType() || '').toLowerCase();
+		const category = this.getCoupureOuvrageCategory(slug);
+		return COUPURE_CAUSES_BY_OUVRAGE[category] ?? COUPURE_CAUSES_BY_OUVRAGE['default'];
+	}
+	/** Libellé court du type d’ouvrage pour l’en-tête de la modale cause. */
+	get coupureOuvrageLabel(): string {
+		const slug = (this.selectedMapStart?.slug || this.getSlugForCurrentType() || '').toLowerCase();
+		const category = this.getCoupureOuvrageCategory(slug);
+		const labels: Record<string, string> = {
+			poste_source: 'Poste source',
+			ligne_hta: 'Ligne HTA',
+			poste_cabine: 'Poste cabine / Transfo',
+			transformateur: 'Transformateur',
+			cellule: 'Cellule (disjoncteur / sectionneur)',
+			parafoudre: 'Parafoudre',
+			arrivee_depart: 'Arrivée / Départ',
+			poteau: 'Poteau',
+			ligne_bt: 'Ligne BT',
+			raccordement: 'Point de raccordement',
+			default: 'Ouvrage'
+		};
+		return labels[category] ?? labels['default'];
+	}
+	private _coupureCauseEnCours = '';
+	reelimentationActive = false;
+	reelimentationOpen = false;
+	reelimentationImpacted = 0;
+	reelimentationBypass = 0;
+	reelimentationImpossible = 0;
+	reelimentationExecutedAt = '';
+	private reelimentationCutSet = new Set<string>();
+	private reelimentationSupplySet = new Set<string>();
+	private reelimentationCutSetCanon = new Set<string>();
+	private reelimentationSupplySetCanon = new Set<string>();
+	/** Lignes/ouvrages pouvant alimenter la zone coupée (tracé depuis le départ de secours sélectionné). */
+	private coupureSupplyOuvrageIdsCanon = new Set<string>();
 
 	canUndo = false;
 	canRedo = false;
@@ -82,6 +240,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private layerGroup: unknown = null;
 	private initialBounds: unknown = null;
 	private slugToLayerGroups = new Map<string, unknown>();
+	private rowsBySlug = new Map<string, Record<string, unknown>[]>();
 	/** Pour clignoter sur la carte : (slug + ':' + id) -> layer Leaflet */
 	private slugIdToLayer = new Map<string, {
 		getBounds?: () => { getCenter?: () => unknown };
@@ -95,8 +254,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private blinkCircle: unknown = null;
 	private blinkInterval: ReturnType<typeof setInterval> | null = null;
 	private flowAnimationInterval: ReturnType<typeof setInterval> | null = null;
+	private secoursAnimationInterval: ReturnType<typeof setInterval> | null = null;
 	private flowDashOffset = 0;
 	private pointPulsePhase = false;
+	private secoursPulsePhase = false;
 	selectedTraceRowKey: string | null = null;
 	private popupButtonsClickListener: ((e: Event) => void) | null = null;
 	selectedMapStart: { slug: string; id: string; label: string } | null = null;
@@ -118,6 +279,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	ngOnDestroy(): void {
 		this.stopBlink();
 		this.stopFlowAnimation();
+		this.stopSecoursAnimation();
 		this.clearTracePointClusters();
 		if (this.popupButtonsClickListener && this.mapContainer?.nativeElement) {
 			this.mapContainer.nativeElement.removeEventListener('click', this.popupButtonsClickListener);
@@ -142,6 +304,40 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
 					this.posteSourceOptions = this.buildOptionsFromRows(rows, ['numero_poste', 'assetid', 'name', 'objectid', 'gid'], 'Poste source');
 					if (this.posteSourceOptions.length > 0) this.paramPosteSource = this.posteSourceOptions[0].value;
+					this.cdr.markForCheck();
+				});
+			}
+			// Lignes de secours pour réalimentation (ligne HTA, ligne BT, ligne branchement).
+			const ligneHtaSlug = bySlug.has('ligne-hta') ? 'ligne-hta' : [...bySlug.keys()].find((s) => s.includes('ligne') && s.includes('hta'));
+			const ligneBtSlug = bySlug.has('ligne-bt') ? 'ligne-bt' : [...bySlug.keys()].find((s) => s.includes('ligne') && s.includes('bt') && !s.includes('brcht'));
+			const ligneBrchtSlug = bySlug.has('ligne-brcht') ? 'ligne-brcht' : [...bySlug.keys()].find((s) => s.includes('ligne') && (s.includes('brcht') || s.includes('branchement')));
+			if (ligneHtaSlug) {
+				const t = bySlug.get(ligneHtaSlug)!;
+				this.slugLigneHta = t.slug;
+				this.gisApi.getList(t.slug, 500, 0).subscribe((rows) => {
+					const opts = this.buildOptionsFromRows(rows, ['numero', 'code', 'name', 'nom', 'gid'], 'Ligne HTA');
+					this.ligneSecoursHtaOptions = opts.map((o) => ({ label: `Ligne HTA - ${o.label}`, value: this.encodeSelectionValue(t.slug, o.value) }));
+					this.updateLigneSecoursOptionsBySelection();
+					this.cdr.markForCheck();
+				});
+			}
+			if (ligneBtSlug) {
+				const t = bySlug.get(ligneBtSlug)!;
+				this.slugLigneBt = t.slug;
+				this.gisApi.getList(t.slug, 500, 0).subscribe((rows) => {
+					const opts = this.buildOptionsFromRows(rows, ['numero', 'code', 'name', 'nom', 'gid'], 'Ligne BT');
+					this.ligneSecoursBtOptions = opts.map((o) => ({ label: `Ligne BT - ${o.label}`, value: this.encodeSelectionValue(t.slug, o.value) }));
+					this.updateLigneSecoursOptionsBySelection();
+					this.cdr.markForCheck();
+				});
+			}
+			if (ligneBrchtSlug) {
+				const t = bySlug.get(ligneBrchtSlug)!;
+				this.slugLigneBrcht = t.slug;
+				this.gisApi.getList(t.slug, 500, 0).subscribe((rows) => {
+					const opts = this.buildOptionsFromRows(rows, ['numero', 'code', 'name', 'nom', 'gid'], 'Ligne branchement');
+					this.ligneSecoursBrchtOptions = opts.map((o) => ({ label: `Ligne branchement - ${o.label}`, value: this.encodeSelectionValue(t.slug, o.value) }));
+					this.updateLigneSecoursOptionsBySelection();
 					this.cdr.markForCheck();
 				});
 			}
@@ -260,6 +456,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.selectedMapStart = null;
 		this.showStartSelectors = true;
 		this.resetCoupureState();
+		this.resetReelimentationState();
 		this.cdr.markForCheck();
 		this.onSelectionChange();
 	}
@@ -291,6 +488,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		}
 		this.showStartSelectors = !this.hasSelection();
 		this.resetCoupureState();
+		this.resetReelimentationState();
+		this.updateLigneSecoursOptionsBySelection();
 		console.log('[Trace réseau] Sélection changée', {
 			type: this.paramTypePoint,
 			id: this.getSelectedId(),
@@ -307,6 +506,22 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		}
 		if (this.paramTypePoint === 'abonne') return this.slugAbonne;
 		return '';
+	}
+
+	/** Retourne la catégorie d’ouvrage pour les causes de coupure (expert métier). */
+	private getCoupureOuvrageCategory(slug: string): string {
+		const s = (slug || '').toLowerCase().replace(/-/g, '_');
+		if (s.includes('poste_source') || s === 'poste_source') return 'poste_source';
+		if (s.includes('ligne_hta') || s === 'ligne_hta') return 'ligne_hta';
+		if (s.includes('poste_cabine') || s.includes('poste_transformation')) return 'poste_cabine';
+		if (s.includes('transformateur') || s.includes('transfo')) return 'transformateur';
+		if (s.includes('cellule')) return 'cellule';
+		if (s.includes('parafoudre')) return 'parafoudre';
+		if (s.includes('arrivee') || s.includes('depart')) return 'arrivee_depart';
+		if (s.includes('poteau')) return 'poteau';
+		if (s.includes('ligne_bt') || s.includes('ligne_brcht')) return 'ligne_bt';
+		if (s.includes('raccordement') || s.includes('abonne') || s.includes('branchement')) return 'raccordement';
+		return 'default';
 	}
 
 	private getSelectedId(): string {
@@ -337,6 +552,14 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			clearInterval(this.flowAnimationInterval);
 			this.flowAnimationInterval = null;
 		}
+	}
+
+	private stopSecoursAnimation(): void {
+		if (this.secoursAnimationInterval) {
+			clearInterval(this.secoursAnimationInterval);
+			this.secoursAnimationInterval = null;
+		}
+		this.secoursPulsePhase = false;
 	}
 
 	private clearTracePointClusters(): void {
@@ -430,7 +653,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				setView?: (center: [number, number] | unknown, zoom?: number, opts?: object) => void;
 			};
 			if (m?.fitBounds && b) {
-				m.fitBounds(b, { padding: [70, 70], maxZoom: 20 });
+				m.fitBounds(b, { padding: [70, 70], maxZoom: 22 });
 			} else if (m?.setView && latLng) {
 				m.setView(latLng, 20, { animate: true });
 			}
@@ -497,8 +720,87 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.runTrace('tous');
 	}
 
+	/** Ouvre la modale de sélection de la cause sur la carte. */
 	simulerCoupure(): void {
+		this.showCoupureCauseModal = true;
+		this.coupureCauseSelected = null;
+		this.cdr.markForCheck();
+	}
+
+	/** Ferme la modale cause sans exécuter la coupure. */
+	annulerCoupureCause(): void {
+		this.showCoupureCauseModal = false;
+		this.coupureCauseSelected = null;
+		this.cdr.markForCheck();
+	}
+
+	/** Exécute la simulation de coupure après validation de la cause dans la modale. */
+	confirmerCoupureAvecCause(): void {
+		if (!this.coupureCauseSelected || !this.hasSelection()) return;
+		const opt = this.coupureCauseOptions.find((o) => o.value === this.coupureCauseSelected);
+		this._coupureCauseEnCours = opt?.label ?? this.coupureCauseSelected;
+		this.showCoupureCauseModal = false;
+		this.coupureCauseSelected = null;
 		this.runTrace('tous', 'coupure');
+		this.cdr.markForCheck();
+	}
+
+	simulerReelimentation(): void {
+		const refId = this.getSelectedRefId();
+		const ligneSecoursId = this.getLigneSecoursId();
+		if (!refId || !ligneSecoursId) return;
+		const traceType = this.selectedMapStart ? 'ouvrage' : this.paramTypePoint;
+		this.mapLoading = true;
+		this.resetReelimentationState();
+		this.cdr.markForCheck();
+		forkJoin({
+			coupure: this.gisApi.getTrace(traceType, refId, 'tous').pipe(catchError(() => of({ ouvrage_ids: [] }))),
+			secours: this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous').pipe(catchError(() => of({ ouvrage_ids: [] })))
+		}).subscribe({
+			next: ({ coupure, secours }) => {
+				this.mapLoading = false;
+				const cut = (coupure.ouvrage_ids || []).map((o) => `${o.slug}:${o.id}`);
+				const supply = new Set((secours.ouvrage_ids || []).map((o) => `${o.slug}:${o.id}`));
+				const bypass = cut.filter((k) => supply.has(k));
+				this.reelimentationCutSet = new Set(cut);
+				this.reelimentationSupplySet = new Set(bypass);
+				this.reelimentationCutSetCanon = new Set(cut.map((k) => this.normalizeOuvrageKey(k)));
+				this.reelimentationSupplySetCanon = new Set(bypass.map((k) => this.normalizeOuvrageKey(k)));
+				this.reelimentationActive = true;
+				this.reelimentationImpacted = cut.length;
+				this.reelimentationBypass = bypass.length;
+				this.reelimentationImpossible = Math.max(0, cut.length - bypass.length);
+				this.reelimentationExecutedAt = new Date().toLocaleString('fr-FR');
+				// Conserver la structure d'analyse existante sur la zone coupée.
+				this.applyTraceResult(coupure.ouvrage_ids || [], 'tous');
+				this.stopFlowAnimation();
+				this.applyTraceStyleToMap();
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.mapLoading = false;
+				this.cdr.markForCheck();
+			}
+		});
+	}
+
+	onLigneSecoursChange(): void {
+		this.startSecoursAnimation();
+		if (this.coupureActive) this.loadCoupureSupplyTrace();
+		this.applyTraceStyleToMap();
+		this.cdr.markForCheck();
+	}
+
+	toggleReelimentationPanel(): void {
+		this.reelimentationOpen = !this.reelimentationOpen;
+		if (this.reelimentationOpen) {
+			this.updateLigneSecoursOptionsBySelection();
+			this.startSecoursAnimation();
+		} else {
+			this.stopSecoursAnimation();
+			this.applyTraceStyleToMap();
+		}
+		this.cdr.markForCheck();
 	}
 
 	/** Lance le tracé et affiche les ouvrages connectés */
@@ -529,13 +831,17 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	private traceFromMapSelection(slug: string, id: string, label: string, direction: 'amont' | 'aval' | 'tous'): void {
 		this.selectedMapStart = { slug, id, label: label || `${slug}:${id}` };
 		this.showStartSelectors = false;
+		this.updateLigneSecoursOptionsBySelection();
 		this.runTrace(direction);
 	}
 
 	private simulateCoupureFromMapSelection(slug: string, id: string, label: string): void {
 		this.selectedMapStart = { slug, id, label: label || `${slug}:${id}` };
 		this.showStartSelectors = false;
-		this.runTrace('tous', 'coupure');
+		this.updateLigneSecoursOptionsBySelection();
+		this.showCoupureCauseModal = true;
+		this.coupureCauseSelected = null;
+		this.cdr.markForCheck();
 	}
 
 	showSelectionDropdowns(): void {
@@ -550,10 +856,229 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.paramAbonne = null;
 		this.showStartSelectors = true;
 		this.resetCoupureState();
+		this.resetReelimentationState();
+		this.updateLigneSecoursOptionsBySelection();
 		this.cdr.markForCheck();
 	}
 
+	private detectCurrentCutNetwork(): 'hta' | 'bt' | null {
+		const slug = (this.selectedMapStart?.slug || this.getSlugForCurrentType() || '').toLowerCase();
+		if (slug) {
+			if (slug.includes('hta')) return 'hta';
+			if (
+				slug.includes('bt') ||
+				slug.includes('raccord') ||
+				slug.includes('brcht') ||
+				slug.includes('abonne') ||
+				slug.includes('branchement')
+			) return 'bt';
+			if (slug.includes('depart-bt')) return 'bt';
+			if (slug === 'depart' || slug.includes('depart')) return 'hta';
+		}
+		// Fallback selon le type de point de départ UI.
+		if (this.paramTypePoint === 'poste_source') return 'hta';
+		if (this.paramTypePoint === 'poste_transformation' || this.paramTypePoint === 'abonne') return 'bt';
+		return null;
+	}
+
+	private updateLigneSecoursOptionsBySelection(): void {
+		const network = this.detectCurrentCutNetwork();
+		let options: { label: string; value: string }[] = [];
+		if (network === 'bt') {
+			options = [...this.ligneSecoursBtOptions, ...this.ligneSecoursBrchtOptions];
+			this.ligneSecoursFieldLabel = 'Ligne de secours (BT)';
+			this.ligneSecoursNetworkLabel = 'Réseau détecté: BT';
+		} else if (network === 'hta') {
+			options = [...this.ligneSecoursHtaOptions, ...this.ligneSecoursBrchtOptions];
+			this.ligneSecoursFieldLabel = 'Ligne de secours (HTA)';
+			this.ligneSecoursNetworkLabel = 'Réseau détecté: HTA';
+		} else {
+			options = [...this.ligneSecoursHtaOptions, ...this.ligneSecoursBtOptions, ...this.ligneSecoursBrchtOptions];
+			this.ligneSecoursFieldLabel = 'Ligne de secours';
+			this.ligneSecoursNetworkLabel = '';
+		}
+		this.ligneSecoursOptions = options;
+		if (this.ligneSecoursOptions.length === 0) {
+			this.paramLigneSecours = null;
+			this.stopSecoursAnimation();
+			return;
+		}
+		const suggested = this.ligneSecoursOptions[0]?.value ?? null;
+		if (suggested && (!this.paramLigneSecours || !this.ligneSecoursOptions.some((o) => o.value === this.paramLigneSecours))) {
+			this.paramLigneSecours = suggested;
+		}
+		this.startSecoursAnimation();
+	}
+
+	/** Retourne l'id (gid) de la ligne de secours sélectionnée pour les appels API getTrace. */
+	private getLigneSecoursId(): string | null {
+		const decoded = this.decodeSelectionValue(this.paramLigneSecours);
+		return (decoded?.id ?? (this.paramLigneSecours || '').trim()) || null;
+	}
+
+	private getLigneSecoursSelectionInfo(): { slug: string; id: string } | null {
+		const decoded = this.decodeSelectionValue(this.paramLigneSecours);
+		if (!decoded?.slug || !decoded?.id) return null;
+		return { slug: decoded.slug, id: decoded.id };
+	}
+
+	private getPotentialLigneSecoursCanonSet(): Set<string> {
+		const out = new Set<string>();
+		if (!this.reelimentationOpen && !this.reelimentationActive && !this.coupureActive) return out;
+		for (const o of this.ligneSecoursOptions) {
+			const decoded = this.decodeSelectionValue(o.value);
+			if (decoded?.slug && decoded?.id) out.add(this.normalizeOuvrageKey(`${decoded.slug}:${decoded.id}`));
+		}
+		return out;
+	}
+
+	/** Retourne le gid (canon) du départ qui alimente l'ouvrage sélectionné (celui qu'on coupe). */
+	private getCutDepartureCanon(network: 'hta' | 'bt' | null): string | null {
+		if (!network) return null;
+		const selectedId = this.getSelectedRefId();
+		if (!selectedId) return null;
+		const selectedSlug = (this.selectedMapStart?.slug || this.getSlugForCurrentType() || '').toLowerCase();
+		const selectedCanon = this.normalizeId(selectedId);
+		const row = this.getRowBySlugAndId(selectedSlug, selectedId);
+
+		if (network === 'hta') {
+			const dep = this.valueToCanon(row?.['id_depart_hta']);
+			if (dep) return dep;
+			const fromLine = this.findDepartCanonFromLinePoteau('id_poteau_hta', 'id_depart_hta', 'ligne-hta', selectedCanon);
+			if (fromLine) return fromLine;
+			if (this.slugDepartHta && selectedSlug === this.slugDepartHta.toLowerCase()) return selectedCanon;
+			return this.findDepartByColumnMatch(this.slugDepartHta, ['id_poste_source'], selectedCanon);
+		}
+		const dep = this.valueToCanon(row?.['id_depart_bt']);
+		if (dep) return dep;
+		const lineId = this.valueToCanon(row?.['id_ligne_brcht']);
+		if (lineId) {
+			const lineSlug = this.findFirstSlugByPart('ligne-brcht') ?? this.findFirstSlugByPart('ligne_brcht') ?? this.findFirstSlugByPart('ligne-branchement');
+			const lineRow = lineSlug ? this.getRowBySlugAndCanonicalId(lineSlug, lineId) : null;
+			const depViaLine = this.valueToCanon(lineRow?.['id_depart_bt']);
+			if (depViaLine) return depViaLine;
+		}
+		const fromLineBt = this.findDepartCanonFromLinePoteau('id_poteau_bt', 'id_depart_bt', 'ligne-bt', selectedCanon);
+		if (fromLineBt) return fromLineBt;
+		if (this.slugDepartBt && selectedSlug === this.slugDepartBt.toLowerCase()) return selectedCanon;
+		return this.findDepartByColumnMatch(
+			this.slugDepartBt,
+			['id_poste_cabine', 'id_poste_sur_poteau', 'id_transfo_poteau', 'id_transfo_ht_bt'],
+			selectedCanon
+		);
+	}
+
+	/** Trouve un départ à partir d'une table de lignes où un poteau (poteauCanon) est référencé. */
+	private findDepartCanonFromLinePoteau(poteauCol: string, departCol: string, lineSlugPart: string, poteauCanon: string): string | null {
+		const lineSlug = this.findFirstSlugByPart(lineSlugPart);
+		if (!lineSlug) return null;
+		const rows = this.rowsBySlug.get(lineSlug) || [];
+		for (const r of rows) {
+			if (this.valueToCanon(r[poteauCol]) !== poteauCanon) continue;
+			const d = this.valueToCanon(r[departCol]);
+			if (d) return d;
+		}
+		return null;
+	}
+
+	/** Pour un départ donné, retourne les gid (canon) des autres départs de la même source (même poste/transfo). */
+	private getSameSourceDepartureCanons(departCanon: string, network: 'hta' | 'bt'): string[] {
+		const slug = network === 'hta' ? this.slugDepartHta : this.slugDepartBt;
+		if (!slug) return [];
+		const rows = this.rowsBySlug.get(slug) || [];
+		const refCols = network === 'hta' ? ['id_poste_source'] : ['id_poste_cabine', 'id_poste_sur_poteau', 'id_transfo_poteau', 'id_transfo_ht_bt'];
+		let sourceCanon: string | null = null;
+		for (const r of rows) {
+			const gid = this.normalizeId(this.extractRowId(r));
+			if (gid !== departCanon) continue;
+			for (const c of refCols) {
+				const v = this.valueToCanon(r[c]);
+				if (v) {
+					sourceCanon = v;
+					break;
+				}
+			}
+			if (sourceCanon) break;
+		}
+		if (!sourceCanon) return [];
+		const same: string[] = [];
+		for (const r of rows) {
+			for (const c of refCols) {
+				if (this.valueToCanon(r[c]) === sourceCanon) {
+					const gid = this.normalizeId(this.extractRowId(r));
+					if (gid && !same.includes(gid)) same.push(gid);
+					break;
+				}
+			}
+		}
+		return same;
+	}
+
+	/** Plus utilisé : la ligne de secours est choisie manuellement (première de la liste par défaut). */
+	private resolveAutoDepartSecoursValue(_network: 'hta' | 'bt' | null): string | null {
+		return null;
+	}
+
+	private valueToCanon(v: unknown): string {
+		if (v == null) return '';
+		const s = String(v).trim();
+		if (!s) return '';
+		return this.normalizeId(s);
+	}
+
+	private findOptionValueByCanonicalId(options: { label: string; value: string }[], canonId: string): string | null {
+		if (!canonId) return null;
+		const found = options.find((o) => this.normalizeId(o.value) === canonId);
+		return found?.value ?? null;
+	}
+
+	private findFirstSlugByPart(part: string): string | null {
+		const p = (part || '').toLowerCase();
+		for (const slug of this.rowsBySlug.keys()) {
+			if (slug.toLowerCase().includes(p)) return slug;
+		}
+		return null;
+	}
+
+	private extractRowId(row: Record<string, unknown> | null): string {
+		if (!row) return '';
+		const id = row['gid'] ?? row['id'] ?? row['objectid'] ?? '';
+		return String(id ?? '').trim();
+	}
+
+	private getRowBySlugAndId(slug: string, id: string): Record<string, unknown> | null {
+		if (!slug || !id) return null;
+		return this.getRowBySlugAndCanonicalId(slug, this.normalizeId(id));
+	}
+
+	private getRowBySlugAndCanonicalId(slug: string, canonId: string): Record<string, unknown> | null {
+		const rows = this.rowsBySlug.get(slug) || [];
+		for (const r of rows) {
+			const rowIdCanon = this.normalizeId(r['gid'] ?? r['id'] ?? r['objectid'] ?? '');
+			if (rowIdCanon === canonId) return r;
+		}
+		return null;
+	}
+
+	private findDepartByColumnMatch(slugDepart: string, refCols: string[], targetCanon: string): string | null {
+		if (!slugDepart || !targetCanon) return null;
+		const rows = this.rowsBySlug.get(slugDepart) || [];
+		for (const r of rows) {
+			for (const c of refCols) {
+				if (this.valueToCanon(r[c]) === targetCanon) {
+					const depId = this.extractRowId(r);
+					if (depId) return this.normalizeId(depId);
+				}
+			}
+		}
+		return null;
+	}
+
 	resetSimulationCoupure(): void {
+		this.effacerTrace();
+	}
+
+	resetSimulationReelimentation(): void {
 		this.effacerTrace();
 	}
 
@@ -562,6 +1087,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		// Pour l’instant : si le backend renvoie des IDs, on pourrait masquer les couches non concernées ou surligner.
 		// Ici on garde l’affichage actuel ; à étendre quand le backend renverra les géométries ou IDs.
 		this.traceOuvrageIds = new Set(ouvrageIds.map((o) => `${o.slug}:${o.id}`));
+		this.traceOuvrageIdsCanon = new Set(ouvrageIds.map((o) => this.normalizeOuvrageKey(`${o.slug}:${o.id}`)));
 		this.lastTraceDirection = direction;
 		this.flowDashOffset = 0;
 		this.resumeOuvrages = ouvrageIds.length;
@@ -834,7 +1360,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			fitBounds?: (b: unknown, o?: object) => void;
 			setView?: (center: [number, number] | unknown, zoom?: number, opts?: object) => void;
 		};
-		if (m?.fitBounds && b) m.fitBounds(b, { padding: [80, 80], maxZoom: 20 });
+		if (m?.fitBounds && b) m.fitBounds(b, { padding: [80, 80], maxZoom: 22 });
 		else if (m?.setView) m.setView(latLng, 20, { animate: true });
 		this.stopBlink();
 		import('leaflet').then((LMod) => {
@@ -875,13 +1401,38 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		const hasTrace = this.traceOuvrageIds.size > 0;
 		const layerFlags = new Map<unknown, boolean>();
 		const layerSlug = new Map<unknown, string>();
+		const layerCanonKeys = new Map<unknown, Set<string>>();
+		const ligneSecours = this.getLigneSecoursSelectionInfo();
+		const ligneSecoursCanon = ligneSecours ? this.normalizeOuvrageKey(`${ligneSecours.slug}:${ligneSecours.id}`) : '';
+		const potentielSecoursCanon = this.getPotentialLigneSecoursCanonSet();
 		this.slugIdToLayer.forEach((layer, key) => {
 			if (!layerFlags.has(layer)) layerFlags.set(layer, false);
 			if (!layerSlug.has(layer)) layerSlug.set(layer, this.getSlugFromLayerKey(key));
-			if (hasTrace && this.traceOuvrageIds.has(key)) {
+			const canon = this.normalizeOuvrageKey(key);
+			let s = layerCanonKeys.get(layer);
+			if (!s) {
+				s = new Set<string>();
+				layerCanonKeys.set(layer, s);
+			}
+			s.add(canon);
+			if (hasTrace && (this.traceOuvrageIds.has(key) || this.traceOuvrageIdsCanon.has(canon))) {
 				layerFlags.set(layer, true);
 			}
 		});
+		const layerHasCanon = (layer: unknown, canon: string): boolean => {
+			if (!canon) return false;
+			const s = layerCanonKeys.get(layer);
+			return !!s && s.has(canon);
+		};
+		const layerInCanonSet = (layer: unknown, canonSet: Set<string>): boolean => {
+			if (!canonSet || canonSet.size === 0) return false;
+			const s = layerCanonKeys.get(layer);
+			if (!s || s.size === 0) return false;
+			for (const k of s) {
+				if (canonSet.has(k)) return true;
+			}
+			return false;
+		};
 		layerFlags.forEach((isHighlighted, layer) => {
 			const setStyle = (layer as { setStyle?: (s: object) => void }).setStyle;
 			if (!setStyle) return;
@@ -889,6 +1440,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			const isLine = this.isLineSlug(slug);
 			const isPoint = this.isPointSlug(slug);
 			const baseColor = this.getColorForSlug(slug);
+			const isLigneSecours = layerHasCanon(layer, ligneSecoursCanon);
+			const isLigneSecoursPotentiel = layerInCanonSet(layer, potentielSecoursCanon);
+			// En mode coupure : lignes pouvant alimenter la zone coupée (tracé depuis le départ de secours)
+			const isSupplyLine = this.coupureActive && this.coupureSupplyOuvrageIdsCanon.size > 0 && layerInCanonSet(layer, this.coupureSupplyOuvrageIdsCanon);
 			const normal: Record<string, unknown> = {
 				color: baseColor,
 				fillColor: baseColor,
@@ -898,7 +1453,74 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				dashArray: null,
 				dashOffset: null
 			};
+			if (isSupplyLine) {
+				setStyle.call(layer, {
+					color: '#2563eb',
+					fillColor: '#2563eb',
+					opacity: 1,
+					fillOpacity: 0.85,
+					weight: isLine ? 7 : 5,
+					dashArray: isLine ? '12 8' : null,
+					dashOffset: null
+				});
+				return;
+			}
 			if (!hasTrace || !isHighlighted) {
+				if (isLigneSecours) {
+					setStyle.call(layer, {
+						color: '#2563eb',
+						fillColor: '#2563eb',
+						opacity: 1,
+						fillOpacity: this.secoursPulsePhase ? 0.95 : 0.5,
+						weight: isLine ? (this.secoursPulsePhase ? 9 : 6) : (this.secoursPulsePhase ? 8 : 5),
+						dashArray: isLine ? (this.secoursPulsePhase ? '18 8' : '10 8') : null,
+						dashOffset: null
+					});
+					return;
+				}
+				if (isLigneSecoursPotentiel) {
+					setStyle.call(layer, {
+						color: '#06b6d4',
+						fillColor: '#06b6d4',
+						opacity: 0.95,
+						fillOpacity: 0.55,
+						weight: isLine ? 7 : 5,
+						dashArray: isLine ? '8 8' : null,
+						dashOffset: null
+					});
+					return;
+				}
+				setStyle.call(layer, normal);
+				return;
+			}
+			if (this.reelimentationActive) {
+				const inCut = isHighlighted || layerInCanonSet(layer, this.reelimentationCutSetCanon);
+				const inSupply = layerInCanonSet(layer, this.reelimentationSupplySetCanon);
+				if (inSupply) {
+					setStyle.call(layer, {
+						color: '#2563eb',
+						fillColor: '#2563eb',
+						opacity: 1,
+						fillOpacity: 0.9,
+						weight: isLine ? 8 : 6,
+						dashArray: null,
+						dashOffset: null
+					});
+					return;
+				}
+				// Zone coupée réalimentée : plus en noir, affichée en vert (alimentée)
+				if (inCut) {
+					setStyle.call(layer, {
+						color: '#16a34a',
+						fillColor: '#16a34a',
+						opacity: 1,
+						fillOpacity: 0.85,
+						weight: isLine ? 7 : 5,
+						dashArray: null,
+						dashOffset: null
+					});
+					return;
+				}
 				setStyle.call(layer, normal);
 				return;
 			}
@@ -943,6 +1565,38 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		return idx >= 0 ? key.slice(0, idx) : key;
 	}
 
+	private normalizeOuvrageKey(key: string): string {
+		const idx = key.indexOf(':');
+		if (idx < 0) return key.toLowerCase();
+		const slug = key.slice(0, idx).toLowerCase();
+		const id = key.slice(idx + 1).replace(/^\{|\}$/g, '').trim().toLowerCase();
+		return `${slug}:${id}`;
+	}
+
+	private layerBelongsToSet(layer: unknown, keySet: Set<string>, keySetCanon: Set<string>): boolean {
+		for (const [k, l] of this.slugIdToLayer) {
+			if (l !== layer) continue;
+			if (keySet.has(k)) return true;
+			if (keySetCanon.has(this.normalizeOuvrageKey(k))) return true;
+		}
+		return false;
+	}
+
+	private layerMatchesOuvrage(layer: unknown, slug: string, id: string): boolean {
+		const targetSlug = (slug || '').toLowerCase();
+		const targetId = this.normalizeId(id);
+		if (!targetSlug || !targetId) return false;
+		for (const [k, l] of this.slugIdToLayer) {
+			if (l !== layer) continue;
+			const idx = k.indexOf(':');
+			if (idx < 0) continue;
+			const keySlug = k.slice(0, idx).toLowerCase();
+			const keyId = this.normalizeId(k.slice(idx + 1));
+			if (keySlug === targetSlug && keyId === targetId) return true;
+		}
+		return false;
+	}
+
 	private startFlowAnimation(): void {
 		this.stopFlowAnimation();
 		if (this.traceOuvrageIds.size === 0) return;
@@ -954,6 +1608,24 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.pointPulsePhase = !this.pointPulsePhase;
 			this.applyTraceStyleToMap();
 		}, 140);
+	}
+
+	private startSecoursAnimation(): void {
+		this.stopSecoursAnimation();
+		const ligneSecours = this.getLigneSecoursSelectionInfo();
+		if (!ligneSecours) {
+			this.applyTraceStyleToMap();
+			return;
+		}
+		// Éviter de restyler toute la carte en boucle si le panneau n'est pas utilisé.
+		if (!this.reelimentationOpen && !this.reelimentationActive) {
+			this.applyTraceStyleToMap();
+			return;
+		}
+		this.secoursAnimationInterval = setInterval(() => {
+			this.secoursPulsePhase = !this.secoursPulsePhase;
+			this.applyTraceStyleToMap();
+		}, 420);
 	}
 
 	toggleCouche(layer: { id: string; label: string; color: string; visible: boolean }): void {
@@ -982,6 +1654,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Efface le tracé : restaure l'affichage normal et réinitialise le résumé. */
 	effacerTrace(): void {
 		this.traceOuvrageIds = new Set();
+		this.traceOuvrageIdsCanon = new Set();
 		this.resumeOuvrages = 0;
 		this.resumePoteaux = 0;
 		this.resumeLongueurKm = 0;
@@ -993,21 +1666,56 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.flowDashOffset = 0;
 		this.pointPulsePhase = false;
 		this.stopFlowAnimation();
+		this.stopSecoursAnimation();
 		this.clearTracePointClusters();
 		this.resetCoupureState();
+		this.resetReelimentationState();
 		this.applyTraceStyleToMap();
 		this.cdr.markForCheck();
+	}
+
+	/** Charge le tracé du départ de secours sélectionné pour mettre en évidence les lignes pouvant alimenter la zone coupée. */
+	private loadCoupureSupplyTrace(): void {
+		this.coupureSupplyOuvrageIdsCanon = new Set();
+		if (!this.coupureActive) return;
+		const ligneSecoursId = this.getLigneSecoursId();
+		if (!ligneSecoursId) {
+			this.applyTraceStyleToMap();
+			this.cdr.markForCheck();
+			return;
+		}
+		this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous').pipe(
+			catchError(() => of({ ouvrage_ids: [] }))
+		).subscribe({
+			next: (res) => {
+				const ids = res.ouvrage_ids || [];
+				const canon = new Set<string>();
+				for (const o of ids) {
+					canon.add(this.normalizeOuvrageKey(`${o.slug}:${o.id}`));
+				}
+				this.coupureSupplyOuvrageIdsCanon = canon;
+				this.applyTraceStyleToMap();
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.applyTraceStyleToMap();
+				this.cdr.markForCheck();
+			}
+		});
 	}
 
 	private applyCoupureResult(ouvrageIds: { slug: string; id: string }[]): void {
 		this.coupureActive = true;
 		this.coupureStartLabel = this.getCurrentStartLabel();
 		this.coupureStartType = this.selectedMapStart ? 'ouvrage carte' : this.paramTypePoint;
+		this.coupureCauseLabel = this._coupureCauseEnCours || 'Non renseignée';
+		this._coupureCauseEnCours = '';
 		this.coupureImpactedLignes = ouvrageIds.filter((o) => this.isLineSlug(o.slug)).length;
 		this.coupureImpactedPoints = ouvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
 		this.coupureImpactedAbonnes = ouvrageIds.filter((o) => this.isAbonneSlug(o.slug)).length;
 		this.coupureExecutedAt = new Date().toLocaleString('fr-FR');
 		this.stopFlowAnimation();
+		this.loadCoupureSupplyTrace();
 		this.applyTraceStyleToMap();
 	}
 
@@ -1015,10 +1723,26 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.coupureActive = false;
 		this.coupureStartLabel = '';
 		this.coupureStartType = '';
+		this.coupureCauseLabel = '';
 		this.coupureImpactedAbonnes = 0;
 		this.coupureImpactedLignes = 0;
 		this.coupureImpactedPoints = 0;
 		this.coupureExecutedAt = '';
+		this.coupureSupplyOuvrageIdsCanon = new Set();
+		this.showCoupureCauseModal = false;
+		this.coupureCauseSelected = null;
+	}
+
+	private resetReelimentationState(): void {
+		this.reelimentationActive = false;
+		this.reelimentationImpacted = 0;
+		this.reelimentationBypass = 0;
+		this.reelimentationImpossible = 0;
+		this.reelimentationExecutedAt = '';
+		this.reelimentationCutSet = new Set();
+		this.reelimentationSupplySet = new Set();
+		this.reelimentationCutSetCanon = new Set();
+		this.reelimentationSupplySetCanon = new Set();
 	}
 
 	/** Exporte la liste des ouvrages du tracé courant en JSON. */
@@ -1038,7 +1762,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	resetMapView(): void {
 		const m = this.map as { fitBounds?: (b: unknown, o?: object) => void } | null;
 		if (this.initialBounds && m?.fitBounds) {
-			m.fitBounds(this.initialBounds, { padding: [40, 40], maxZoom: 16 });
+			m.fitBounds(this.initialBounds, { padding: [40, 40], maxZoom: 22 });
 		}
 	}
 
@@ -1050,13 +1774,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		const { _layerLabel, _layerSlug, geom, Geom, ...rest } = props;
 		const title = _layerLabel != null ? String(_layerLabel) : '';
 		const rawEntries = Object.entries(rest)
-			.filter(([, v]) => v != null && v !== '')
 			.map(([k, v]) => ({
 				key: k,
 				label: this.formatPopupKey(k),
-				val: typeof v === 'object' && (v as { toISOString?: () => string })?.toISOString
-					? (v as { toISOString: () => string }).toISOString().slice(0, 10)
-					: String(v).length > 80 ? String(v).slice(0, 77) + '…' : String(v)
+				val: this.formatPopupValue(v)
 			}));
 		const ordered = this.orderPopupEntries(rawEntries);
 		const slug = _layerSlug != null ? String(_layerSlug) : '';
@@ -1079,6 +1800,22 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		}
 		html += '</div>';
 		return html;
+	}
+
+	private formatPopupValue(value: unknown): string {
+		if (value == null) return '-';
+		if (value === '') return '-';
+		if (typeof value === 'object') {
+			if ((value as { toISOString?: () => string }).toISOString) {
+				return (value as { toISOString: () => string }).toISOString();
+			}
+			try {
+				return JSON.stringify(value);
+			} catch {
+				return String(value);
+			}
+		}
+		return String(value);
 	}
 
 	/** Ordre préférentiel des champs dans la popup (identité en premier, puis technique, audit à la fin). */
@@ -1143,8 +1880,29 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.map = Lx.map(this.mapContainer.nativeElement, {
 				center: [12.3715, -1.5197],
 				zoom: 13,
-				zoomControl: false
+				zoomControl: false,
+				maxZoom: 22
 			});
+			const mapWithPanes = this.map as {
+				createPane?: (name: string) => { style?: { zIndex?: string } };
+				getPane?: (name: string) => { style?: { zIndex?: string } } | undefined;
+			};
+			mapWithPanes.createPane?.('trace-polygons');
+			mapWithPanes.createPane?.('trace-lines');
+			mapWithPanes.createPane?.('trace-points');
+			const polyPane = mapWithPanes.getPane?.('trace-polygons');
+			const linePane = mapWithPanes.getPane?.('trace-lines');
+			const pointPane = mapWithPanes.getPane?.('trace-points');
+			// Ordre (bas → haut): polygones < points < lignes pour que lignes et points soient cliquables
+			if (polyPane?.style) {
+				polyPane.style.zIndex = '380';
+			}
+			if (pointPane?.style) {
+				pointPane.style.zIndex = '520';
+			}
+			if (linePane?.style) {
+				linePane.style.zIndex = '560';
+			}
 			Lx.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '© OpenStreetMap contributors'
 			}).addTo(this.map);
@@ -1220,14 +1978,28 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						else if (hasZ) s = s.replace(/(\s*-?\d+\.?\d*\s+-?\d+\.?\d*)\s+-?\d+\.?\d*/g, '$1');
 						return s;
 					};
-					const isLineTable = (s: string) => /ligne|electricline/.test(s);
-					const sortedResults = [...(results as { slug: string; table: string; rows: Record<string, unknown>[]; color: string; label: string }[])].sort((a, b) =>
-						isLineTable(a.slug) === isLineTable(b.slug) ? 0 : isLineTable(a.slug) ? 1 : -1
+					const isLineTable = (s: string): boolean => /ligne|electricline/.test((s || '').toLowerCase());
+					const detectGeometryRank = (rows: Record<string, unknown>[]): number => {
+						for (const row of rows || []) {
+							const raw = row['geom'] ?? row['Geom'];
+							if (typeof raw !== 'string') continue;
+							const w = raw.replace(/^SRID=\d+;/i, '').trim().toUpperCase();
+							if (!w) continue;
+							if (w.startsWith('POLYGON') || w.startsWith('MULTIPOLYGON')) return 0; // fond
+							if (w.startsWith('POINT') || w.startsWith('MULTIPOINT')) return 1; // au-dessus des polygones
+							if (w.startsWith('LINESTRING') || w.startsWith('MULTILINESTRING')) return 2; // au-dessus de tout
+						}
+						return 1;
+					};
+					const sortedResults = [...(results as { slug: string; table: string; rows: Record<string, unknown>[]; color: string; label: string }[])].sort(
+						(a, b) => detectGeometryRank(a.rows) - detectGeometryRank(b.rows)
 					);
 					const self = this;
 					self.slugIdToLayer.clear();
+					self.rowsBySlug.clear();
 					const couches: { id: string; label: string; color: string; visible: boolean }[] = [];
 					for (const { slug, table, rows, color, label } of sortedResults) {
+						self.rowsBySlug.set(slug, rows || []);
 						const features: { type: 'Feature'; geometry: unknown; properties: object }[] = [];
 						for (const row of rows || []) {
 							const wktRaw = row['geom'] ?? row['Geom'];
@@ -1245,17 +2017,47 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						}
 						if (features.length === 0) continue;
 						const isLine = isLineTable(slug);
-						const style = { color, weight: isLine ? 5 : 2, opacity: 0.9, fillColor: color, fillOpacity: 0.5 };
+						const geometryRank = detectGeometryRank(rows);
+						const paneName = geometryRank === 0 ? 'trace-polygons' : geometryRank === 2 ? 'trace-lines' : 'trace-points';
+						const style = { color, weight: isLine ? 8 : 2, opacity: 0.9, fillColor: color, fillOpacity: 0.5 };
+						const styleWithPane = { ...style, pane: paneName };
 						const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
 						if (!slugGroup) continue;
 						const fc = { type: 'FeatureCollection' as const, features };
 						const geoJsonLayer = leaflet.geoJSON(fc, {
-							style: () => style,
-							pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, { ...style, radius: 8 }),
-							onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (content: string, opts?: { maxWidth?: number }) => void; feature?: unknown }) => {
+							pane: paneName,
+							style: () => styleWithPane,
+							pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, {
+								...styleWithPane,
+								radius: 14,
+								weight: 3,
+								interactive: true
+							}),
+							onEachFeature: (
+								feature: { properties?: Record<string, unknown> },
+								layer: {
+									bindPopup: (content: string, opts?: { maxWidth?: number }) => void;
+									feature?: unknown;
+									on?: (event: string, handler: () => void) => void;
+								}
+							) => {
 								(layer as { feature?: unknown }).feature = feature;
 								const props = feature.properties ?? {};
 								layer.bindPopup(self.buildPopupContent(props), { maxWidth: 400 });
+								const pickedId = String(props['gid'] ?? props['id'] ?? props['objectid'] ?? '').trim();
+								const pickedSlug = String(props['_layerSlug'] ?? slug).trim();
+								if (pickedId && pickedSlug && typeof layer.on === 'function') {
+									layer.on('click', () => {
+										self.selectedTraceRowKey = `${pickedSlug}:${pickedId}`;
+										self.applyTraceStyleToMap();
+										self.cdr.markForCheck();
+									});
+									layer.on('popupclose', () => {
+										self.selectedTraceRowKey = null;
+										self.applyTraceStyleToMap();
+										self.cdr.markForCheck();
+									});
+								}
 							}
 						});
 						geoJsonLayer.eachLayer((l: unknown) => {
@@ -1299,9 +2101,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					this.initialBounds = bounds ?? this.initialBounds;
 					const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
 					if (m?.invalidateSize) m.invalidateSize();
-					if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+					if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
 					this.mapLoading = false;
 					this.cdr.markForCheck();
+					this.updateLigneSecoursOptionsBySelection();
 					setTimeout(() => self.highlightSelectionOnMap(), 0);
 				});
 			},

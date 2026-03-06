@@ -212,6 +212,78 @@ $header-height: 56px;
 	color: #fff;
 }
 
+.trace-reseau-btn--info {
+	background: #2563eb;
+	color: #fff;
+	border-color: #2563eb;
+}
+
+.trace-reseau-btn--info:hover {
+	background: #1d4ed8;
+	border-color: #1d4ed8;
+	color: #fff;
+}
+
+.trace-reseau-required {
+	color: #dc2626;
+}
+
+// Modale cause de la coupure (sur la carte)
+:host ::ng-deep .trace-reseau-coupure-cause-dialog .p-dialog-content {
+	padding-top: 0.5rem;
+}
+
+.trace-reseau-coupure-cause-intro {
+	margin: 0 0 1rem;
+	font-size: 0.9rem;
+	color: #475569;
+}
+
+.trace-reseau-coupure-cause-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	max-height: 50vh;
+	overflow-y: auto;
+	padding-right: 0.25rem;
+}
+
+.trace-reseau-coupure-cause-item {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	text-align: left;
+	padding: 0.75rem 1rem;
+	border: 2px solid #e2e8f0;
+	border-radius: 8px;
+	background: #fff;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.trace-reseau-coupure-cause-item:hover {
+	border-color: #cbd5e1;
+	background: #f8fafc;
+}
+
+.trace-reseau-coupure-cause-item--selected {
+	border-color: $primary;
+	background: #fff7ed;
+}
+
+.trace-reseau-coupure-cause-label {
+	font-weight: 600;
+	font-size: 0.9rem;
+	color: #1e293b;
+	margin-bottom: 0.35rem;
+}
+
+.trace-reseau-coupure-cause-explanation {
+	font-size: 0.8rem;
+	color: #64748b;
+	line-height: 1.4;
+}
+
 .trace-reseau-coupure-result {
 	margin-top: 0.5rem;
 	padding: 0.55rem 0.65rem;
@@ -227,6 +299,57 @@ $header-height: 56px;
 	margin: 0;
 	font-size: 0.78rem;
 	color: #881337;
+}
+
+.trace-reseau-coupure-supply-desc {
+	color: #1e40af !important;
+	font-size: 0.75rem;
+	margin-top: 0.35rem !important;
+}
+
+.trace-reseau-reelimentation-result {
+	margin-top: 0.5rem;
+	padding: 0.55rem 0.65rem;
+	background: #eff6ff;
+	border: 1px solid #bfdbfe;
+	border-radius: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.trace-reseau-reelimentation-result p {
+	margin: 0;
+	font-size: 0.78rem;
+	color: #1e3a8a;
+}
+
+.trace-reseau-reelimentation-legend {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin-top: 0.2rem !important;
+}
+
+.trace-reseau-legend-chip {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 999px;
+	border: 1px solid rgba(15, 23, 42, 0.25);
+	margin-right: 0.2rem;
+}
+
+.trace-reseau-legend-chip--black {
+	background: #111111;
+}
+
+.trace-reseau-legend-chip--blue {
+	background: #2563eb;
+}
+
+.trace-reseau-legend-chip--green {
+	background: #16a34a;
 }
 
 // Éléments utilisables pour les tracés
@@ -586,6 +709,22 @@ $header-height: 56px;
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 0.5rem;
+}
+
+.trace-reseau-reelimentation-float {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 0.45rem;
+}
+
+.trace-reseau-reelimentation-panel {
+	min-width: 340px;
+	max-width: min(42vw, 460px);
 }
 
 .trace-reseau-resume-float,

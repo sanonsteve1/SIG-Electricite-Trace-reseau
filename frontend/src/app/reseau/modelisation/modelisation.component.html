@@ -98,13 +98,37 @@
 								Charger la liste
 							}
 						</button>
+						@if (!selectedLayerSlug && selectedOuvragesCount > 0) {
+							<div class="modelisation-ouvrages-toolbar modelisation-ouvrages-toolbar--map-selection">
+								<span class="modelisation-ouvrages-toolbar-label">{{ selectedOuvragesCount }} ouvrage(s) sélectionné(s) sur la carte</span>
+								<button type="button" class="modelisation-btn modelisation-btn--outline modelisation-btn-sm" (click)="clearOuvrageSelection()" title="Tout désélectionner">Tout décocher</button>
+								<button type="button" class="modelisation-btn modelisation-btn--danger modelisation-btn-sm" (click)="openBulkDeleteConfirm()" [disabled]="crudLoading" title="Supprimer les éléments sélectionnés">
+									<i class="fa fa-trash"></i> Supprimer la sélection
+								</button>
+							</div>
+						}
 						@if (selectedLayerSlug && ouvragesList.length >= 0 && !ouvragesLoading) {
 							<div class="modelisation-ouvrages-list">
 								@if (ouvragesList.length === 0) {
 									<p class="modelisation-empty">Aucun enregistrement pour cette couche.</p>
 								} @else {
+									<div class="modelisation-ouvrages-toolbar">
+										<div class="modelisation-ouvrages-toolbar-actions">
+											<button type="button" class="modelisation-btn modelisation-btn--outline modelisation-btn-sm" (click)="selectAllOuvrages()" title="Tout sélectionner">Tout cocher</button>
+											<button type="button" class="modelisation-btn modelisation-btn--outline modelisation-btn-sm" (click)="clearOuvrageSelection()" [disabled]="selectedOuvragesCount === 0" title="Tout désélectionner">Tout décocher</button>
+										</div>
+										@if (selectedOuvragesCount > 0) {
+											<button type="button" class="modelisation-btn modelisation-btn--danger modelisation-btn-sm" (click)="openBulkDeleteConfirm()" [disabled]="crudLoading" title="Supprimer les éléments sélectionnés">
+												<i class="fa fa-trash"></i> Supprimer la sélection ({{ selectedOuvragesCount }})
+											</button>
+										}
+									</div>
 									@for (ouvrage of ouvragesList; track getPkValue(ouvrage)) {
-										<div class="modelisation-ouvrage-row">
+										<div class="modelisation-ouvrage-row" [class.modelisation-ouvrage-row--selected]="isOuvrageSelected(ouvrage)">
+											<label class="modelisation-ouvrage-checkbox">
+												<input type="checkbox" [checked]="isOuvrageSelected(ouvrage)" (change)="toggleOuvrageSelection(ouvrage)" [disabled]="crudLoading" />
+												<span class="modelisation-ouvrage-checkbox-label"></span>
+											</label>
 											<div class="modelisation-ouvrage-preview">
 												@for (key of getListColumns(ouvrage).slice(0, 3); track key) {
 													<span class="modelisation-ouvrage-preview-item">{{ key }}: {{ ouvrage[key] }}</span>
@@ -134,6 +158,9 @@
 					@if (!mapPanelCollapsed && !selectedLayerSlug && (selectedMapPanelAction === 'modify' || selectedMapPanelAction === 'delete')) {
 						<span class="modelisation-map-panel-geom-type">Cliquez sur un ouvrage sur la carte</span>
 					}
+					@if (!mapPanelCollapsed && selectedMapPanelAction === 'select') {
+						<span class="modelisation-map-panel-geom-type">Dessinez un rectangle sur la carte pour encadrer les ouvrages à supprimer</span>
+					}
 					<button type="button" class="modelisation-map-panel-toggle" (click)="mapPanelCollapsed = !mapPanelCollapsed" [title]="mapPanelCollapsed ? 'Développer le panneau' : 'Réduire le panneau'">
 						<i class="fa" [class.fa-chevron-right]="mapPanelCollapsed" [class.fa-chevron-down]="!mapPanelCollapsed"></i>
 					</button>
@@ -150,6 +177,10 @@
 					<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'delete'" (click)="actionDelete()" title="Supprimer : cliquez sur un ouvrage sur la carte">
 						<i class="fa fa-trash"></i>
 						<span class="modelisation-map-panel-btn-text">Supprimer</span>
+					</button>
+					<button type="button" class="modelisation-map-panel-btn modelisation-map-panel-btn--outline" [class.modelisation-map-panel-btn--selected]="selectedMapPanelAction === 'select'" (click)="actionSelect()" title="Sélection : encadrez sur la carte les ouvrages à supprimer" >
+						<i class="fa fa-object-group"></i>
+						<span class="modelisation-map-panel-btn-text">Sélection</span>
 					</button>
 				</div>
 					<div class="modelisation-map-panel-scroll">
@@ -500,6 +531,25 @@
 		<ng-template pTemplate="footer">
 			<button pButton label="Annuler" class="p-button-text" (click)="closeDeleteConfirm()"></button>
 			<button pButton label="Supprimer" icon="pi pi-trash" class="p-button-danger" (click)="confirmDeleteOuvrage()" [loading]="crudLoading" [disabled]="crudLoading"></button>
+		</ng-template>
+	</p-dialog>
+
+	<!-- Modale de confirmation de suppression multiple -->
+	<p-dialog
+		[(visible)]="bulkDeleteConfirmVisible"
+		header="Confirmer la suppression multiple"
+		[modal]="true"
+		[closable]="true"
+		[style]="{ width: 'min(90vw, 400px)' }"
+		(onHide)="closeBulkDeleteConfirm()"
+		styleClass="modelisation-dialog modelisation-dialog--delete"
+	>
+		<div class="modelisation-delete-confirm">
+			<p><i class="fa fa-exclamation-triangle modelisation-delete-confirm-icon"></i> Supprimer les <strong>{{ selectedOuvragesCount }}</strong> ouvrage(s) sélectionné(s) ? Cette action est irréversible.</p>
+		</div>
+		<ng-template pTemplate="footer">
+			<button pButton label="Annuler" class="p-button-text" (click)="closeBulkDeleteConfirm()"></button>
+			<button pButton label="Supprimer tout" icon="pi pi-trash" class="p-button-danger" (click)="confirmBulkDeleteOuvrages()" [loading]="crudLoading" [disabled]="crudLoading"></button>
 		</ng-template>
 	</p-dialog>
 

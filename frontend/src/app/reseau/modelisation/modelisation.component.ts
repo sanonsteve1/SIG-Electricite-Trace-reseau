@@ -88,7 +88,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Spinner : chargement des couches sur la carte */
 	layersMapLoading = false;
 	/** Action du panneau carte actuellement sélectionnée (pour mise en évidence visuelle) */
-	selectedMapPanelAction: 'create' | 'modify' | 'delete' | null = null;
+	selectedMapPanelAction: 'create' | 'modify' | 'delete' | 'select' | null = null;
 	ouvragesList: Record<string, unknown>[] = [];
 	ouvragesLoading = false;
 	ouvrageModalVisible = false;
@@ -115,6 +115,10 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Modale de confirmation de suppression */
 	deleteConfirmVisible = false;
 	ouvrageToDelete: Record<string, unknown> | null = null;
+	/** Sélection multiple pour suppression en masse (clés "slug:pk" pour supporter plusieurs couches) */
+	selectedOuvragePks = new Set<string>();
+	/** Modale de confirmation de suppression multiple */
+	bulkDeleteConfirmVisible = false;
 	/** Overlay plein écran : succès (confettis) ou échec (animation) après enregistrement/suppression */
 	crudOverlayVisible = false;
 	crudOverlaySuccess = false;
@@ -134,8 +138,14 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	private blinkInterval: ReturnType<typeof setInterval> | null = null;
 	private blinkTimeout: ReturnType<typeof setTimeout> | null = null;
 	/** Clé ouvrage (slug:pk) → layer + style par défaut (pour mise en évidence au consulter) */
-	private ouvrageIdToLayer = new Map<string, { layer: { setStyle: (s: object) => void; getBounds?: () => unknown; bringToFront?: () => void }; defaultColor: string; isLine: boolean }>();
+	private ouvrageIdToLayer = new Map<string, { layer: { setStyle: (s: object) => void; getBounds?: () => unknown; getLatLng?: () => { lat: number; lng: number }; bringToFront?: () => void }; defaultColor: string; isLine: boolean }>();
 	private highlightedOuvrageKey: string | null = null;
+	/** Mode sélection par rectangle : début du tracé (lat, lng) */
+	private selectRectStart: [number, number] | null = null;
+	/** Rectangle de sélection affiché pendant le dessin */
+	private selectRectLayer: unknown = null;
+	/** Nettoyage des écouteurs de dessin du rectangle de sélection */
+	private removeSelectRectListeners: (() => void) | null = null;
 	/** Détails chargés au clic popup (incluant image) pour éviter des appels répétés. */
 	private popupDetailsCache = new Map<string, Record<string, unknown>>();
 
@@ -194,6 +204,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	ngOnDestroy(): void {
 		this.clearCrudOverlayTimeout();
 		this.stopBlink();
+		this.stopSelectRectDrawing();
 		if (this.popupButtonsClickListener && this.mapContainer?.nativeElement) {
 			this.mapContainer.nativeElement.removeEventListener('click', this.popupButtonsClickListener);
 			this.popupButtonsClickListener = null;
@@ -388,6 +399,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.selectedLayerGeometryType = null;
 		this.selectedMapPanelAction = null;
 		this.mapPanelCollapsed = true;
+		this.selectedOuvragePks.clear();
 		if (slug && this.gisApi) {
 			this.gisApi.getTableMeta(slug).pipe(
 				catchError(() => of({ slug, table: slug, geometry_type: undefined }))
@@ -405,11 +417,12 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		if (!slug || !this.gisApi) return;
 		this.ouvragesLoading = true;
 		this.cdr.markForCheck();
-		const showAllLayersOnMap = this.selectedMapPanelAction === 'modify' || this.selectedMapPanelAction === 'delete' || this.selectedMapPanelAction === 'create';
+		const showAllLayersOnMap = this.selectedMapPanelAction === 'modify' || this.selectedMapPanelAction === 'delete' || this.selectedMapPanelAction === 'create' || this.selectedMapPanelAction === 'select';
 		this.gisApi.getList(slug, 2000, 0).pipe(
 			catchError(() => of([]))
 		).subscribe((list) => {
 			this.ouvragesList = list;
+			this.selectedOuvragePks.clear();
 			this.ouvragesLoading = false;
 			if (showAllLayersOnMap && this.map && this.layerGroup) {
 				// Afficher toutes les couches sur la carte (ligne, point, polygone, etc.)
@@ -516,6 +529,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Démarre la création : dessin sur la carte selon le type de géométrie, puis formulaire dans le panneau. Charge les suggestions de placement. */
 	openCreate(): void {
 		this.selectedMapPanelAction = 'create';
+		this.stopSelectRectDrawing();
 		this.mapPanelCollapsed = false;
 		this.suggestedConnectionLabel = '';
 		this.createSuggestionsLoaded = false;
@@ -990,6 +1004,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Charge la liste des ouvrages et marque l’action « Modifier » comme sélectionnée */
 	actionModify(): void {
 		this.selectedMapPanelAction = 'modify';
+		this.stopSelectRectDrawing();
 		if (this.selectedLayerSlug) {
 			this.loadOuvragesForLayer();
 		} else if (this.couchesModele.length > 0 && this.map && this.layerGroup) {
@@ -1002,12 +1017,110 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/** Charge la liste des ouvrages et marque l’action « Supprimer » comme sélectionnée */
 	actionDelete(): void {
 		this.selectedMapPanelAction = 'delete';
+		this.stopSelectRectDrawing();
 		if (this.selectedLayerSlug) {
 			this.loadOuvragesForLayer();
 		} else if (this.couchesModele.length > 0 && this.map && this.layerGroup) {
 			this.loadAllLayersOnMap();
 		}
 		this.mapPanelCollapsed = false;
+		this.cdr.markForCheck();
+	}
+
+	actionSelect(): void {
+		this.selectedMapPanelAction = 'select';
+		this.mapPanelCollapsed = false;
+		if (this.selectedLayerSlug) {
+			this.loadOuvragesForLayer();
+		} else if (this.couchesModele.length > 0 && this.map && this.layerGroup) {
+			this.loadAllLayersOnMap();
+		}
+		this.startSelectRectDrawing();
+		this.cdr.markForCheck();
+	}
+
+	private startSelectRectDrawing(): void {
+		this.stopSelectRectDrawing();
+		if (!this.map) return;
+		import('leaflet').then((LMod) => {
+			const L = (LMod as { default: unknown }).default as {
+				latLngBounds: (sw: [number, number], ne: [number, number]) => unknown;
+				rectangle: (bounds: unknown, opts: object) => { setBounds: (b: unknown) => void; addTo: (m: unknown) => unknown; getBounds?: () => { getSouthWest: () => { lat: number; lng: number }; getNorthEast: () => { lat: number; lng: number } } };
+			};
+			const map = this.map as { on: (ev: string, fn: (e: unknown) => void) => unknown; off: (ev: string, fn?: (e: unknown) => void) => void; addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void };
+			const onMouseDown = (e: unknown): void => {
+				const ev = e as { latlng: { lat: number; lng: number } };
+				if (!ev?.latlng) return;
+				this.selectRectStart = [ev.latlng.lat, ev.latlng.lng];
+				const bounds = L.latLngBounds([ev.latlng.lat, ev.latlng.lng], [ev.latlng.lat, ev.latlng.lng]);
+				this.selectRectLayer = L.rectangle(bounds, { color: '#dc2626', weight: 2, fillColor: '#dc2626', fillOpacity: 0.2, pane: 'selectPane' });
+				map.addLayer(this.selectRectLayer);
+				this.cdr.markForCheck();
+			};
+			const onMouseMove = (e: unknown): void => {
+				if (!this.selectRectStart || !this.selectRectLayer) return;
+				const ev = e as { latlng: { lat: number; lng: number } };
+				if (!ev?.latlng) return;
+				const [lat1, lng1] = this.selectRectStart;
+				const southWest: [number, number] = [Math.min(lat1, ev.latlng.lat), Math.min(lng1, ev.latlng.lng)];
+				const northEast: [number, number] = [Math.max(lat1, ev.latlng.lat), Math.max(lng1, ev.latlng.lng)];
+				(this.selectRectLayer as { setBounds: (b: unknown) => void }).setBounds(L.latLngBounds(southWest, northEast));
+				this.cdr.markForCheck();
+			};
+			const onMouseUp = (): void => {
+				if (!this.selectRectStart || !this.selectRectLayer || !this.map) return;
+				const b = (this.selectRectLayer as { getBounds?: () => { getSouthWest: () => { lat: number; lng: number }; getNorthEast: () => { lat: number; lng: number } } }).getBounds?.();
+				if (b) {
+					const sw = b.getSouthWest();
+					const ne = b.getNorthEast();
+					this.selectOuvragesInBounds(L.latLngBounds([sw.lat, sw.lng], [ne.lat, ne.lng]));
+				}
+				map.removeLayer(this.selectRectLayer);
+				this.selectRectLayer = null;
+				this.selectRectStart = null;
+				this.cdr.markForCheck();
+			};
+			map.on('mousedown', onMouseDown);
+			map.on('mousemove', onMouseMove);
+			map.on('mouseup', onMouseUp);
+			this.removeSelectRectListeners = (): void => {
+				map.off('mousedown', onMouseDown);
+				map.off('mousemove', onMouseMove);
+				map.off('mouseup', onMouseUp);
+				if (this.selectRectLayer && this.map) (this.map as { removeLayer: (l: unknown) => void }).removeLayer(this.selectRectLayer);
+				this.selectRectLayer = null;
+				this.selectRectStart = null;
+				this.removeSelectRectListeners = null;
+			};
+		});
+	}
+
+	private stopSelectRectDrawing(): void {
+		if (this.removeSelectRectListeners) {
+			this.removeSelectRectListeners();
+			this.removeSelectRectListeners = null;
+		}
+	}
+
+	private selectOuvragesInBounds(selectionBounds: unknown): void {
+		this.ouvrageIdToLayer.forEach((entry, key) => {
+			const slug = this.selectedLayerSlug;
+			if (slug && !key.startsWith(`${slug}:`)) return;
+			const layer = entry.layer as { getBounds?: () => unknown; getLatLng?: () => { lat: number; lng: number } };
+			let inside = false;
+			if (layer.getBounds) {
+				const layerBounds = layer.getBounds();
+				if (layerBounds && typeof (selectionBounds as { intersects: (b: unknown) => boolean }).intersects === 'function') {
+					inside = (selectionBounds as { intersects: (b: unknown) => boolean }).intersects(layerBounds);
+				}
+			} else if (layer.getLatLng) {
+				const latlng = layer.getLatLng();
+				if (latlng && typeof (selectionBounds as { contains: (p: unknown) => boolean }).contains === 'function') {
+					inside = (selectionBounds as { contains: (p: unknown) => boolean }).contains(latlng);
+				}
+			}
+			if (inside) this.selectedOuvragePks.add(key);
+		});
 		this.cdr.markForCheck();
 	}
 
@@ -1699,6 +1812,89 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		});
 	}
 
+	/** Nombre d'ouvrages sélectionnés pour la suppression multiple */
+	get selectedOuvragesCount(): number {
+		return this.selectedOuvragePks.size;
+	}
+
+	/** Indique si un ouvrage est sélectionné pour la suppression multiple */
+	isOuvrageSelected(ouvrage: Record<string, unknown>): boolean {
+		if (!this.selectedLayerSlug) return false;
+		return this.selectedOuvragePks.has(`${this.selectedLayerSlug}:${this.getPkValue(ouvrage)}`);
+	}
+
+	/** Bascule la sélection d'un ouvrage pour la suppression multiple */
+	toggleOuvrageSelection(ouvrage: Record<string, unknown>): void {
+		if (!this.selectedLayerSlug) return;
+		const key = `${this.selectedLayerSlug}:${this.getPkValue(ouvrage)}`;
+		if (this.selectedOuvragePks.has(key)) {
+			this.selectedOuvragePks.delete(key);
+		} else {
+			this.selectedOuvragePks.add(key);
+		}
+		this.cdr.markForCheck();
+	}
+
+	/** Sélectionne tous les ouvrages de la liste courante */
+	selectAllOuvrages(): void {
+		if (!this.selectedLayerSlug) return;
+		this.ouvragesList.forEach((o) => this.selectedOuvragePks.add(`${this.selectedLayerSlug}:${this.getPkValue(o)}`));
+		this.cdr.markForCheck();
+	}
+
+	/** Désélectionne tous les ouvrages */
+	clearOuvrageSelection(): void {
+		this.selectedOuvragePks.clear();
+		this.cdr.markForCheck();
+	}
+
+	/** Ouvre la modale de confirmation de suppression multiple */
+	openBulkDeleteConfirm(): void {
+		if (this.selectedOuvragePks.size === 0) return;
+		this.bulkDeleteConfirmVisible = true;
+		this.cdr.markForCheck();
+	}
+
+	/** Ferme la modale de confirmation de suppression multiple */
+	closeBulkDeleteConfirm(): void {
+		this.bulkDeleteConfirmVisible = false;
+		this.cdr.markForCheck();
+	}
+
+	/** Supprime tous les ouvrages sélectionnés après confirmation */
+	confirmBulkDeleteOuvrages(): void {
+		if (!this.gisApi || this.selectedOuvragePks.size === 0) {
+			this.closeBulkDeleteConfirm();
+			return;
+		}
+		const keys = Array.from(this.selectedOuvragePks);
+		this.closeBulkDeleteConfirm();
+		this.selectedOuvragePks.clear();
+		this.crudLoading = true;
+		this.cdr.markForCheck();
+		const deleteCalls = keys.map((key) => {
+			const i = key.indexOf(':');
+			const slug = i >= 0 ? key.substring(0, i) : this.selectedLayerSlug ?? '';
+			const pk = i >= 0 ? key.substring(i + 1) : key;
+			return slug && pk ? this.gisApi!.deleteRow(slug, pk).pipe(map((r) => ({ pk, ...r })), catchError(() => of({ pk, deleted: false }))) : of({ pk: key, deleted: false });
+		});
+		forkJoin(deleteCalls).subscribe((results) => {
+			this.crudLoading = false;
+			const deleted = results.filter((r) => r.deleted).length;
+			const failed = results.length - deleted;
+			if (failed === 0) {
+				this.modelResult = { success: true, message: `${deleted} ouvrage(s) supprimé(s).` };
+				this.showCrudSuccessOverlay(`${deleted} ouvrage(s) supprimé(s).`);
+			} else {
+				this.modelResult = { success: false, message: `${deleted} supprimé(s), ${failed} échec(s).` };
+				this.showCrudFailureOverlay(this.modelResult.message);
+			}
+			this.loadOuvragesForLayer();
+			if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+			this.cdr.markForCheck();
+		});
+	}
+
 	/** Exporter le modèle (fichier ou API) */
 	exporterModele(): void {
 		this.modelResult = null;
@@ -1778,6 +1974,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 					suggestPane.classList.add('modelisation-suggest-pane');
 				}
 				suggestOpts = { pane: 'suggestPane' };
+				const selPane = mapWithPane.createPane('selectPane');
+				if (selPane) selPane.style.zIndex = '620';
 			}
 			this.suggestionLayerGroup = (Lx.layerGroup as (opts?: object) => { addTo: (m: unknown) => unknown; addLayer: (l: unknown) => void; clearLayers: () => void })(suggestOpts).addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			// Recharger les suggestions (lignes BT, branchements proposés) au déplacement de la carte en mode Créer
