@@ -228,6 +228,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Lignes/ouvrages pouvant alimenter la zone coupée (tracé depuis le départ de secours sélectionné). */
 	private coupureSupplyOuvrageIdsCanon = new Set<string>();
 
+	/** Schéma unifilaire : modale et sections du flux (poste source → HT → ouvrages → BT → raccordements). */
+	showUnifilaireModal = false;
+	unifilaireSections: { stageLabel: string; order: number; items: { slug: string; label: string; count: number; color: string }[] }[] = [];
+
 	canUndo = false;
 	canRedo = false;
 
@@ -303,7 +307,6 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				this.slugPosteSource = t.slug;
 				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
 					this.posteSourceOptions = this.buildOptionsFromRows(rows, ['numero_poste', 'assetid', 'name', 'objectid', 'gid'], 'Poste source');
-					if (this.posteSourceOptions.length > 0) this.paramPosteSource = this.posteSourceOptions[0].value;
 					this.cdr.markForCheck();
 				});
 			}
@@ -384,7 +387,6 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						if (!uniq.has(o.value)) uniq.set(o.value, o);
 					}
 					this.posteTransfoOptions = Array.from(uniq.values());
-					if (this.posteTransfoOptions.length > 0) this.paramPosteTransfo = this.posteTransfoOptions[0].value;
 					this.cdr.markForCheck();
 				});
 			}
@@ -399,7 +401,6 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				this.slugAbonne = t.slug;
 				this.gisApi.getList(t.slug, 200, 0).subscribe((rows) => {
 					this.abonneOptions = this.buildOptionsFromRows(rows, ['numero', 'numero_abonne', 'num_abonne', 'nom', 'code_client', 'subscribernumber', 'subscribername', 'meternumber', 'customercode', 'name', 'gid'], 'Point raccordement');
-					if (this.abonneOptions.length > 0) this.paramAbonne = this.abonneOptions[0].value;
 					this.cdr.markForCheck();
 				});
 			}
@@ -1215,7 +1216,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	getCurrentStartLabel(): string {
 		if (this.selectedMapStart) return this.selectedMapStart.label;
-		return this.getSelectedOptionLabel() || 'Sélection courante';
+		return this.getSelectedOptionLabel() || 'Aucun';
 	}
 
 	onTraceRowClick(item: { slug: string; id: string }): void {
@@ -1745,6 +1746,92 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.reelimentationSupplySetCanon = new Set();
 	}
 
+	/** Ordre d’étage du flux pour le schéma unifilaire (1 = amont, 5 = aval). */
+	private getUnifilaireStageOrder(slug: string): number {
+		const s = (slug || '').toLowerCase();
+		if (s.includes('poste-source') || s.includes('limite-poste') || s.includes('arrivee')) return 1;
+		if (s.includes('ligne') && (s.includes('hta') || s.includes('ht'))) return 2;
+		if (s.includes('poteau') || s.includes('cellule') || s.includes('transformateur') || s.includes('transfo') || s.includes('parafoudre') || s.includes('poste-cabine') || s.includes('depart') && !s.includes('bt')) return 3;
+		if (s.includes('ligne') && (s.includes('bt') || s.includes('brcht'))) return 4;
+		if (s.includes('abonne') || s.includes('raccordement') || s.includes('branchement') || s.includes('compteur')) return 5;
+		return 3;
+	}
+
+	/** Libellé court d’un slug pour le schéma unifilaire. */
+	getUnifilaireLabel(slug: string): string {
+		const labels: Record<string, string> = {
+			'poste-source': 'Poste source',
+			'limite-poste-sourc': 'Poste source',
+			arrivee: 'Arrivée HT',
+			'ligne-hta-aerien': 'Ligne HTA',
+			'ligne-hta-souter': 'Ligne HTA',
+			'ligne-hta': 'Ligne HTA',
+			'depart-bt': 'Départ BT',
+			depart: 'Départ MT',
+			'poteau-hta': 'Poteau HTA',
+			'poteau-bt': 'Poteau BT',
+			'transformateur-ps': 'Transfo puissance',
+			'transfo-ht-bt': 'Transfo MT/BT',
+			cellule: 'Cellule',
+			parafoudre: 'Parafoudre',
+			'poste-cabine': 'Poste cabine',
+			'ligne-brcht': 'Ligne branchement',
+			'ligne-bt': 'Ligne BT',
+			'point-raccordement': 'Point raccordement',
+			branchement: 'Branchement',
+			abonne: 'Abonné',
+			compteur: 'Compteur'
+		};
+		const lower = (slug || '').toLowerCase();
+		const entries = Object.entries(labels).sort((a, b) => b[0].length - a[0].length);
+		for (const [key, label] of entries) {
+			if (lower === key || lower.includes(key)) return label;
+		}
+		return slug || 'Ouvrage';
+	}
+
+	/** Construit les sections du schéma unifilaire à partir du tracé courant. */
+	buildUnifilaireSections(): void {
+		const stageLabels: Record<number, string> = {
+			1: 'Source / Arrivée HT',
+			2: 'Lignes HTA',
+			3: 'Ouvrages MT (poteaux, cellules, transfo)',
+			4: 'Lignes BT',
+			5: 'Raccordements / Abonnés'
+		};
+		const byStage = new Map<number, { slug: string; label: string; count: number; color: string }[]>();
+		for (const t of this.traceTypeCounts) {
+			const order = this.getUnifilaireStageOrder(t.slug);
+			const list = byStage.get(order) ?? [];
+			list.push({
+				slug: t.slug,
+				label: this.getUnifilaireLabel(t.slug),
+				count: t.count,
+				color: t.color
+			});
+			byStage.set(order, list);
+		}
+		const orders = Array.from(byStage.keys()).sort((a, b) => a - b);
+		this.unifilaireSections = orders.map((order) => ({
+			stageLabel: stageLabels[order] ?? 'Autres',
+			order,
+			items: byStage.get(order) ?? []
+		}));
+	}
+
+	/** Ouvre la modale du schéma unifilaire (représentation simplifiée du flux d’énergie). */
+	openUnifilaireModal(): void {
+		this.buildUnifilaireSections();
+		this.showUnifilaireModal = true;
+		this.cdr.markForCheck();
+	}
+
+	/** Ferme la modale du schéma unifilaire. */
+	closeUnifilaireModal(): void {
+		this.showUnifilaireModal = false;
+		this.cdr.markForCheck();
+	}
+
 	/** Exporte la liste des ouvrages du tracé courant en JSON. */
 	exporterTrace(): void {
 		const list = Array.from(this.traceOuvrageIds).map((key) => {
@@ -2049,6 +2136,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 								if (pickedId && pickedSlug && typeof layer.on === 'function') {
 									layer.on('click', () => {
 										self.selectedTraceRowKey = `${pickedSlug}:${pickedId}`;
+										const label = String(props['_layerLabel'] ?? props['name'] ?? props['numero_poste'] ?? props['assetid'] ?? props['numero'] ?? `${pickedSlug}:${pickedId}`).trim() || `${pickedSlug}:${pickedId}`;
+										self.selectedMapStart = { slug: pickedSlug, id: pickedId, label };
 										self.applyTraceStyleToMap();
 										self.cdr.markForCheck();
 									});

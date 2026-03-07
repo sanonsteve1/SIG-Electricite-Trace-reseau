@@ -1163,3 +1163,80 @@ $header-height: 56px;
 	border-color: #fca5a5;
 	color: #b91c1c;
 }
+
+// Schéma unifilaire (flux d’énergie)
+::ng-deep .trace-reseau-unifilaire-dialog .p-dialog-content {
+	padding: 0.75rem 1rem 1rem;
+}
+
+.trace-reseau-unifilaire-intro {
+	font-size: 0.9rem;
+	color: #475569;
+	margin: 0 0 1rem;
+	line-height: 1.4;
+}
+
+.trace-reseau-unifilaire-flow {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.trace-reseau-unifilaire-stage {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.trace-reseau-unifilaire-stage-label {
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #64748b;
+	min-width: 10rem;
+}
+
+.trace-reseau-unifilaire-stage-items {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.trace-reseau-unifilaire-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.35rem 0.65rem;
+	border-radius: 6px;
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	background: color-mix(in srgb, var(--item-color, #94a3b8) 18%, #fff);
+	color: #1e293b;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.trace-reseau-unifilaire-item-count {
+	background: rgba(0, 0, 0, 0.08);
+	padding: 0.1rem 0.4rem;
+	border-radius: 4px;
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+.trace-reseau-unifilaire-arrow {
+	color: #cbd5e1;
+	font-size: 0.9rem;
+	padding: 0 0.25rem;
+}
+
+.trace-reseau-unifilaire-empty {
+	font-size: 0.9rem;
+	color: #64748b;
+	margin: 1rem 0 0;
+	padding: 1rem;
+	background: #f1f5f9;
+	border-radius: 8px;
+}

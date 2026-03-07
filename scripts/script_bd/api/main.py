@@ -727,13 +727,176 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     return start
 
 
-def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> tuple[list[tuple[str, str]], set[str]]:
+def _trace_has_hta_depart_nodes(cur, node_ids: set[str]) -> bool:
+    """True si au moins un des node_ids correspond à un depart HTA (gid dans la table depart)."""
+    if not node_ids:
+        return False
+    canon = sorted({_canon_id(n) for n in node_ids if _canon_id(n)})
+    if not canon:
+        return False
+    try:
+        placeholders = ", ".join(["%s"] * len(canon))
+        cur.execute(
+            f"SELECT 1 FROM depart WHERE {_canon_sql_expr('gid')} IN ({placeholders}) LIMIT 1",
+            tuple(canon),
+        )
+        return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def _trace_ref_is_point_raccordement_or_abonne(cur, ref_id: str) -> bool:
+    """
+    True si ref_id est le gid d'un point de raccordement ou d'un abonné.
+    Depuis un tel point, on souhaite souvent n'afficher que la ligne et les poteaux qui l'alimentent (amont),
+    pas tout le réseau connecté.
+    """
+    if not ref_id or not str(ref_id).strip():
+        return False
+    ref_canon = _canon_id(ref_id)
+    try:
+        cur.execute(
+            "SELECT 1 FROM point_raccordement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        if cur.fetchone():
+            return True
+    except Exception:
+        pass
+    try:
+        cur.execute(
+            "SELECT 1 FROM abonne WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        if cur.fetchone():
+            return True
+    except Exception:
+        pass
+    try:
+        cur.execute(
+            "SELECT 1 FROM branchement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        if cur.fetchone():
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _trace_get_ligne_brcht_only_for_raccord(cur, ref_id: str) -> tuple[str | None, str | None]:
+    """
+    Depuis un point de raccordement (ou abonné / branchement), retourne uniquement
+    la ligne de branchement liée à ce point : (gid_ligne_brcht, gid_point_raccordement).
+    Retourne (None, None) si ref_id n'est pas un point de raccordement/abonné/branchement
+    ou si la ligne de branchement est introuvable.
+    """
+    ref_canon = _canon_id(ref_id)
+    if not ref_canon:
+        return None, None
+    pt_racc_gid: str | None = None
+    ligne_brcht_gid: str | None = None
+    try:
+        # 1) ref_id = point_raccordement
+        cur.execute(
+            "SELECT gid, id_ligne_brcht FROM point_raccordement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        row = cur.fetchone()
+        if row and row.get("id_ligne_brcht") is not None:
+            pt_racc_gid = str(row["gid"]).strip() if row.get("gid") else None
+            ligne_brcht_gid = str(row["id_ligne_brcht"]).strip()
+            return ligne_brcht_gid, pt_racc_gid
+    except Exception:
+        pass
+    try:
+        # 2) ref_id = branchement -> id_point_raccordement
+        cur.execute(
+            "SELECT id_point_raccordement FROM branchement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        row = cur.fetchone()
+        if row and row.get("id_point_raccordement") is not None:
+            pt_id = str(row["id_point_raccordement"]).strip()
+            cur.execute(
+                "SELECT gid, id_ligne_brcht FROM point_raccordement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                (_canon_id(pt_id),),
+            )
+            r2 = cur.fetchone()
+            if r2 and r2.get("id_ligne_brcht") is not None:
+                pt_racc_gid = str(r2["gid"]).strip() if r2.get("gid") else None
+                ligne_brcht_gid = str(r2["id_ligne_brcht"]).strip()
+                return ligne_brcht_gid, pt_racc_gid
+    except Exception:
+        pass
+    try:
+        # 3) ref_id = abonne -> branchement.id_abonne -> id_point_raccordement
+        dep_bt_meta = TABLE_BY_SLUG.get("branchement", (None, {}))[1] or {}
+        id_abonne_col = "id_abonne" if _table_has_column(dep_bt_meta, "id_abonne") else None
+        if not id_abonne_col:
+            # table branchement peut avoir un autre nom de colonne
+            for c in ["id_abonne", "abonne_id", "gid_abonne"]:
+                if _table_has_column(TABLE_BY_SLUG.get("distributionpanel-branchement", (None, {}))[1] or {}, c):
+                    id_abonne_col = c
+                    break
+        if id_abonne_col:
+            qcol = quote_ident(id_abonne_col)
+            qtable = quote_ident("branchement")
+            cur.execute(
+                f"SELECT id_point_raccordement FROM {qtable} WHERE {_canon_sql_expr(id_abonne_col)} = %s LIMIT 1",
+                (ref_canon,),
+            )
+            row = cur.fetchone()
+            if row and row.get("id_point_raccordement") is not None:
+                pt_id = str(row["id_point_raccordement"]).strip()
+                cur.execute(
+                    "SELECT gid, id_ligne_brcht FROM point_raccordement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                    (_canon_id(pt_id),),
+                )
+                r2 = cur.fetchone()
+                if r2 and r2.get("id_ligne_brcht") is not None:
+                    pt_racc_gid = str(r2["gid"]).strip() if r2.get("gid") else None
+                    ligne_brcht_gid = str(r2["id_ligne_brcht"]).strip()
+                    return ligne_brcht_gid, pt_racc_gid
+    except Exception:
+        pass
+    # Fallback: abonne via branchement sans colonne id_abonne (chercher branchement par gid abonne = ref_id)
+    try:
+        cur.execute(
+            "SELECT id_point_raccordement FROM branchement WHERE " + _canon_sql_expr("id_abonne") + " = %s LIMIT 1",
+            (ref_canon,),
+        )
+        row = cur.fetchone()
+        if row and row.get("id_point_raccordement") is not None:
+            pt_id = str(row["id_point_raccordement"]).strip()
+            cur.execute(
+                "SELECT gid, id_ligne_brcht FROM point_raccordement WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                (_canon_id(pt_id),),
+            )
+            r2 = cur.fetchone()
+            if r2 and r2.get("id_ligne_brcht") is not None:
+                pt_racc_gid = str(r2["gid"]).strip() if r2.get("gid") else None
+                ligne_brcht_gid = str(r2["id_ligne_brcht"]).strip()
+                return ligne_brcht_gid, pt_racc_gid
+    except Exception:
+        pass
+    return None, None
+
+
+def _trace_bfs_from_node(
+    cur, start_ids: set[str], direction: str = "aval", restrict_to_bt: bool = False, restrict_to_hta: bool = False
+) -> tuple[list[tuple[str, str]], set[str]]:
     """
     BFS directionnel à partir des nœuds start_ids sur ligne_bt, ligne_hta, ligne_brcht.
     Retourne ([(slug, gid), ...], {node_ids_visités}).
     - aval : suit upstream -> downstream (id_depart_* vers id_poteau_*)
     - amont : suit downstream -> upstream
-    - tous : composante connectée complète (amont + aval)
+    - tous : composante connectée complète (amont + aval). Chaque nœud (dont les poteaux)
+      est traité comme un carrefour : toutes les lignes touchant ce nœud sont suivies,
+      ce qui permet d’afficher toutes les ramifications.
+    - restrict_to_bt : si True, ne pas traverser le réseau HTA (ligne_hta) ni suivre id_poteau_hta
+      dans ligne_brcht, pour que une coupure BT ne remonte pas vers le HTA.
+    - restrict_to_hta : si True, ne traverser que le réseau HTA (ligne_hta uniquement).
     """
     start_ids = {_canon_id(s) for s in start_ids if s and str(s).strip()}
     if not start_ids:
@@ -749,10 +912,13 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
     while frontier:
         next_frontier: set[str] = set()
         frontier_list = list(frontier)
-        for table_name, slug, node_cols in _TRACE_EDGE_TABLES:
-            # Convention directionnelle:
-            # - node_cols[0] = nœud amont principal (id_depart_*)
-            # - node_cols[1:] = nœuds aval (id_poteau_*)
+        tables = [(t, s, c) for t, s, c in _TRACE_EDGE_TABLES if s == "ligne-hta"] if restrict_to_hta else _TRACE_EDGE_TABLES
+        for table_name, slug, node_cols in tables:
+            if restrict_to_bt and slug == "ligne-hta":
+                continue
+            # En restrict_to_bt, ne pas suivre id_poteau_hta de ligne_brcht (reste côté BT uniquement)
+            brcht_bt_only = restrict_to_bt and slug == "ligne-brcht"
+            cols_for_frontier = ["id_depart_bt", "id_poteau_bt"] if brcht_bt_only else node_cols
             upstream_col = node_cols[0]
             downstream_cols = node_cols[1:] if len(node_cols) > 1 else node_cols
             placeholders = ", ".join(["%s"] * len(frontier_list))
@@ -782,9 +948,9 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
                     seen_gids.add(key)
                     result.append((slug, gid_str))
                 if direction == "aval":
-                    candidates = [row.get(c) for c in downstream_cols]
+                    candidates = [row.get(c) for c in (["id_poteau_bt"] if brcht_bt_only else downstream_cols)]
                 elif direction == "tous":
-                    candidates = [row.get(c) for c in node_cols]
+                    candidates = [row.get(c) for c in cols_for_frontier]
                 else:
                     candidates = [row.get(upstream_col)]
                 for v in candidates:
@@ -797,6 +963,139 @@ def _trace_bfs_from_node(cur, start_ids: set[str], direction: str = "aval") -> t
         frontier = next_frontier
 
     return result, visited
+
+
+def _trace_hta_entry_from_poste_cabine(cur, ref_id: str) -> tuple[set[str], str | None]:
+    """
+    Utilise poste_cabine.id_ligne_hta pour obtenir directement les nœuds HTA (id_depart_hta, id_poteau_hta)
+    de la ligne HTA qui alimente le poste cabine. Facilite le tracé amont vers le poste source.
+    Retourne (set des nœuds HTA, gid de la ligne_hta à inclure) ou (set(), None) si non trouvé.
+    """
+    ref_canon = _canon_id(ref_id)
+    if not ref_canon:
+        return set(), None
+    entry: set[str] = set()
+    ligne_hta_gid: str | None = None
+
+    def fetch_from_table(qtable: str, table_label: str) -> bool:
+        nonlocal entry, ligne_hta_gid
+        try:
+            cur.execute(
+                f"SELECT id_ligne_hta FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                (ref_canon,),
+            )
+            row = cur.fetchone()
+            if not row or row.get("id_ligne_hta") is None:
+                return False
+            line_id = _canon_id(str(row["id_ligne_hta"]))
+            if not line_id:
+                return False
+            cur.execute(
+                "SELECT gid, id_depart_hta, id_poteau_hta FROM ligne_hta WHERE " + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                (line_id,),
+            )
+            line_row = cur.fetchone()
+            if not line_row:
+                return False
+            ligne_hta_gid = str(line_row.get("gid", "")).strip() if line_row.get("gid") is not None else None
+            for c in ("id_depart_hta", "id_poteau_hta"):
+                v = line_row.get(c)
+                if v is not None and str(v).strip():
+                    entry.add(_canon_id(v))
+            return True
+        except Exception:
+            return False
+
+    # 1) Requête directe sur poste_cabine (schéma standard)
+    try:
+        qtable = quote_ident("poste_cabine")
+        if fetch_from_table(qtable, "poste_cabine"):
+            return entry, ligne_hta_gid
+    except Exception:
+        pass
+
+    # 2) Chercher la table poste cabine via TABLE_BY_SLUG (slug ou alias poste-cabine)
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        if "poste-cabine" not in slug and _resolve_slug(slug) != "poste-cabine":
+            continue
+        table_name, _meta = TABLE_BY_SLUG[slug]
+        try:
+            qtable = quote_ident(table_name)
+            if fetch_from_table(qtable, slug):
+                return entry, ligne_hta_gid
+        except Exception:
+            continue
+
+    return set(), None
+
+
+def _trace_hta_entry_from_start(cur, start_nodes: set[str]) -> set[str]:
+    """
+    À partir de nœuds de départ (ex. depart_bt pour poste cabine), retourne les nœuds HTA
+    (id_poteau_hta, id_depart_hta) permettant de traverser uniquement le réseau HTA en amont.
+    - Depuis ligne_brcht : id_poteau_hta où id_depart_bt ou id_poteau_bt dans start_nodes.
+    - Depuis ligne_hta : id_poteau_hta où id_depart_hta dans start_nodes (départ déjà côté HTA).
+    """
+    if not start_nodes:
+        return set()
+    canon = sorted({_canon_id(n) for n in start_nodes if _canon_id(n)})
+    if not canon:
+        return set()
+    entry: set[str] = set()
+    placeholders = ", ".join(["%s"] * len(canon))
+    try:
+        cur.execute(
+            "SELECT id_poteau_hta FROM ligne_brcht "
+            f"WHERE {_canon_sql_expr('id_depart_bt')} IN ({placeholders}) OR {_canon_sql_expr('id_poteau_bt')} IN ({placeholders})",
+            tuple(canon) * 2,
+        )
+        for row in cur.fetchall() or []:
+            v = row.get("id_poteau_hta")
+            if v is not None and str(v).strip():
+                entry.add(_canon_id(v))
+    except Exception:
+        pass
+    try:
+        cur.execute(
+            "SELECT id_poteau_hta FROM ligne_hta WHERE " + _canon_sql_expr("id_depart_hta") + f" IN ({placeholders})",
+            tuple(canon),
+        )
+        for row in cur.fetchall() or []:
+            v = row.get("id_poteau_hta")
+            if v is not None and str(v).strip():
+                entry.add(_canon_id(v))
+    except Exception:
+        pass
+    return entry
+
+
+def _trace_bt_start_from_hta_nodes(cur, visited_nodes: set[str]) -> set[str]:
+    """
+    À partir de nœuds HTA (ex. poteau_hta) atteints par le tracé, retourne les nœuds BT
+    (id_depart_bt, id_poteau_bt) des lignes de branchement connectées à ces poteaux HTA.
+    Permet de poursuivre un tracé aval depuis le poste source vers le réseau BT et les points de raccordement.
+    """
+    if not visited_nodes:
+        return set()
+    canon = sorted({_canon_id(n) for n in visited_nodes if _canon_id(n)})
+    if not canon:
+        return set()
+    bt_start: set[str] = set()
+    try:
+        placeholders = ", ".join(["%s"] * len(canon))
+        cur.execute(
+            "SELECT id_depart_bt, id_poteau_bt FROM ligne_brcht "
+            f"WHERE {_canon_sql_expr('id_poteau_hta')} IN ({placeholders})",
+            tuple(canon),
+        )
+        for row in cur.fetchall() or []:
+            for c in ("id_depart_bt", "id_poteau_bt"):
+                v = row.get(c)
+                if v is not None and str(v).strip():
+                    bt_start.add(_canon_id(v))
+    except Exception:
+        pass
+    return bt_start
 
 
 def _trace_directional_links_count(cur) -> int:
@@ -1011,6 +1310,28 @@ def _trace_postes_transfos_from_node_ids(cur, node_ids: set[str]) -> list[tuple[
     except Exception:
         pass
 
+    # 3) Depuis les poteaux HTA visités -> postes cabines (poste_cabine.id_poteau_hta)
+    # Quand on simule une coupure au poste source, on ne parcourt que les lignes HTA ;
+    # les postes cabines sont alimentés via un poteau HTA, donc il faut les inclure via ce lien.
+    try:
+        for slug in sorted(TABLE_BY_SLUG.keys()):
+            if "poste-cabine" not in slug:
+                continue
+            table_name, meta = TABLE_BY_SLUG[slug]
+            if not _table_has_column(meta, "gid") or not _table_has_column(meta, "id_poteau_hta"):
+                continue
+            placeholders = ", ".join(["%s"] * len(canon_nodes))
+            cur.execute(
+                f"SELECT gid FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('id_poteau_hta')} IN ({placeholders})",
+                tuple(canon_nodes),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is not None:
+                    poste_cabine_ids.add(_canon_id(str(gid_val)))
+    except Exception:
+        pass
+
     def _collect_pairs_for_slugs(ids_set: set[str], slug_matcher) -> list[tuple[str, str]]:
         ids = sorted({_canon_id(x) for x in ids_set if _canon_id(x)})
         if not ids:
@@ -1133,41 +1454,108 @@ def trace_ouvrages(
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
-                start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
-                pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, direction)
-                if trace_type == "ouvrage":
-                    ref_canon = _canon_id(ref_id)
-                    for _table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
-                        try:
-                            qtable = quote_ident(_table_name)
-                            cur.execute(
-                                f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
-                                (ref_canon,),
-                            )
-                            row = cur.fetchone()
-                            if row and row.get("gid") is not None:
-                                pairs.append((slug, str(row["gid"])))
-                        except Exception:
-                            continue
-                point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
-                equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
-                raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
-                links_count = _trace_directional_links_count(cur)
-                used_spatial_fallback = False
-                if not pairs and links_count == 0:
-                    # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
-                    pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
-                    point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+                # Depuis un point de raccordement / abonné : en aval/tous on ne retourne que sa ligne de branchement ;
+                # en amont on remonte jusqu'au poste de transformation (BFS amont).
+                from_point_raccordement = trace_type == "abonne" or _trace_ref_is_point_raccordement_or_abonne(cur, ref_id)
+                ligne_brcht_only_gid, _pt_racc_gid = _trace_get_ligne_brcht_only_for_raccord(cur, ref_id) if from_point_raccordement else (None, None)
+                if from_point_raccordement and ligne_brcht_only_gid and direction != "amont":
+                    pairs = [("ligne-brcht", ligne_brcht_only_gid)]
+                    visited_nodes = set()
+                    raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
+                    merged = list(pairs)
+                    seen_merged = set(merged)
+                    for item in raccord_pairs:
+                        if item not in seen_merged:
+                            seen_merged.add(item)
+                            merged.append(item)
+                    pairs = merged
+                else:
+                    # Depuis un point de raccordement / abonné sans ligne_brcht trouvée, ou depuis un autre type : tracé classique.
+                    effective_direction = direction
+                    if direction == "tous" and from_point_raccordement:
+                        effective_direction = "amont"
+                    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
+                    # Coupure BT ne doit pas remonter sur le HTA sauf en amont depuis poste cabine (remonter jusqu'au poste source).
+                    # En amont depuis poste_transformation : ne pas restreindre au BT pour atteindre le poste source.
+                    restrict_to_bt = (
+                        trace_type == "abonne"
+                        or (trace_type == "poste_transformation" and direction != "amont")
+                        or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
+                    )
+                    # En amont : ne traverser que le réseau HTA (ligne_hta) jusqu'au poste source.
+                    # Priorité : poste_cabine.id_ligne_hta pour remonter directement vers le poste source.
+                    ligne_hta_cabine_gid: str | None = None
+                    if effective_direction == "amont":
+                        hta_entry = set()
+                        if trace_type == "poste_transformation":
+                            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, ref_id)
+                        if not hta_entry:
+                            hta_entry = _trace_hta_entry_from_start(cur, start_nodes)
+                        if hta_entry:
+                            pairs, visited_nodes = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+                            # Garantir que la ligne HTA qui alimente le poste cabine est bien dans le résultat
+                            if ligne_hta_cabine_gid and not any(_canon_id(gid) == _canon_id(ligne_hta_cabine_gid) for _s, gid in pairs if _s == "ligne-hta"):
+                                pairs.insert(0, ("ligne-hta", ligne_hta_cabine_gid))
+                        else:
+                            pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, effective_direction, restrict_to_bt=restrict_to_bt)
+                    else:
+                        pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, effective_direction, restrict_to_bt=restrict_to_bt)
+                    if trace_type == "ouvrage":
+                        ref_canon = _canon_id(ref_id)
+                        for _table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+                            try:
+                                qtable = quote_ident(_table_name)
+                                cur.execute(
+                                    f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                                    (ref_canon,),
+                                )
+                                row = cur.fetchone()
+                                if row and row.get("gid") is not None:
+                                    pairs.append((slug, str(row["gid"])))
+                            except Exception:
+                                continue
+                    point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
                     equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
                     raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
-                    used_spatial_fallback = len(pairs) > 0
-                merged: list[tuple[str, str]] = []
-                seen_merged: set[tuple[str, str]] = set()
-                for item in (pairs + point_pairs + equip_pairs + raccord_pairs):
-                    if item not in seen_merged:
-                        seen_merged.add(item)
-                        merged.append(item)
-                pairs = merged
+                    links_count = _trace_directional_links_count(cur)
+                    used_spatial_fallback = False
+                    if not pairs and links_count == 0:
+                        # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
+                        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
+                        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+                        equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
+                        raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
+                        used_spatial_fallback = len(pairs) > 0
+                    merged = []
+                    seen_merged = set()
+                    for item in (pairs + point_pairs + equip_pairs + raccord_pairs):
+                        if item not in seen_merged:
+                            seen_merged.add(item)
+                            merged.append(item)
+
+                    # Règle métier : si le réseau HTA qui alimente le BT est coupé, le réseau BT est coupé aussi.
+                    # En "tous" : ajouter tout le réseau BT en aval des postes cabine.
+                    # En "aval" depuis poste source : descendre jusqu'aux points de raccordement (réseau BT en aval).
+                    bt_start: set[str] = set()
+                    if effective_direction == "aval":
+                        # Le BFS aval HTA s'arrête aux poteaux HTA ; on relie au BT via ligne_brcht (id_poteau_hta).
+                        bt_start = _trace_bt_start_from_hta_nodes(cur, visited_nodes)
+                    poste_cabine_gids = [gid for slug, gid in merged if "poste-cabine" in (slug or "")]
+                    if poste_cabine_gids and effective_direction in ("tous", "aval"):
+                        for pc_gid in poste_cabine_gids:
+                            bt_start |= _trace_resolve_start_nodes(cur, "poste_transformation", pc_gid)
+                    if bt_start:
+                        bt_direction = "tous" if effective_direction == "tous" else "aval"
+                        bt_pairs, bt_visited = _trace_bfs_from_node(cur, bt_start, bt_direction, restrict_to_bt=True)
+                        bt_point_pairs = _trace_points_from_node_ids(cur, bt_visited)
+                        bt_equip_pairs = _trace_postes_transfos_from_node_ids(cur, bt_visited)
+                        bt_raccord_pairs = _trace_points_raccordement_from_lines(cur, bt_pairs)
+                        for item in (bt_pairs + bt_point_pairs + bt_equip_pairs + bt_raccord_pairs):
+                            if item not in seen_merged:
+                                seen_merged.add(item)
+                                merged.append(item)
+
+                    pairs = merged
     except Exception as e:
         _log.warning("Trace amont/aval: %s", e)
         return {"ouvrage_ids": [], "message": f"Erreur lors du tracé: {e}"}

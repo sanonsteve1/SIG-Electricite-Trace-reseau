@@ -59,6 +59,7 @@ DECLARE
 
     phta1_gid text;
     phta2_gid text;
+    phta3_gid text;
     cab_gid text;
     lhta1_gid text;
     lhta2_gid text;
@@ -69,6 +70,7 @@ DECLARE
     lhta7_gid text;
     lhta8_gid text;
     lhta9_gid text;
+    lhta10_gid text;
     depbt_gid text;
     arr_ref_gid text;
     tr_ref_gid text;
@@ -84,8 +86,15 @@ DECLARE
 
     pbt1_gid text;
     pbt2_gid text;
+    pbt3_gid text;
+    pbt4_gid text;
+    pbt5_gid text;
+    depbt2_gid text;
     lbt1_gid text;
     lbt2_gid text;
+    lbt3_gid text;
+    lbt4_gid text;
+    lbt5_gid text;
 
     lbr_gid text;
     pr_gid text;
@@ -113,10 +122,18 @@ DECLARE
     lat2 double precision;
     lon3 double precision;
     lat3 double precision;
+    lon_phta3 double precision;
+    lat_phta3 double precision;
     lon_bt1 double precision;
     lat_bt1 double precision;
     lon_bt2 double precision;
     lat_bt2 double precision;
+    lon_bt3 double precision;
+    lat_bt3 double precision;
+    lon_bt4 double precision;
+    lat_bt4 double precision;
+    lon_bt5 double precision;
+    lat_bt5 double precision;
     lon_pr double precision;
     lat_pr double precision;
 BEGIN
@@ -126,13 +143,13 @@ BEGIN
             ps_num := 'PS-BOBO-OUEST-01';
             ps_lon := -4.3149;
             ps_lat := 11.1713;
-            dep_count := 3;
+            dep_count := 5;
         ELSE
             ps_gid := '{bobo-real-ps-est-0001}';
             ps_num := 'PS-BOBO-EST-01';
             ps_lon := -4.2872;
             ps_lat := 11.1899;
-            dep_count := 2;
+            dep_count := 4;
         END IF;
 
         -- Poste source en polygone (emprise poste, pas un simple point).
@@ -289,9 +306,12 @@ BEGIN
             lat2 := ps_lat + 0.0033 * sin(angle);
             lon3 := ps_lon + 0.0062 * cos(angle);
             lat3 := ps_lat + 0.0048 * sin(angle);
+            lon_phta3 := lon2 + (lon3 - lon2) * 0.55;
+            lat_phta3 := lat2 + (lat3 - lat2) * 0.55;
 
             phta1_gid := format('{bobo-real-phta1-%s-%s}', ps_idx, dep_idx);
             phta2_gid := format('{bobo-real-phta2-%s-%s}', ps_idx, dep_idx);
+            phta3_gid := format('{bobo-real-phta3-%s-%s}', ps_idx, dep_idx);
             cab_gid   := format('{bobo-real-cab-%s-%s}', ps_idx, dep_idx);
             lhta1_gid := format('{bobo-real-lhta1-%s-%s}', ps_idx, dep_idx);
             lhta2_gid := format('{bobo-real-lhta2-%s-%s}', ps_idx, dep_idx);
@@ -302,6 +322,7 @@ BEGIN
             lhta7_gid := format('{bobo-real-lhta7-%s-%s}', ps_idx, dep_idx);
             lhta8_gid := format('{bobo-real-lhta8-%s-%s}', ps_idx, dep_idx);
             lhta9_gid := format('{bobo-real-lhta9-%s-%s}', ps_idx, dep_idx);
+            lhta10_gid := format('{bobo-real-lhta10-%s-%s}', ps_idx, dep_idx);
 
             INSERT INTO poteau_hta (
                 gid, numero, id_poteau_hta_type, id_poteau_hta_hauteur, id_poteau_hta_implantation,
@@ -321,6 +342,13 @@ BEGIN
                     1, 4, 4, TRUE, TRUE, FALSE, FALSE, FALSE,
                     'reset_bobo_coherent', 1,
                     ST_Transform(ST_SetSRID(ST_MakePoint(lon2, lat2), 4326), 32630)
+                ),
+                (
+                    phta3_gid,
+                    format('PHTA-BOBO-%s-%s-C', ps_idx, dep_idx),
+                    1, 4, 4, TRUE, TRUE, FALSE, FALSE, FALSE,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(ST_SetSRID(ST_MakePoint(lon_phta3, lat_phta3), 4326), 32630)
                 );
 
             INSERT INTO poste_cabine (
@@ -410,10 +438,21 @@ BEGIN
                     lhta7_gid,
                     format('LHTA-BOBO-%s-%s-EXT-03', ps_idx, dep_idx),
                     1, 1,
-                    phta2_gid, cab_gid,
+                    phta2_gid, phta3_gid,
                     'reset_bobo_coherent', 1,
                     ST_Transform(
-                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon2, lat2, lon3, lat3)), 4326),
+                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon2, lat2, lon_phta3, lat_phta3)), 4326),
+                        32630
+                    )
+                ),
+                (
+                    lhta10_gid,
+                    format('LHTA-BOBO-%s-%s-EXT-04', ps_idx, dep_idx),
+                    1, 1,
+                    phta3_gid, cab_gid,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(
+                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_phta3, lat_phta3, lon3, lat3)), 4326),
                         32630
                     )
                 ),
@@ -440,9 +479,9 @@ BEGIN
                     )
                 );
 
-            UPDATE poste_cabine SET id_ligne_hta = lhta7_gid WHERE gid = cab_gid;
+            UPDATE poste_cabine SET id_ligne_hta = lhta10_gid WHERE gid = cab_gid;
 
-            -- Niveau BT.
+            -- Niveau BT (branche 1).
             depbt_gid := format('{bobo-real-depbt-%s-%s}', ps_idx, dep_idx);
             INSERT INTO depart_bt (
                 gid, numero_depart, id_poste_sur_poteau, id_poste_cabine, collecte_par, validation
@@ -454,15 +493,39 @@ BEGIN
                 'reset_bobo_coherent',
                 1
             );
+            -- Second depart BT depuis la meme poste cabine (branche 2).
+            depbt2_gid := format('{bobo-real-depbt2-%s-%s}', ps_idx, dep_idx);
+            INSERT INTO depart_bt (
+                gid, numero_depart, id_poste_sur_poteau, id_poste_cabine, collecte_par, validation
+            ) VALUES (
+                depbt2_gid,
+                format('DEP-BT-BOBO-%s-%s-B2', ps_idx, dep_idx),
+                NULL,
+                cab_gid,
+                'reset_bobo_coherent',
+                1
+            );
 
             lon_bt1 := lon3 + 0.0011 * cos(angle + 0.35);
             lat_bt1 := lat3 + 0.0011 * sin(angle + 0.35);
             lon_bt2 := lon3 + 0.0022 * cos(angle + 0.28);
             lat_bt2 := lat3 + 0.0022 * sin(angle + 0.28);
+            lon_bt3 := lon3 + 0.0033 * cos(angle + 0.22);
+            lat_bt3 := lat3 + 0.0033 * sin(angle + 0.22);
+            lon_bt4 := lon3 + 0.0012 * cos(angle - 0.5);
+            lat_bt4 := lat3 + 0.0012 * sin(angle - 0.5);
+            lon_bt5 := lon3 + 0.0024 * cos(angle - 0.42);
+            lat_bt5 := lat3 + 0.0024 * sin(angle - 0.42);
             pbt1_gid := format('{bobo-real-pbt1-%s-%s}', ps_idx, dep_idx);
             pbt2_gid := format('{bobo-real-pbt2-%s-%s}', ps_idx, dep_idx);
+            pbt3_gid := format('{bobo-real-pbt3-%s-%s}', ps_idx, dep_idx);
+            pbt4_gid := format('{bobo-real-pbt4-%s-%s}', ps_idx, dep_idx);
+            pbt5_gid := format('{bobo-real-pbt5-%s-%s}', ps_idx, dep_idx);
             lbt1_gid := format('{bobo-real-lbt1-%s-%s}', ps_idx, dep_idx);
             lbt2_gid := format('{bobo-real-lbt2-%s-%s}', ps_idx, dep_idx);
+            lbt3_gid := format('{bobo-real-lbt3-%s-%s}', ps_idx, dep_idx);
+            lbt4_gid := format('{bobo-real-lbt4-%s-%s}', ps_idx, dep_idx);
+            lbt5_gid := format('{bobo-real-lbt5-%s-%s}', ps_idx, dep_idx);
 
             INSERT INTO poteau_bt (
                 gid, numero, id_poteau_bt_type, id_poteau_bt_hauteur, id_poteau_bt_implantation,
@@ -482,6 +545,27 @@ BEGIN
                     1, 2, 1, TRUE, TRUE, FALSE, FALSE,
                     'reset_bobo_coherent', 1,
                     ST_Transform(ST_SetSRID(ST_MakePoint(lon_bt2, lat_bt2), 4326), 32630)
+                ),
+                (
+                    pbt3_gid,
+                    format('PBT-BOBO-%s-%s-C', ps_idx, dep_idx),
+                    1, 2, 1, TRUE, TRUE, FALSE, FALSE,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(ST_SetSRID(ST_MakePoint(lon_bt3, lat_bt3), 4326), 32630)
+                ),
+                (
+                    pbt4_gid,
+                    format('PBT-BOBO-%s-%s-D', ps_idx, dep_idx),
+                    1, 2, 1, TRUE, TRUE, FALSE, FALSE,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(ST_SetSRID(ST_MakePoint(lon_bt4, lat_bt4), 4326), 32630)
+                ),
+                (
+                    pbt5_gid,
+                    format('PBT-BOBO-%s-%s-E', ps_idx, dep_idx),
+                    1, 2, 1, TRUE, TRUE, FALSE, FALSE,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(ST_SetSRID(ST_MakePoint(lon_bt5, lat_bt5), 4326), 32630)
                 );
 
             INSERT INTO ligne_bt (
@@ -509,31 +593,116 @@ BEGIN
                         ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt1, lat_bt1, lon_bt2, lat_bt2)), 4326),
                         32630
                     )
+                ),
+                (
+                    lbt3_gid,
+                    format('LBT-BOBO-%s-%s-03', ps_idx, dep_idx),
+                    1, 1, 1, 1,
+                    pbt2_gid, pbt3_gid,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(
+                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt2, lat_bt2, lon_bt3, lat_bt3)), 4326),
+                        32630
+                    )
+                ),
+                (
+                    lbt4_gid,
+                    format('LBT-BOBO-%s-%s-04', ps_idx, dep_idx),
+                    1, 1, 1, 1,
+                    depbt2_gid, pbt4_gid,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(
+                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon3, lat3, lon_bt4, lat_bt4)), 4326),
+                        32630
+                    )
+                ),
+                (
+                    lbt5_gid,
+                    format('LBT-BOBO-%s-%s-05', ps_idx, dep_idx),
+                    1, 1, 1, 1,
+                    pbt4_gid, pbt5_gid,
+                    'reset_bobo_coherent', 1,
+                    ST_Transform(
+                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt4, lat_bt4, lon_bt5, lat_bt5)), 4326),
+                        32630
+                    )
                 );
 
-            -- Branchement + point de raccordement + abonne (3 par depart BT).
-            FOR b_idx IN 1..3 LOOP
-                lon_pr := lon_bt2 + (0.00045 * b_idx) * cos(angle - 0.9);
-                lat_pr := lat_bt2 + (0.00045 * b_idx) * sin(angle - 0.9);
+            -- Branchement + point de raccordement + abonne (8 au total: 3 sur pbt2, 2 sur pbt3, 2 sur pbt4, 1 sur pbt5).
+            FOR b_idx IN 1..8 LOOP
+                IF b_idx <= 3 THEN
+                    lon_pr := lon_bt2 + (0.00045 * b_idx) * cos(angle - 0.9);
+                    lat_pr := lat_bt2 + (0.00045 * b_idx) * sin(angle - 0.9);
+                    INSERT INTO ligne_brcht (
+                        gid, numero, id_ligne_brcht_nature, id_ligne_brcht_type_cable, id_ligne_brcht_section_cable,
+                        id_depart_bt, id_poteau_bt, collecte_par, validation, geom
+                    ) VALUES (
+                        format('{bobo-real-lbr-%s-%s-%s}', ps_idx, dep_idx, b_idx),
+                        format('LBR-BOBO-%s-%s-%s', ps_idx, dep_idx, b_idx),
+                        1, 1, 1,
+                        depbt_gid, pbt2_gid,
+                        'reset_bobo_coherent', 1,
+                        ST_Transform(
+                            ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt2, lat_bt2, lon_pr, lat_pr)), 4326),
+                            32630
+                        )
+                    );
+                ELSIF b_idx <= 5 THEN
+                    lon_pr := lon_bt3 + (0.00040 * (b_idx - 3)) * cos(angle - 0.7);
+                    lat_pr := lat_bt3 + (0.00040 * (b_idx - 3)) * sin(angle - 0.7);
+                    INSERT INTO ligne_brcht (
+                        gid, numero, id_ligne_brcht_nature, id_ligne_brcht_type_cable, id_ligne_brcht_section_cable,
+                        id_depart_bt, id_poteau_bt, collecte_par, validation, geom
+                    ) VALUES (
+                        format('{bobo-real-lbr-%s-%s-%s}', ps_idx, dep_idx, b_idx),
+                        format('LBR-BOBO-%s-%s-%s', ps_idx, dep_idx, b_idx),
+                        1, 1, 1,
+                        depbt_gid, pbt3_gid,
+                        'reset_bobo_coherent', 1,
+                        ST_Transform(
+                            ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt3, lat_bt3, lon_pr, lat_pr)), 4326),
+                            32630
+                        )
+                    );
+                ELSIF b_idx <= 7 THEN
+                    lon_pr := lon_bt4 + (0.00038 * (b_idx - 5)) * cos(angle - 0.6);
+                    lat_pr := lat_bt4 + (0.00038 * (b_idx - 5)) * sin(angle - 0.6);
+                    INSERT INTO ligne_brcht (
+                        gid, numero, id_ligne_brcht_nature, id_ligne_brcht_type_cable, id_ligne_brcht_section_cable,
+                        id_depart_bt, id_poteau_bt, collecte_par, validation, geom
+                    ) VALUES (
+                        format('{bobo-real-lbr-%s-%s-%s}', ps_idx, dep_idx, b_idx),
+                        format('LBR-BOBO-%s-%s-%s', ps_idx, dep_idx, b_idx),
+                        1, 1, 1,
+                        depbt2_gid, pbt4_gid,
+                        'reset_bobo_coherent', 1,
+                        ST_Transform(
+                            ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt4, lat_bt4, lon_pr, lat_pr)), 4326),
+                            32630
+                        )
+                    );
+                ELSE
+                    lon_pr := lon_bt5 + 0.00035 * cos(angle - 0.5);
+                    lat_pr := lat_bt5 + 0.00035 * sin(angle - 0.5);
+                    INSERT INTO ligne_brcht (
+                        gid, numero, id_ligne_brcht_nature, id_ligne_brcht_type_cable, id_ligne_brcht_section_cable,
+                        id_depart_bt, id_poteau_bt, collecte_par, validation, geom
+                    ) VALUES (
+                        format('{bobo-real-lbr-%s-%s-%s}', ps_idx, dep_idx, b_idx),
+                        format('LBR-BOBO-%s-%s-%s', ps_idx, dep_idx, b_idx),
+                        1, 1, 1,
+                        depbt2_gid, pbt5_gid,
+                        'reset_bobo_coherent', 1,
+                        ST_Transform(
+                            ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt5, lat_bt5, lon_pr, lat_pr)), 4326),
+                            32630
+                        )
+                    );
+                END IF;
                 lbr_gid := format('{bobo-real-lbr-%s-%s-%s}', ps_idx, dep_idx, b_idx);
                 pr_gid  := format('{bobo-real-pr-%s-%s-%s}',  ps_idx, dep_idx, b_idx);
                 br_gid  := format('{bobo-real-br-%s-%s-%s}',  ps_idx, dep_idx, b_idx);
                 ab_gid  := format('{bobo-real-ab-%s-%s-%s}',  ps_idx, dep_idx, b_idx);
-
-                INSERT INTO ligne_brcht (
-                    gid, numero, id_ligne_brcht_nature, id_ligne_brcht_type_cable, id_ligne_brcht_section_cable,
-                    id_depart_bt, id_poteau_bt, collecte_par, validation, geom
-                ) VALUES (
-                    lbr_gid,
-                    format('LBR-BOBO-%s-%s-%s', ps_idx, dep_idx, b_idx),
-                    1, 1, 1,
-                    depbt_gid, pbt2_gid,
-                    'reset_bobo_coherent', 1,
-                    ST_Transform(
-                        ST_SetSRID(ST_GeomFromText(format('LINESTRING(%s %s,%s %s)', lon_bt2, lat_bt2, lon_pr, lat_pr)), 4326),
-                        32630
-                    )
-                );
 
                 INSERT INTO point_raccordement (
                     gid, numero, id_point_raccord_organe, id_point_raccord_exploitation,

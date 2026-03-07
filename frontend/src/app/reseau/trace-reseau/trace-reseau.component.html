@@ -16,33 +16,13 @@
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-cog"></i> Paramètres du tracé</h2>
 					<div class="trace-reseau-form">
-						@if (showStartSelectors) {
-							<label class="trace-reseau-label">Type de point de départ</label>
-							<p-select [(ngModel)]="paramTypePoint" [options]="typePointOptions" optionLabel="label" optionValue="value" placeholder="Choisir un type" styleClass="trace-reseau-select w-full" (onChange)="onTypePointChange()" />
-							@if (paramTypePoint === 'poste_source') {
-								<label class="trace-reseau-label">Poste source</label>
-								<p-select [(ngModel)]="paramPosteSource" [options]="posteSourceOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste source" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
-							}
-							@if (paramTypePoint === 'poste_transformation') {
-								<label class="trace-reseau-label">Poste cabine / Transfo poteau</label>
-								<p-select [(ngModel)]="paramPosteTransfo" [options]="posteTransfoOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un poste cabine ou un transfo poteau" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
-							}
-							@if (paramTypePoint === 'abonne') {
-								<label class="trace-reseau-label">Point de raccordement</label>
-								<p-select [(ngModel)]="paramAbonne" [options]="abonneOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un point de raccordement" styleClass="trace-reseau-select w-full" (ngModelChange)="onSelectionChange()" />
-							}
-						} @else {
-							<div class="trace-reseau-selected-start">
-								<strong>Ouvrage sélectionné :</strong>
-								<span>{{ getCurrentStartLabel() }}</span>
-								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="showSelectionDropdowns()">
-									<i class="fa fa-pencil"></i>
-								</button>
-								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="clearCurrentSelection()">
-									<i class="fa fa-times"></i>
-								</button>
-							</div>
-						}
+						<div class="trace-reseau-selected-start">
+							<strong>Ouvrage sélectionné :</strong>
+							<span>{{ getCurrentStartLabel() }}</span>
+							<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary" (click)="clearCurrentSelection()">
+								<i class="fa fa-times"></i>
+							</button>
+						</div>
 					</div>
 				</section>
 				<!-- Correction de topologie (masquée temporairement)
@@ -83,6 +63,7 @@
 				<!-- Outils de tracé -->
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-pencil-square-o"></i> Tracé</h2>
+					<p class="trace-reseau-topology-desc">Pour voir toutes les ramifications (poteaux comme nœuds ou carrefours), utilisez <strong>Tous connectés</strong>.</p>
 					<div class="trace-reseau-tools">
 						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="tracerAmont()" [disabled]="!hasSelection()">
 							<i class="fa fa-arrow-up"></i>
@@ -130,6 +111,16 @@
 								</button>
 							</div>
 						}
+					</div>
+				</section>
+				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-bolt"></i> Schéma unifilaire</h2>
+					<div class="trace-reseau-form">
+						<p class="trace-reseau-topology-desc">Représentation simplifiée du flux d’énergie (source → HT → ouvrages → BT → raccordements). Génération à partir du tracé courant.</p>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="openUnifilaireModal()" [disabled]="traceDetails.length === 0">
+							<i class="fa fa-sitemap"></i>
+							Générer le schéma unifilaire
+						</button>
 					</div>
 				</section>
 			}
@@ -374,6 +365,46 @@
 		<ng-template pTemplate="footer">
 			<button pButton label="Annuler" icon="pi pi-times" class="p-button-secondary" (click)="annulerCoupureCause()"></button>
 			<button pButton label="Valider et simuler la coupure" icon="pi pi-bolt" class="p-button-danger" [disabled]="!coupureCauseSelected || mapLoading" (click)="confirmerCoupureAvecCause()"></button>
+		</ng-template>
+	</p-dialog>
+
+	<!-- Modale schéma unifilaire (flux d’énergie) -->
+	<p-dialog
+		[(visible)]="showUnifilaireModal"
+		header="Schéma unifilaire — Flux d’énergie"
+		[modal]="true"
+		[closable]="true"
+		[closeOnEscape]="true"
+		styleClass="trace-reseau-unifilaire-dialog"
+		[style]="{ width: 'min(95vw, 720px)' }"
+		(onHide)="closeUnifilaireModal()"
+	>
+		<p class="trace-reseau-unifilaire-intro">Représentation simplifiée du tracé : de la source (poste source / arrivée HT) vers les lignes HTA, les ouvrages MT, les lignes BT et les raccordements.</p>
+		<div class="trace-reseau-unifilaire-flow">
+			@for (section of unifilaireSections; track section.order) {
+				<div class="trace-reseau-unifilaire-stage">
+					<div class="trace-reseau-unifilaire-stage-label">{{ section.stageLabel }}</div>
+					<div class="trace-reseau-unifilaire-stage-items">
+						@for (item of section.items; track item.slug) {
+							<div class="trace-reseau-unifilaire-item" [style.--item-color]="item.color">
+								<span class="trace-reseau-unifilaire-item-label">{{ item.label }}</span>
+								<span class="trace-reseau-unifilaire-item-count">{{ item.count }}</span>
+							</div>
+						}
+					</div>
+					@if (!$last) {
+						<div class="trace-reseau-unifilaire-arrow" aria-hidden="true">
+							<i class="fa fa-arrow-right"></i>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		@if (unifilaireSections.length === 0) {
+			<p class="trace-reseau-unifilaire-empty">Effectuez d’abord un tracé (Amont, Aval ou Tous connectés) pour générer le schéma.</p>
+		}
+		<ng-template pTemplate="footer">
+			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="closeUnifilaireModal()"></button>
 		</ng-template>
 	</p-dialog>
 </div>
