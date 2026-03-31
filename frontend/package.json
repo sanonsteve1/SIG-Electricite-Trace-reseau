@@ -28,6 +28,7 @@
 		"chart.js": "4.4.2",
 		"font-awesome": "^4.7.0",
 		"leaflet": "^1.9.4",
+		"mermaid": "^11.12.3",
 		"primeclt": "^0.1.5",
 		"primeicons": "^7.0.0",
 		"primeng": "^19.0.8",

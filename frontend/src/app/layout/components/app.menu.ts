@@ -50,9 +50,30 @@ export class AppMenu {
 					routerLink: ['/reseau/trace-reseau']
 				},
 				{
+					label: 'Schéma du réseau',
+					icon: 'fa fa-sitemap',
+					routerLink: ['/reseau/schema-reseau']
+				},
+				{
 					label: 'Modélisation',
 					icon: 'fa fa-cube',
 					routerLink: ['/reseau/modelisation']
+				},
+				{
+					label: 'Règles',
+					icon: 'fa fa-list-alt',
+					items: [
+						{
+							label: 'Connectivité',
+							icon: 'fa fa-link',
+							routerLink: ['/reseau/regles/connectivite']
+						},
+						{
+							label: 'Topologie',
+							icon: 'fa fa-sitemap',
+							routerLink: ['/reseau/regles/topologie']
+						}
+					]
 				}
 			]
 		}

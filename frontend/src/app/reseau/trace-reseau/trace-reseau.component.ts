@@ -1,10 +1,17 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Select } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { GisApiService, TopologyCorrectResponse } from '../../../services/gis-api.service';
+import {
+	GisApiService,
+	TopologyCorrectIssueResponse,
+	TopologyCorrectResponse,
+	TopologyValidationIssue,
+	TopologyValidationResponse
+} from '../../../services/gis-api.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 
@@ -123,7 +130,6 @@ const MAP_COLORS = [
 })
 export class TraceReseau implements AfterViewInit, OnDestroy {
 	@ViewChild('mapContainer') mapContainer!: ElementRef<HTMLDivElement>;
-
 	sidebarCollapsed = false;
 	legendOpen = false;
 	resumeOpen = false;
@@ -231,14 +237,37 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Schéma unifilaire : modale et sections du flux (poste source → HT → ouvrages → BT → raccordements). */
 	showUnifilaireModal = false;
 	unifilaireSections: { stageLabel: string; order: number; items: { slug: string; label: string; count: number; color: string }[] }[] = [];
+	/** Code PlantUML pour le schéma unifilaire d'un poste source (à utiliser dans un outil PlantUML). */
+	unifilairePlantUmlCode = '';
+	/** Message d'erreur ou d'info pour le schéma unifilaire (PowSyBL). */
+	unifilaireDiagramError: string | null = null;
+	/** SVG du schéma unifilaire (généré par backend PowSyBL). */
+	unifilaireSvgContent: string | null = null;
+	/** SVG sanitized pour [innerHTML] (évite le filtrage Angular). */
+	get safeUnifilaireSvgContent(): SafeHtml | null {
+		return this.unifilaireSvgContent != null
+			? this.sanitizer.bypassSecurityTrustHtml(this.unifilaireSvgContent)
+			: null;
+	}
 
 	canUndo = false;
 	canRedo = false;
 
 	/** Correction de topologie */
 	topologyTolerance = 2;
+	/** Rayon (m) pour rattacher une ligne à un nœud (connectivité) : BT/branchement ↔ HTA peut dépasser 100 m. */
+	connectivitySearchRadiusM = 1000;
 	topologyCorrecting = false;
 	topologyResult: (TopologyCorrectResponse & { error?: string }) | null = null;
+	topologyValidationType: 'connectivite' | 'topologie' | 'all' = 'all';
+	topologyValidating = false;
+	topologyValidationFloatOpen = false;
+	topologyValidationResult: (TopologyValidationResponse & { error?: string }) | null = null;
+	topologyAutoCorrectionInProgress = false;
+	topologyAutoCorrectionIssueKey: string | null = null;
+	/** Résumé lisible de la dernière correction auto (affiché dans le panneau flottant). */
+	topologyCorrectionFeedback: { success: boolean; title: string; lines: string[] } | null = null;
+	private topologyViolationCanon = new Set<string>();
 
 	private map: unknown = null;
 	private layerGroup: unknown = null;
@@ -269,7 +298,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	constructor(
 		private gisApi: GisApiService,
-		private cdr: ChangeDetectorRef
+		private cdr: ChangeDetectorRef,
+		private sanitizer: DomSanitizer
 	) {}
 
 	ngOnInit(): void {
@@ -707,6 +737,211 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		return Object.entries(this.topologyResult.by_table)
 			.filter(([, v]) => v.updated > 0)
 			.map(([slug, v]) => ({ slug, updated: v.updated }));
+	}
+
+	lancerValidationTopologie(): void {
+		this.topologyValidating = true;
+		this.topologyValidationResult = null;
+		this.topologyCorrectionFeedback = null;
+		this.topologyValidationFloatOpen = true;
+		this.cdr.markForCheck();
+		this.gisApi.validateTopology(this.topologyValidationType, 600).pipe(
+			catchError((err) => {
+				this.topologyValidating = false;
+				this.topologyViolationCanon = new Set();
+				this.topologyValidationResult = {
+					check_type: this.topologyValidationType,
+					total_issues: 0,
+					by_rule_type: { connectivite: 0, topologie: 0 },
+					by_slug: {},
+					issues: [],
+					error: err?.error?.detail || err?.message || 'Erreur lors de la validation.'
+				};
+				this.applyTraceStyleToMap();
+				this.topologyValidationFloatOpen = true;
+				this.cdr.markForCheck();
+				return of(this.topologyValidationResult);
+			})
+		).subscribe((res) => {
+			this.topologyValidating = false;
+			this.topologyValidationResult = res;
+			this.topologyValidationFloatOpen = true;
+			const canon = new Set<string>();
+			for (const issue of res.issues || []) {
+				canon.add(this.normalizeOuvrageKey(`${issue.slug}:${issue.id}`));
+			}
+			this.topologyViolationCanon = canon;
+			this.applyTraceStyleToMap();
+			this.cdr.markForCheck();
+		});
+	}
+
+	canAutoCorrectIssue(issue: TopologyValidationIssue): boolean {
+		return issue.rule_type === 'topologie' || issue.rule_type === 'connectivite';
+	}
+
+	isAutoCorrectingIssue(issue: TopologyValidationIssue): boolean {
+		return this.topologyAutoCorrectionIssueKey === this.getTopologyIssueKey(issue);
+	}
+
+	/** Détail lisible pour le panneau : ce qui a été modifié pour lever l’anomalie. */
+	private buildCorrectionFeedback(res: TopologyCorrectIssueResponse): { success: boolean; title: string; lines: string[] } {
+		const lines: string[] = [];
+		const equipement = `${res.slug}, identifiant ${res.id}`;
+
+		if (!res.success) {
+			lines.push(res.message || 'Correction impossible.');
+			if (res.updates?.length) {
+				for (const u of res.updates) {
+					if (u.ok) continue;
+					if (u.reason === 'aucun_noeud_dans_le_rayon' && u.distance_m != null) {
+						lines.push(
+							`Champ « ${u.column} » : aucun nœud (${u.node_slug || 'réseau'}) dans le rayon — distance au plus proche : ${u.distance_m < 100 ? u.distance_m.toFixed(1) : Math.round(u.distance_m)} m.`
+						);
+					} else if (u.error) {
+						lines.push(`Champ « ${u.column} » : ${u.error}`);
+					} else if (u.reason) {
+						lines.push(`Champ « ${u.column} » : ${u.reason}`);
+					}
+				}
+			}
+			return { success: false, title: 'Correction non appliquée', lines };
+		}
+
+		if (res.rule_type === 'topologie') {
+			const mv = res.make_valid_updated ?? 0;
+			const snap = res.snap_updated ?? 0;
+			if (mv > 0) {
+				lines.push('Géométrie rendue valide (ST_MakeValid), ce qui supprime les erreurs de validité / géométrie vide.');
+			}
+			if (snap > 0) {
+				lines.push(
+					`Extrémités de la ligne rapprochées vers les nœuds du réseau (snap, ${snap} mise(s) à jour) — alignement sur la règle de contiguïté / snap spatial.`
+				);
+			}
+			if (mv === 0 && snap === 0) {
+				lines.push(res.message || 'Aucune modification nécessaire : l’ouvrage est déjà conforme sur ces points.');
+			}
+			return {
+				success: true,
+				title: `Équipement mis à jour — ${equipement}`,
+				lines: lines.length ? lines : [res.message || 'OK']
+			};
+		}
+
+		const okUpdates = res.updates?.filter((u) => u.ok) ?? [];
+		for (const u of okUpdates) {
+			const dist =
+				u.distance_m != null
+					? ` ; distance au nœud choisi : ${u.distance_m < 100 ? u.distance_m.toFixed(1) : Math.round(u.distance_m)} m`
+					: '';
+			lines.push(
+				`Champ « ${u.column} » renseigné avec la référence ${u.value} (table nœud « ${u.node_slug || '?'} »)${dist}. La ligne est ainsi reliée logiquement au réseau.`
+			);
+		}
+		const failed = res.updates?.filter((u) => !u.ok) ?? [];
+		for (const u of failed) {
+			if (u.reason === 'aucun_noeud_dans_le_rayon' && u.distance_m != null) {
+				lines.push(
+					`Attention — champ « ${u.column} » non renseigné : aucun nœud dans le rayon (plus proche à ${u.distance_m < 100 ? u.distance_m.toFixed(1) : Math.round(u.distance_m)} m).`
+				);
+			} else if (!u.ok) {
+				lines.push(`Attention — champ « ${u.column} » : ${u.error || u.reason || 'échec'}`);
+			}
+		}
+		if (!lines.length) {
+			lines.push(res.message || 'Aucun champ vide à compléter.');
+		}
+		return {
+			success: true,
+			title: `Connectivité mise à jour — ${equipement}`,
+			lines
+		};
+	}
+
+	corrigerIssueTopologie(issue: TopologyValidationIssue, event?: Event): void {
+		event?.stopPropagation();
+		if (!this.canAutoCorrectIssue(issue) || this.topologyAutoCorrectionInProgress) return;
+		this.topologyAutoCorrectionInProgress = true;
+		this.topologyAutoCorrectionIssueKey = this.getTopologyIssueKey(issue);
+		this.topologyCorrecting = true;
+		this.topologyResult = null;
+		this.topologyCorrectionFeedback = null;
+		this.cdr.markForCheck();
+		this.gisApi
+			.correctTopologyIssue({
+				slug: issue.slug,
+				id: issue.id,
+				rule_type: issue.rule_type,
+				tolerance_m: this.topologyTolerance,
+				...(issue.rule_type === 'connectivite'
+					? { search_radius_m: Math.max(this.connectivitySearchRadiusM, this.topologyTolerance * 3) }
+					: {})
+			})
+			.pipe(
+				switchMap((res) => {
+					this.topologyCorrectionFeedback = this.buildCorrectionFeedback(res);
+					if (!res.success) {
+						this.topologyResult = {
+							corrected: 0,
+							by_table: {},
+							error: res.message || 'Correction impossible.'
+						};
+					} else {
+						const snap = res.snap_updated ?? 0;
+						const mv = res.make_valid_updated ?? 0;
+						const connOk = res.updates?.filter((u) => u.ok).length ?? 0;
+						this.topologyResult = {
+							corrected: snap + mv + connOk,
+							by_table: {},
+							message: res.message || 'Correction effectuée.'
+						};
+						if (snap > 0 || mv > 0 || connOk > 0) {
+							this.loadGeometries();
+						}
+					}
+					return this.gisApi.validateTopology(this.topologyValidationType, 600);
+				}),
+				catchError((err) => {
+					const msg = err?.error?.detail || err?.message || 'Erreur lors de la correction automatique.';
+					this.topologyResult = {
+						corrected: 0,
+						by_table: {},
+						error: msg
+					};
+					this.topologyCorrectionFeedback = {
+						success: false,
+						title: 'Erreur technique',
+						lines: [msg]
+					};
+					return of(null);
+				})
+			)
+			.subscribe((validationRes) => {
+				this.topologyCorrecting = false;
+				this.topologyAutoCorrectionInProgress = false;
+				this.topologyAutoCorrectionIssueKey = null;
+				if (validationRes) {
+					this.topologyValidationResult = validationRes;
+					this.topologyValidationFloatOpen = true;
+					const canon = new Set<string>();
+					for (const currentIssue of validationRes.issues || []) {
+						canon.add(this.normalizeOuvrageKey(`${currentIssue.slug}:${currentIssue.id}`));
+					}
+					this.topologyViolationCanon = canon;
+					this.applyTraceStyleToMap();
+				}
+				this.cdr.markForCheck();
+			});
+	}
+
+	effacerValidationTopologie(): void {
+		this.topologyViolationCanon = new Set();
+		this.topologyValidationResult = null;
+		this.topologyCorrectionFeedback = null;
+		this.topologyValidationFloatOpen = false;
+		this.applyTraceStyleToMap();
+		this.cdr.markForCheck();
 	}
 
 	tracerAmont(): void {
@@ -1224,6 +1459,21 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.focusTraceItemOnMap(item.slug, item.id);
 	}
 
+	onTopologyValidationRowClick(issue: TopologyValidationIssue): void {
+		this.selectedTraceRowKey = `${issue.slug}:${issue.id}`;
+		this.focusTraceItemOnMap(issue.slug, issue.id);
+		this.cdr.markForCheck();
+	}
+
+	/** Libellé court pour la colonne « Problème » (connectivité vs topologie). */
+	topologyProblemLabel(t: TopologyValidationIssue['rule_type']): string {
+		return t === 'connectivite' ? 'Connectivité' : 'Topologie';
+	}
+
+	private getTopologyIssueKey(issue: TopologyValidationIssue): string {
+		return `${issue.slug}:${issue.id}:${issue.rule_type}`;
+	}
+
 	private normalizeId(v: unknown): string {
 		return String(v ?? '').replace(/^\{|\}$/g, '').trim().toLowerCase();
 	}
@@ -1443,6 +1693,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			const baseColor = this.getColorForSlug(slug);
 			const isLigneSecours = layerHasCanon(layer, ligneSecoursCanon);
 			const isLigneSecoursPotentiel = layerInCanonSet(layer, potentielSecoursCanon);
+			const isTopologyViolation = layerInCanonSet(layer, this.topologyViolationCanon);
 			// En mode coupure : lignes pouvant alimenter la zone coupée (tracé depuis le départ de secours)
 			const isSupplyLine = this.coupureActive && this.coupureSupplyOuvrageIdsCanon.size > 0 && layerInCanonSet(layer, this.coupureSupplyOuvrageIdsCanon);
 			const normal: Record<string, unknown> = {
@@ -1454,6 +1705,18 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				dashArray: null,
 				dashOffset: null
 			};
+			if (isTopologyViolation) {
+				setStyle.call(layer, {
+					color: '#dc2626',
+					fillColor: '#dc2626',
+					opacity: 1,
+					fillOpacity: 0.9,
+					weight: isLine ? 8 : 6,
+					dashArray: isLine ? '10 6' : null,
+					dashOffset: null
+				});
+				return;
+			}
 			if (isSupplyLine) {
 				setStyle.call(layer, {
 					color: '#2563eb',
@@ -1817,9 +2080,52 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			order,
 			items: byStage.get(order) ?? []
 		}));
+		this.unifilairePlantUmlCode = this.buildUnifilairePlantUmlCode();
 	}
 
-	/** Ouvre la modale du schéma unifilaire (représentation simplifiée du flux d’énergie). */
+	/**
+	 * Génère le code PlantUML pour le même schéma unifilaire (poste source).
+	 * À coller dans un outil PlantUML (pas Mermaid). Syntaxe activité, orientation haut vers bas.
+	 */
+	buildUnifilairePlantUmlCode(): string {
+		return `@startuml
+' Schéma unifilaire — Poste source (transport / distribution)
+' Orientation : haut vers bas (Top-Down). Sans blocs/partitions.
+title Schéma unifilaire - Poste source
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 10
+
+start
+:Ligne d'arrivée HT 1 (90 kV);
+:Ligne d'arrivée HT 2 (90 kV);
+:Sectionneur IS - Arrivée 1;
+:Sectionneur IS - Arrivée 2;
+:Parafoudre(s) - Protection surtension;
+:JEU_A 90 kV;
+:JEU_B 90 kV;
+:Transfo 1 - 90 kV / 33 kV;
+:Transfo 2 - 90 kV / 33 kV;
+:JEU_MT 33 kV;
+:Disjoncteur DM1 - Départ 1;
+:Disjoncteur DM2 - Départ 2;
+:Disjoncteur DM3 - Départ 3;
+:Sectionneur IS - Départ 1;
+:Sectionneur IS - Départ 2;
+:TC/TT Mesure QM - Départ 1;
+:TC/TT Mesure QM - Départ 2;
+:Départ MT 1 - Ligne HTA;
+:Départ MT 2 - Ligne HTA;
+:Départ MT 3 - Ligne HTA;
+:SCADA / Contrôle-commande (RTU, IED, HMI);
+:Réseau mise à la terre;
+:Alimentation secourue (Batterie 110 V DC, chargeur, UPS);
+
+stop
+@enduml`;
+	}
+
+	/** Ouvre la modale du schéma unifilaire (représentation simplifiée du flux d'énergie). */
 	openUnifilaireModal(): void {
 		this.buildUnifilaireSections();
 		this.showUnifilaireModal = true;
@@ -1829,7 +2135,100 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Ferme la modale du schéma unifilaire. */
 	closeUnifilaireModal(): void {
 		this.showUnifilaireModal = false;
+		this.unifilaireDiagramError = null;
+		this.unifilaireSvgContent = null;
 		this.cdr.markForCheck();
+	}
+
+	/** Appelé quand la modale schéma unifilaire est affichée : charge le schéma PowSyBL (SVG depuis le backend). */
+	onUnifilaireDialogShow(): void {
+		this.unifilaireDiagramError = null;
+		this.unifilaireSvgContent = null;
+		setTimeout(() => this.loadUnifilairePowSyBL(), 80);
+	}
+
+	/** Charge et affiche le schéma unifilaire PowSyBL (SVG généré par le backend à partir du tracé). */
+	loadUnifilairePowSyBL(): void {
+		const ouvrageIds = this.traceDetails.map((d) => ({ slug: d.slug, id: d.id }));
+		if (ouvrageIds.length === 0) {
+			this.unifilaireDiagramError = 'Effectuez d\'abord un tracé (Amont, Aval ou Tous connectés) pour générer le schéma.';
+			this.unifilaireSvgContent = null;
+			this.cdr.markForCheck();
+			return;
+		}
+		this.unifilaireDiagramError = null;
+		this.unifilaireSvgContent = null;
+		this.gisApi
+			.getUnifilaireSvg(ouvrageIds)
+			.pipe(
+				catchError((err) => {
+					const msg = err?.error ?? err?.message ?? String(err);
+					this.unifilaireDiagramError = 'Impossible de charger le schéma : ' + msg;
+					this.unifilaireSvgContent = null;
+					this.cdr.markForCheck();
+					return of('');
+				})
+			)
+			.subscribe((svg) => {
+				if (svg) {
+					this.unifilaireSvgContent = svg;
+					this.unifilaireDiagramError = null;
+				}
+				this.cdr.markForCheck();
+			});
+	}
+
+	/** Copie le code PlantUML du schéma unifilaire dans le presse-papiers. */
+	async copyUnifilairePlantUmlToClipboard(): Promise<void> {
+		if (!this.unifilairePlantUmlCode) return;
+		try {
+			await navigator.clipboard.writeText(this.unifilairePlantUmlCode);
+		} catch {
+			const ta = document.createElement('textarea');
+			ta.value = this.unifilairePlantUmlCode;
+			ta.setAttribute('readonly', '');
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.select();
+			document.execCommand('copy');
+			document.body.removeChild(ta);
+		}
+	}
+
+	/** Exporte le schéma unifilaire en PDF (téléchargement). */
+	exportUnifilairePdf(): void {
+		const ouvrageIds = this.traceDetails.map((d) => ({ slug: d.slug, id: d.id }));
+		if (ouvrageIds.length === 0) {
+			this.unifilaireDiagramError = 'Effectuez d\'abord un tracé pour exporter le schéma en PDF.';
+			this.cdr.markForCheck();
+			return;
+		}
+		this.gisApi
+			.getUnifilairePdf(ouvrageIds)
+			.pipe(
+				catchError((err) => {
+					const msg = err?.error?.message ?? err?.message ?? 'Erreur lors de l\'export PDF.';
+					this.unifilaireDiagramError = msg;
+					this.cdr.markForCheck();
+					return of(null);
+				})
+			)
+			.subscribe((blob) => {
+				if (!blob || blob.size === 0) {
+					this.unifilaireDiagramError = this.unifilaireDiagramError ?? 'Impossible de générer le PDF.';
+					this.cdr.markForCheck();
+					return;
+				}
+				this.unifilaireDiagramError = null;
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = 'schema-unifilaire.pdf';
+				a.click();
+				URL.revokeObjectURL(url);
+				this.cdr.markForCheck();
+			});
 	}
 
 	/** Exporte la liste des ouvrages du tracé courant en JSON. */
@@ -1856,6 +2255,16 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	undo(): void {}
 	redo(): void {}
 
+	/** Anomalies du dernier contrôle des règles pour cet ouvrage (popup carte). */
+	getValidationIssuesForPopup(slug: string, id: string): TopologyValidationIssue[] {
+		const issues = this.topologyValidationResult?.issues;
+		if (!issues?.length || !slug || !id) return [];
+		const idCanon = this.normalizeId(id);
+		return issues.filter(
+			(iss) => iss.slug.toLowerCase() === slug.toLowerCase() && this.normalizeId(iss.id) === idCanon
+		);
+	}
+
 	buildPopupContent(props: Record<string, unknown>): string {
 		if (!props || typeof props !== 'object') return '';
 		const { _layerLabel, _layerSlug, geom, Geom, ...rest } = props;
@@ -1878,6 +2287,36 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		});
 		html += '</div>';
 		if (slug && id) {
+			const popupIssues = this.getValidationIssuesForPopup(slug, id);
+			if (popupIssues.length) {
+				const byRule = new Map<'connectivite' | 'topologie', TopologyValidationIssue[]>();
+				for (const iss of popupIssues) {
+					const list = byRule.get(iss.rule_type) ?? [];
+					list.push(iss);
+					byRule.set(iss.rule_type, list);
+				}
+				html += '<div class="map-popup-validation">';
+				html += '<div class="map-popup-validation-title"><i class="fa fa-shield"></i> À corriger</div>';
+				for (const [ruleType, list] of byRule) {
+					const first = list[0];
+					const reasons = list.map((i) => i.reason).filter(Boolean);
+					const reasonsText = reasons.length ? reasons.join(' · ') : '';
+					const suggestion = list.map((i) => i.suggestion).find((s) => s != null && String(s).trim() !== '');
+					html += '<div class="map-popup-validation-item">';
+					html += `<div class="map-popup-validation-type">${this.escapeHtml(this.topologyProblemLabel(ruleType))}</div>`;
+					if (reasonsText) {
+						html += `<div class="map-popup-validation-reason">${this.escapeHtml(reasonsText)}</div>`;
+					}
+					if (suggestion) {
+						html += `<div class="map-popup-validation-suggestion"><span>Suggestion</span> ${this.escapeHtml(String(suggestion))}</div>`;
+					}
+					if (this.canAutoCorrectIssue(first)) {
+						html += `<button type="button" class="map-popup-btn map-popup-btn--fix" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-rule-type="${this.escapeHtml(ruleType)}"><i class="fa fa-magic"></i> Corriger</button>`;
+					}
+					html += '</div>';
+				}
+				html += '</div>';
+			}
 			html += '<div class="map-popup-actions">';
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-amont" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-up"></i> Tracé amont</button>`;
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-aval" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-down"></i> Tracé aval</button>`;
@@ -1998,6 +2437,23 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			this.traceClusterLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
 			this.popupButtonsClickListener = (e: Event): void => {
+				const fixTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--fix');
+				if (fixTarget && fixTarget instanceof HTMLElement) {
+					const slug = fixTarget.getAttribute('data-slug') ?? '';
+					const id = fixTarget.getAttribute('data-id') ?? '';
+					const rt = fixTarget.getAttribute('data-rule-type') as 'connectivite' | 'topologie';
+					if (!slug || !id || (rt !== 'connectivite' && rt !== 'topologie')) return;
+					const issue =
+						this.getValidationIssuesForPopup(slug, id).find((i) => i.rule_type === rt) ?? {
+							slug,
+							id,
+							rule_type: rt,
+							reason: '',
+							severity: 'warning' as const
+						};
+					this.corrigerIssueTopologie(issue, undefined);
+					return;
+				}
 				const traceTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--trace-amont, .map-popup-btn--trace-aval, .map-popup-btn--trace-all, .map-popup-btn--outage');
 				if (traceTarget && traceTarget instanceof HTMLElement) {
 					const slug = traceTarget.getAttribute('data-slug') ?? '';
@@ -2124,6 +2580,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 								feature: { properties?: Record<string, unknown> },
 								layer: {
 									bindPopup: (content: string, opts?: { maxWidth?: number }) => void;
+									setPopupContent: (content: string) => void;
 									feature?: unknown;
 									on?: (event: string, handler: () => void) => void;
 								}
@@ -2131,6 +2588,11 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 								(layer as { feature?: unknown }).feature = feature;
 								const props = feature.properties ?? {};
 								layer.bindPopup(self.buildPopupContent(props), { maxWidth: 400 });
+								if (typeof layer.on === 'function') {
+									layer.on('popupopen', () => {
+										layer.setPopupContent(self.buildPopupContent(props));
+									});
+								}
 								const pickedId = String(props['gid'] ?? props['id'] ?? props['objectid'] ?? '').trim();
 								const pickedSlug = String(props['_layerSlug'] ?? slug).trim();
 								if (pickedId && pickedSlug && typeof layer.on === 'function') {

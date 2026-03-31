@@ -1,0 +1,767 @@
+$primary: #ea580c;
+$header-height: 56px;
+
+/* Toute la vue (en-tête + corps) — défilement interne si besoin */
+:host {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 78vh;
+	max-height: 78vh;
+	min-height: 0;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+.schema-reseau {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	background: #fff;
+}
+
+.schema-reseau-header {
+	display: flex;
+	align-items: center;
+	padding: 0 1.25rem;
+	height: $header-height;
+	background: #fff;
+	border-bottom: 1px solid #e5e7eb;
+	flex-shrink: 0;
+}
+
+.schema-reseau-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: #1f2937;
+
+	i {
+		color: $primary;
+		font-size: 1.1rem;
+	}
+}
+
+.schema-reseau-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	position: relative;
+}
+
+.schema-reseau-body > .schema-reseau-error,
+.schema-reseau-body > .schema-reseau-intro {
+	flex-shrink: 0;
+	margin: 1rem 1.25rem 0;
+}
+
+.schema-reseau-content {
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.schema-reseau-intro {
+	font-size: 0.95rem;
+	color: #4b5563;
+	margin: 0 0 1.5rem;
+	line-height: 1.5;
+}
+
+.schema-reseau-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	margin: 1.25rem;
+	background: #f9fafb;
+	border: 2px dashed #e5e7eb;
+	border-radius: 12px;
+	color: #9ca3af;
+	font-size: 1rem;
+}
+
+.schema-reseau-placeholder-icon {
+	font-size: 3rem;
+	opacity: 0.6;
+}
+
+.schema-reseau-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem 1rem;
+	margin-left: auto;
+}
+
+.schema-reseau-label {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: #64748b;
+	white-space: nowrap;
+}
+
+.schema-reseau-ref {
+	width: 200px;
+	padding: 0.4rem 0.6rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 0.9rem;
+}
+
+.schema-reseau-select {
+	padding: 0.4rem 0.6rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 0.9rem;
+	background: #fff;
+	min-width: 140px;
+}
+
+.schema-reseau-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.5rem 1rem;
+	background: $primary;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.9rem;
+	cursor: pointer;
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+}
+
+.schema-reseau-error {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+	color: #b91c1c;
+	font-size: 0.9rem;
+	margin-bottom: 1rem;
+}
+
+/* Zone principale : légende à gauche, schéma à droite, fond blanc */
+.schema-reseau-main {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	min-height: 0;
+	overflow: hidden;
+	border-top: 1px solid #e5e7eb;
+	background: #fff;
+}
+
+.schema-reseau-sidebar {
+	width: min(300px, 34vw);
+	flex-shrink: 0;
+	align-self: stretch;
+	min-height: 0;
+	max-height: 100%;
+	box-sizing: border-box;
+	background: #fff;
+	border-right: 1px solid #e5e7eb;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 1rem 1rem 1.25rem;
+	-webkit-overflow-scrolling: touch;
+}
+
+.schema-reseau-sidebar-heading {
+	margin: 0 0 0.35rem;
+	font-size: 0.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #64748b;
+}
+
+.schema-reseau-sidebar-intro {
+	margin: 0 0 1rem;
+	font-size: 0.78rem;
+	color: #64748b;
+	line-height: 1.4;
+}
+
+.schema-reseau-sidebar-sub {
+	margin: 0 0 0.5rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #94a3b8;
+}
+
+.schema-reseau-diagram {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	background: #fff;
+	min-height: 0;
+}
+
+.schema-reseau-svg-wrap {
+	flex: 1;
+	width: 100%;
+	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #fff;
+	background-image:
+		linear-gradient(rgba(148, 163, 184, 0.35) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(148, 163, 184, 0.35) 1px, transparent 1px);
+	background-size: 28px 28px;
+	background-position: -1px -1px;
+	border: none;
+	border-radius: 0;
+	overflow: auto;
+	position: relative;
+}
+
+.schema-reseau-svg {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	max-height: 100%;
+	height: auto;
+	min-width: 0;
+	min-height: 0;
+	background: transparent;
+}
+
+@media (max-width: 900px) {
+	.schema-reseau-main {
+		flex-direction: column;
+		overflow: hidden;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.schema-reseau-sidebar {
+		width: 100%;
+		align-self: stretch;
+		flex: 0 1 auto;
+		max-height: min(42vh, 300px);
+		border-right: none;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.schema-reseau-diagram {
+		flex: 1;
+		min-height: 0;
+	}
+}
+
+.schema-reseau-edge {
+	stroke-width: 2;
+	fill: none;
+	stroke-linecap: round;
+}
+
+.schema-reseau-meta {
+	flex-shrink: 0;
+	font-size: 0.8rem;
+	color: #64748b;
+	margin: 0;
+	padding: 0.6rem 1rem;
+	background: #fafafa;
+	border-top: 1px solid #e5e7eb;
+}
+
+.schema-reseau-legend-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.schema-reseau-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	font-size: 0.85rem;
+	color: #374151;
+	&--line {
+		align-items: center;
+	}
+}
+
+.schema-reseau-legend-text {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	flex: 1;
+}
+
+.schema-reseau-legend-label {
+	font-weight: 500;
+}
+
+.schema-reseau-legend-ref {
+	font-size: 0.7rem;
+	color: #6b7280;
+}
+
+.schema-reseau-legend-symbol {
+	display: block;
+	flex-shrink: 0;
+}
+
+.schema-reseau-legend-line {
+	display: inline-block;
+	width: 28px;
+	height: 4px;
+	border-radius: 2px;
+	flex-shrink: 0;
+}
+
+.schema-reseau-legend-line--thick {
+	height: 6px;
+	border-radius: 3px;
+	box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+/* —— Synoptique SCADA (sidebar + zone diagramme) —— */
+
+.schema-reseau-scada-voltage-list {
+	list-style: none;
+	margin: 0 0 1rem;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+}
+
+.schema-reseau-scada-voltage-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	font-size: 0.82rem;
+	line-height: 1.35;
+}
+
+.schema-reseau-scada-voltage-swatch {
+	display: block;
+	width: 14px;
+	height: 14px;
+	border-radius: 3px;
+	flex-shrink: 0;
+	margin-top: 0.15rem;
+	box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.schema-reseau-scada-voltage-text {
+	display: flex;
+	flex-direction: column;
+	gap: 0.05rem;
+	min-width: 0;
+}
+
+.schema-reseau-scada-voltage-label {
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.schema-reseau-scada-voltage-hint {
+	font-size: 0.72rem;
+	color: #64748b;
+}
+
+.schema-reseau-scada-departs {
+	list-style: none;
+	margin: 0 0 1rem;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+}
+
+.schema-reseau-scada-depart-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	padding: 0.25rem 0.4rem;
+	background: #f8fafc;
+	border-radius: 6px;
+	border: 1px solid #e2e8f0;
+}
+
+.schema-reseau-scada-depart-name {
+	color: #334155;
+	font-weight: 500;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.schema-reseau-scada-depart-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.25rem;
+	padding: 0.1rem 0.35rem;
+	font-size: 0.65rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	border-radius: 4px;
+	border: 1px solid transparent;
+}
+
+.schema-reseau-scada-depart-badge--closed {
+	background: #dcfce7;
+	color: #166534;
+	border-color: #bbf7d0;
+}
+
+.schema-reseau-scada-depart-badge--open {
+	background: #fee2e2;
+	color: #b91c1c;
+	border-color: #fecaca;
+}
+
+.schema-reseau-scada-measures {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+}
+
+.schema-reseau-scada-measure-row {
+	font-size: 0.78rem;
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+	color: #0e7490;
+	background: #ecfeff;
+	border: 1px solid #a5f3fc;
+	border-radius: 6px;
+	padding: 0.35rem 0.5rem;
+	line-height: 1.35;
+}
+
+.schema-reseau-label-panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin: 0.15rem 0 0.45rem;
+}
+
+.schema-reseau-label-reset {
+	border: 1px solid #cbd5e1;
+	background: #fff;
+	color: #334155;
+	border-radius: 6px;
+	padding: 0.2rem 0.45rem;
+	font-size: 0.68rem;
+	cursor: pointer;
+}
+
+.schema-reseau-label-list {
+	list-style: none;
+	margin: 0 0 1rem;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+}
+
+.schema-reseau-label-btn {
+	width: 100%;
+	border: 1px solid #e2e8f0;
+	background: #f8fafc;
+	border-radius: 6px;
+	padding: 0.32rem 0.45rem;
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.45rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.schema-reseau-label-btn-main {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.schema-reseau-label-btn-type {
+	font-size: 0.66rem;
+	color: #64748b;
+	text-transform: capitalize;
+	white-space: nowrap;
+}
+
+.schema-reseau-label-btn--selected {
+	border-color: #0ea5e9;
+	background: #e0f2fe;
+}
+
+.schema-scada-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.5rem 1rem;
+	padding: 0.5rem 0.85rem;
+	background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+	border-bottom: 1px solid #e2e8f0;
+	flex-shrink: 0;
+}
+
+.schema-scada-toolbar-left {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	min-width: 0;
+}
+
+.schema-scada-toolbar-kicker {
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #94a3b8;
+}
+
+.schema-scada-toolbar-title {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: #0f172a;
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: min(56vw, 520px);
+}
+
+.schema-scada-toolbar-right {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.schema-scada-toolbar-chip {
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: #475569;
+	background: #f1f5f9;
+	border: 1px solid #e2e8f0;
+	border-radius: 999px;
+	padding: 0.2rem 0.55rem;
+}
+
+.schema-reseau-svg-wrap--scada {
+	background-color: #fff;
+	background-image:
+		linear-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(148, 163, 184, 0.22) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
+
+.schema-scada-svg {
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+}
+
+.schema-scada-node {
+	cursor: pointer;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.schema-scada-node--dimmed {
+	opacity: 0.24;
+}
+
+.schema-scada-node--selected {
+	opacity: 1;
+	filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.65));
+}
+
+.schema-scada-node-card {
+	fill: rgba(248, 250, 252, 0.95);
+	stroke: #e2e8f0;
+	stroke-width: 1;
+}
+
+.schema-scada-node-label {
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+	font-weight: 600;
+	paint-order: stroke;
+	stroke: #ffffff;
+	stroke-width: 2.5px;
+	stroke-linejoin: round;
+}
+
+.schema-scada-node-measure {
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+}
+
+.schema-reseau-edge--scada {
+	filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.15));
+}
+
+.schema-reseau-edge--dimmed {
+	opacity: 0.18;
+}
+
+.schema-reseau-edge--active {
+	opacity: 1;
+	filter: drop-shadow(0 0 3px rgba(14, 165, 233, 0.6));
+}
+
+.schema-node-popup {
+	position: absolute;
+	z-index: 8;
+	width: 300px;
+	max-width: min(300px, calc(100% - 16px));
+	max-height: min(70vh, 520px);
+	background: #ffffff;
+	border: 1px solid #cbd5e1;
+	border-radius: 10px;
+	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+	padding: 0.6rem 0.7rem;
+	overflow: auto;
+}
+
+.schema-node-popup-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.4rem;
+}
+
+.schema-node-popup-title {
+	font-size: 0.86rem;
+	color: #0f172a;
+	word-break: break-word;
+}
+
+.schema-node-popup-close {
+	border: 1px solid #cbd5e1;
+	background: #fff;
+	color: #334155;
+	width: 22px;
+	height: 22px;
+	border-radius: 6px;
+	line-height: 18px;
+	font-size: 0.95rem;
+	cursor: pointer;
+	padding: 0;
+}
+
+.schema-node-popup-row {
+	display: flex;
+	gap: 0.5rem;
+	font-size: 0.74rem;
+	margin-bottom: 0.2rem;
+}
+
+.schema-node-popup-row .k {
+	color: #64748b;
+	min-width: 70px;
+}
+
+.schema-node-popup-row .v {
+	color: #0f172a;
+	word-break: break-word;
+}
+
+.schema-node-popup-measures {
+	margin-top: 0.35rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.schema-node-popup-measures span {
+	font-size: 0.7rem;
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+	color: #0e7490;
+	background: #ecfeff;
+	border: 1px solid #a5f3fc;
+	border-radius: 999px;
+	padding: 0.12rem 0.4rem;
+}
+
+.schema-node-popup-db-title {
+	margin-top: 0.5rem;
+	margin-bottom: 0.35rem;
+	font-size: 0.72rem;
+	font-weight: 700;
+	color: #334155;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.schema-node-popup-db-loading {
+	font-size: 0.75rem;
+	color: #475569;
+}
+
+.schema-node-popup-db-error {
+	font-size: 0.75rem;
+	color: #b91c1c;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 6px;
+	padding: 0.35rem 0.45rem;
+}
+
+.schema-node-popup-db-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.22rem;
+}
+
+.schema-node-popup-db-item {
+	display: grid;
+	grid-template-columns: minmax(90px, 110px) 1fr;
+	gap: 0.45rem;
+	align-items: start;
+	font-size: 0.72rem;
+	border-bottom: 1px dashed #e2e8f0;
+	padding-bottom: 0.2rem;
+}
+
+.schema-node-popup-db-item .db-k {
+	color: #64748b;
+	font-weight: 600;
+	word-break: break-word;
+}
+
+.schema-node-popup-db-item .db-v {
+	color: #0f172a;
+	word-break: break-word;
+	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+}

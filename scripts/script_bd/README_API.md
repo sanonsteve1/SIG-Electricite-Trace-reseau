@@ -82,6 +82,13 @@ curl -X DELETE http://localhost:8000/gis/distributionpanel-branchement/1
 - En **lecture** (GET) : toutes les colonnes sont renvoyées ; les colonnes géométriques (`geom`) sont renvoyées en **WKT** en **WGS84 (EPSG:4326)**. Les géométries en EPSG:32630 (UTM zone 30N) sont transformées vers 4326 pour la carte.
 - En **écriture** (POST) : vous pouvez envoyer n’importe quelle colonne ; pour `geom`, envoyez une chaîne **WKT** ou **EWKT** (ex. `POINT(1 2)` ou `SRID=4326;POINT(1 2)`).
 
+## Schéma unifilaire
+
+| Méthode | URL | Description |
+|--------|-----|-------------|
+| `POST` | `/gis/unifilaire/svg` | Génère le schéma unifilaire en SVG (body : `{ "ouvrage_ids": [ {"slug", "id"}, ... ] }`). |
+| `POST` | `/gis/unifilaire/pdf` | Génère le schéma unifilaire en PDF (même body). Téléchargement avec `Content-Disposition: attachment`. |
+
 ## Form-defaults et intégration Field Maps
 
 Les endpoints **form-defaults** permettent le pré-remplissage des formulaires (app web et applications de collecte) :
@@ -108,4 +115,29 @@ Exemple pour `lignes_sections_distinct` :
 
 ```sql
 ALTER TABLE lignes_sections_distinct REPLICA IDENTITY FULL;
+```
+
+## Codification unique des equipements
+
+Un script est fourni pour integrer la codification metier dans la base et coder les equipements deja existants.
+
+### Principe
+
+- Cree une sequence globale `equipement_code_seq`.
+- Cree une table `equipement_codification` (`table_name`, `equipement_id`, `code_equipement`).
+- Genere des codes uniques au format `EQ-{TYPE}-{ANNEE}-{SEQ}` (ex. `EQ-CPT-26-000123`).
+- Ignore automatiquement les tables absentes ou sans colonne `gid`.
+
+### Execution
+
+Depuis `scripts/script_bd` :
+
+```powershell
+python codifier_equipements.py
+```
+
+Option annee (2 chiffres) :
+
+```powershell
+python codifier_equipements.py --year 26
 ```

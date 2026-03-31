@@ -45,6 +45,23 @@ export interface OcrProcessResponse {
 	error?: string;
 }
 
+export interface NetworkRule {
+	id: number;
+	rule_type: 'connectivite' | 'topologie';
+	category?: string;
+	rule_name: string;
+	concerned_objects?: string;
+	description?: string;
+	technical_constraints?: string;
+	examples?: string;
+	detected_errors?: string;
+	best_practices?: string;
+	source_file?: string;
+	sort_order?: number;
+	created_at?: string;
+	updated_at?: string;
+}
+
 /**
  * Service pour l'API GIS (script_bd - FastAPI).
  * Base URL : environment.gisApiUrl (ex. http://localhost:8000)
@@ -146,6 +163,37 @@ export class GisApiService {
 		return this.http.delete<{ deleted: boolean; id: string }>(url);
 	}
 
+	/** Règles métier (connectivité/topologie) */
+	getRules(ruleType: 'connectivite' | 'topologie'): Observable<NetworkRule[]> {
+		const url = `${this.baseUrl}/gis/rules?rule_type=${encodeURIComponent(ruleType)}`;
+		return this.http.get<NetworkRule[]>(url);
+	}
+
+	getRuleById(ruleId: number): Observable<NetworkRule> {
+		const url = `${this.baseUrl}/gis/rules/${encodeURIComponent(String(ruleId))}`;
+		return this.http.get<NetworkRule>(url);
+	}
+
+	createRule(payload: Partial<NetworkRule>): Observable<NetworkRule> {
+		const url = `${this.baseUrl}/gis/rules`;
+		return this.http.post<NetworkRule>(url, payload);
+	}
+
+	updateRule(ruleId: number, payload: Partial<NetworkRule>): Observable<NetworkRule> {
+		const url = `${this.baseUrl}/gis/rules/${encodeURIComponent(String(ruleId))}`;
+		return this.http.put<NetworkRule>(url, payload);
+	}
+
+	deleteRule(ruleId: number): Observable<{ deleted: boolean; id: number }> {
+		const url = `${this.baseUrl}/gis/rules/${encodeURIComponent(String(ruleId))}`;
+		return this.http.delete<{ deleted: boolean; id: number }>(url);
+	}
+
+	loadDefaultRules(replaceExisting = true): Observable<{ success: boolean; inserted: number; by_type: Record<string, number> }> {
+		const url = `${this.baseUrl}/gis/rules/load-defaults?replace_existing=${replaceExisting ? 'true' : 'false'}`;
+		return this.http.post<{ success: boolean; inserted: number; by_type: Record<string, number> }>(url, {});
+	}
+
 	/**
 	 * Tracé amont/aval : ouvrages connectés à un point (poste source, poste de transformation ou abonné).
 	 * type: 'poste_source' | 'poste_transformation' | 'abonne'
@@ -167,6 +215,27 @@ export class GisApiService {
 	correctTopology(tolerance_m: number): Observable<TopologyCorrectResponse> {
 		const url = `${this.baseUrl}/gis/topology/correct`;
 		return this.http.post<TopologyCorrectResponse>(url, { tolerance_m });
+	}
+
+	/** Validation des règles connectivité/topologie pour mise en évidence cartographique. */
+	validateTopology(check_type: 'connectivite' | 'topologie' | 'all' = 'all', limit_per_table = 300): Observable<TopologyValidationResponse> {
+		const url = `${this.baseUrl}/gis/topology/validate`;
+		return this.http.post<TopologyValidationResponse>(url, { check_type, limit_per_table });
+	}
+
+	/**
+	 * Correction automatique ciblée pour une ligne du rapport de validation (connectivité ou topologie).
+	 * POST /gis/topology/correct-issue
+	 */
+	correctTopologyIssue(params: {
+		slug: string;
+		id: string;
+		rule_type: 'connectivite' | 'topologie';
+		tolerance_m?: number;
+		search_radius_m?: number;
+	}): Observable<TopologyCorrectIssueResponse> {
+		const url = `${this.baseUrl}/gis/topology/correct-issue`;
+		return this.http.post<TopologyCorrectIssueResponse>(url, params);
 	}
 
 	/**
@@ -193,6 +262,45 @@ export class GisApiService {
 		return this.http.post<ModelisationCalculateResponse>(url, params);
 	}
 
+	/**
+	 * Schéma unifilaire du réseau **par ouvrage** : graphe des nœuds/arêtes connectés à l'ouvrage donné.
+	 * GET /gis/schema-unifilaire?ref_id=...&type=...&direction=...
+	 */
+	getSchemaUnifilaire(
+		refId: string,
+		params?: { type?: string; direction?: string }
+	): Observable<SchemaUnifilaireResponse> {
+		if (!refId?.trim()) {
+			throw new Error('Codification (numéro de l\'ouvrage) requise.');
+		}
+		let url = `${this.baseUrl}/gis/schema-unifilaire?ref_id=${encodeURIComponent(refId.trim())}`;
+		const typeOuvrage = params?.type?.trim();
+		if (typeOuvrage) url += `&type_ouvrage=${encodeURIComponent(typeOuvrage)}`;
+		const direction = params?.direction?.trim();
+		if (direction) url += `&direction=${encodeURIComponent(direction)}`;
+		return this.http.get<SchemaUnifilaireResponse>(url);
+	}
+
+	/**
+	 * Schéma unifilaire PowSyBL : génère un SVG à partir de la liste d'ouvrages du tracé.
+	 * POST /gis/unifilaire/svg avec body { ouvrage_ids: [ { slug, id }, ... ] }.
+	 * Retourne le SVG en texte (image/svg+xml).
+	 */
+	getUnifilaireSvg(ouvrageIds: { slug: string; id: string }[]): Observable<string> {
+		const url = `${this.baseUrl}/gis/unifilaire/svg`;
+		return this.http.post(url, { ouvrage_ids: ouvrageIds }, { responseType: 'text' });
+	}
+
+	/**
+	 * Schéma unifilaire en PDF : génère un PDF à partir de la liste d'ouvrages du tracé.
+	 * POST /gis/unifilaire/pdf avec body { ouvrage_ids: [ { slug, id }, ... ] }.
+	 * Retourne le fichier PDF (application/pdf).
+	 */
+	getUnifilairePdf(ouvrageIds: { slug: string; id: string }[]): Observable<Blob> {
+		const url = `${this.baseUrl}/gis/unifilaire/pdf`;
+		return this.http.post(url, { ouvrage_ids: ouvrageIds }, { responseType: 'blob' });
+	}
+
 	/** OCR: extraire du texte depuis une image pour pré-remplir un formulaire. */
 	processOcr(file: File, options?: { language?: string; engine?: 'tesseract' | 'easyocr' }): Observable<OcrProcessResponse> {
 		const base = (this.ocrApiUrl || '').trim();
@@ -212,6 +320,48 @@ export interface TopologyCorrectResponse {
 	by_table: Record<string, { updated: number; error?: string }>;
 	tolerance_m?: number;
 	message?: string;
+}
+
+export interface TopologyValidationIssue {
+	rule_type: 'connectivite' | 'topologie';
+	slug: string;
+	id: string;
+	reason: string;
+	severity: 'warning' | 'error';
+	/** Piste de correction métier (renseignée par l’API). */
+	suggestion?: string;
+}
+
+export interface TopologyValidationResponse {
+	check_type: 'connectivite' | 'topologie' | 'all';
+	total_issues: number;
+	by_rule_type: { connectivite: number; topologie: number };
+	by_slug: Record<string, number>;
+	issues: TopologyValidationIssue[];
+	message?: string;
+}
+
+export interface TopologyCorrectIssueUpdate {
+	column: string;
+	ok: boolean;
+	node_slug?: string;
+	value?: string;
+	distance_m?: number | null;
+	reason?: string;
+	error?: string;
+}
+
+export interface TopologyCorrectIssueResponse {
+	rule_type: 'connectivite' | 'topologie';
+	slug: string;
+	id: string;
+	success: boolean;
+	message: string;
+	tolerance_m?: number;
+	search_radius_m?: number | null;
+	make_valid_updated?: number;
+	snap_updated?: number;
+	updates?: TopologyCorrectIssueUpdate[];
 }
 
 export interface ModelisationParams {
@@ -240,4 +390,32 @@ export interface ModelisationCalculateResponse {
 	message?: string;
 	layers?: { slug: string; table: string; count: number }[];
 	rows_total?: number;
+}
+
+export interface SchemaUnifilaireNode {
+	id: string;
+	type: string;
+	symbol: string;
+	label: string;
+	x: number;
+	y: number;
+	/** État organe : 'ouvert' | 'ferme' (si présent en base) */
+	state?: string;
+	/** Valeurs de mesure optionnelles (si présentes en base) */
+	tension?: number;
+	courant?: number;
+	puissance?: number;
+}
+
+export interface SchemaUnifilaireEdge {
+	source: string;
+	target: string;
+	line_type: string;
+	line_gid: string;
+}
+
+export interface SchemaUnifilaireResponse {
+	nodes: SchemaUnifilaireNode[];
+	edges: SchemaUnifilaireEdge[];
+	message?: string;
 }

@@ -2,6 +2,8 @@
     padding-top: 4rem;
 
     .layout-content {
+        display: flex;
+        flex-direction: column;
         min-height: calc(100vh - 12.28rem);
         padding: 1rem;
     }

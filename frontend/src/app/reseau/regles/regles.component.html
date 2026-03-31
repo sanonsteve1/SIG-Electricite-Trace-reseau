@@ -1,0 +1,116 @@
+<section class="rules-page">
+	<div class="rules-header">
+		<h2 class="rules-title">{{ title }}</h2>
+		<div class="rules-actions">
+			<button type="button" class="btn btn-light" (click)="loadRules()">Actualiser</button>
+		</div>
+	</div>
+
+	@if (errorMessage) {
+		<div class="alert alert-error">{{ errorMessage }}</div>
+	}
+	@if (successMessage) {
+		<div class="alert alert-success">{{ successMessage }}</div>
+	}
+
+	<div class="rules-body">
+		<div class="rules-layout" [class.rules-layout--form-collapsed]="formPanelCollapsed">
+			<div class="card form-card" [class.form-card--collapsed]="formPanelCollapsed">
+				<div class="card-header">
+					<h3>{{ formPanelCollapsed ? 'Nouvelle règle' : (editingRuleId ? 'Modifier la règle' : 'Nouvelle règle') }}</h3>
+					<div class="form-header-actions">
+						@if (!formPanelCollapsed) {
+							<button type="button" class="btn btn-sm btn-light" (click)="startCreate()">Nouveau</button>
+						}
+						<button type="button" class="btn btn-sm btn-light panel-toggle-btn" (click)="toggleFormPanel()">
+							<i class="fa" [class.fa-chevron-left]="!formPanelCollapsed" [class.fa-chevron-right]="formPanelCollapsed"></i>
+						</button>
+					</div>
+				</div>
+				@if (!formPanelCollapsed) {
+					<div class="form-scroll">
+						<label>Catégorie</label>
+						<input type="text" [(ngModel)]="form.category" />
+
+						<label>Règle</label>
+						<input type="text" [(ngModel)]="form.rule_name" />
+
+						<label>Objets concernés</label>
+						<textarea rows="2" [(ngModel)]="form.concerned_objects"></textarea>
+
+						<label>Description</label>
+						<textarea rows="3" [(ngModel)]="form.description"></textarea>
+
+						<label>Contraintes techniques</label>
+						<textarea rows="3" [(ngModel)]="form.technical_constraints"></textarea>
+
+						<label>Exemples</label>
+						<textarea rows="2" [(ngModel)]="form.examples"></textarea>
+
+						@if (ruleType === 'topologie') {
+							<label>Erreurs détectées</label>
+							<textarea rows="2" [(ngModel)]="form.detected_errors"></textarea>
+						}
+
+						<label>Bonnes pratiques</label>
+						<textarea rows="2" [(ngModel)]="form.best_practices"></textarea>
+
+						<label>Ordre</label>
+						<input type="number" [(ngModel)]="form.sort_order" />
+					</div>
+					<div class="form-buttons">
+						<button type="button" class="btn btn-primary" [disabled]="saving" (click)="save()">
+							{{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+						</button>
+						@if (editingRuleId) {
+							<button type="button" class="btn btn-light" (click)="cancelEdit()">Annuler</button>
+						}
+					</div>
+				}
+			</div>
+
+			<div class="card list-card">
+				<div class="card-header">
+					<h3>Liste des règles</h3>
+					<span class="count-badge">{{ rules.length }} règle(s)</span>
+				</div>
+				@if (loading) {
+					<p>Chargement...</p>
+				} @else {
+					<div class="table-wrapper">
+						<table>
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Catégorie</th>
+									<th>Règle</th>
+									<th>Description</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								@for (rule of rules; track rule.id) {
+									<tr>
+										<td>{{ rule.sort_order }}</td>
+										<td>{{ rule.category || '-' }}</td>
+										<td>{{ rule.rule_name }}</td>
+										<td>{{ rule.description || '-' }}</td>
+										<td class="actions-col">
+											<button type="button" class="btn btn-sm btn-outline" (click)="startEdit(rule)">Modifier</button>
+											<button type="button" class="btn btn-sm btn-danger" (click)="remove(rule)">Supprimer</button>
+										</td>
+									</tr>
+								}
+								@if (rules.length === 0) {
+									<tr>
+										<td colspan="5">Aucune règle trouvée.</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+</section>

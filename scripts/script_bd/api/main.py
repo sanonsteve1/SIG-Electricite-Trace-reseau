@@ -6,7 +6,10 @@ Expose pour chaque table : GET liste, GET par id, POST (création/mise à jour),
 import json
 import os
 import re
+from collections import Counter, defaultdict, deque
+from pathlib import Path as FsPath
 
+import networkx as nx
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import Body, FastAPI, HTTPException, Path, Query
@@ -301,6 +304,184 @@ def get_alternate_key_columns(meta: dict, pk: str) -> list[str]:
     return [c for c in fallback if c in all_cols and c != pk]
 
 
+def _codification_table_available(cur) -> bool:
+    """Indique si la table de codification existe dans le schema public."""
+    cur.execute("SELECT to_regclass('public.equipement_codification') IS NOT NULL AS ok")
+    row = cur.fetchone() or {}
+    return bool(row.get("ok"))
+
+
+def _attach_code_equipement(cur, table_name: str, rows: list[dict]) -> None:
+    """Ajoute code_equipement aux lignes si la table equipement_codification existe."""
+    if not rows:
+        return
+    if not _codification_table_available(cur):
+        return
+
+    equipement_ids = []
+    for r in rows:
+        gid = r.get("gid")
+        if gid is None:
+            continue
+        equipement_ids.append(str(gid))
+    if not equipement_ids:
+        return
+
+    cur.execute(
+        """
+        SELECT equipement_id, code_equipement
+        FROM equipement_codification
+        WHERE table_name = %s
+          AND equipement_id = ANY(%s)
+        """,
+        (table_name, equipement_ids),
+    )
+    by_gid = {str(x.get("equipement_id")): x.get("code_equipement") for x in (cur.fetchall() or [])}
+    for r in rows:
+        gid = r.get("gid")
+        r["code_equipement"] = by_gid.get(str(gid)) if gid is not None else None
+
+
+RULE_TYPES = {"connectivite", "topologie"}
+
+
+def _ensure_rules_table(cur) -> None:
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS network_rules (
+            id BIGSERIAL PRIMARY KEY,
+            rule_type VARCHAR(32) NOT NULL,
+            category TEXT,
+            rule_name TEXT NOT NULL,
+            concerned_objects TEXT,
+            description TEXT,
+            technical_constraints TEXT,
+            examples TEXT,
+            detected_errors TEXT,
+            best_practices TEXT,
+            source_file TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            CHECK (rule_type IN ('connectivite', 'topologie'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_network_rules_type ON network_rules(rule_type);
+        CREATE INDEX IF NOT EXISTS idx_network_rules_sort ON network_rules(rule_type, sort_order, id);
+        """
+    )
+
+
+def _normalize_md_cell(value: str) -> str:
+    text = (value or "").strip()
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    return text.strip()
+
+
+def _parse_markdown_table(md_text: str) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for raw in (md_text or "").splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        if re.match(r"^\|\s*[-:\s|]+\|\s*$", line):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        rows.append([_normalize_md_cell(c) for c in cells])
+    return rows
+
+
+def _rows_from_markdown(md_text: str, rule_type: str, source_file: str) -> list[dict]:
+    table_rows = _parse_markdown_table(md_text)
+    if len(table_rows) <= 1:
+        return []
+
+    data_rows = table_rows[1:]
+    out: list[dict] = []
+    for i, row in enumerate(data_rows, start=1):
+        if rule_type == "connectivite":
+            out.append(
+                {
+                    "rule_type": rule_type,
+                    "category": row[0] if len(row) > 0 else "",
+                    "rule_name": row[0] if len(row) > 0 else f"Regle {i}",
+                    "concerned_objects": row[1] if len(row) > 1 else "",
+                    "description": row[2] if len(row) > 2 else "",
+                    "technical_constraints": row[3] if len(row) > 3 else "",
+                    "examples": row[4] if len(row) > 4 else "",
+                    "detected_errors": "",
+                    "best_practices": row[5] if len(row) > 5 else "",
+                    "source_file": source_file,
+                    "sort_order": i,
+                }
+            )
+        else:
+            out.append(
+                {
+                    "rule_type": rule_type,
+                    "category": row[0] if len(row) > 0 else "",
+                    "rule_name": row[1] if len(row) > 1 else f"Regle {i}",
+                    "concerned_objects": "",
+                    "description": row[2] if len(row) > 2 else "",
+                    "technical_constraints": row[3] if len(row) > 3 else "",
+                    "examples": row[4] if len(row) > 4 else "",
+                    "detected_errors": row[5] if len(row) > 5 else "",
+                    "best_practices": row[6] if len(row) > 6 else "",
+                    "source_file": source_file,
+                    "sort_order": i,
+                }
+            )
+    return out
+
+
+def _load_default_rules(cur, replace_existing: bool = True) -> dict:
+    _ensure_rules_table(cur)
+    api_dir = FsPath(__file__).resolve().parent
+    base_dir = api_dir.parent
+    files = [
+        ("connectivite", base_dir / "connectivity_rule.md"),
+        ("topologie", base_dir / "topologie_rule.md"),
+    ]
+
+    inserted_total = 0
+    by_type: dict[str, int] = {"connectivite": 0, "topologie": 0}
+    for rule_type, file_path in files:
+        if not file_path.exists():
+            continue
+        md_text = file_path.read_text(encoding="utf-8", errors="replace")
+        rows = _rows_from_markdown(md_text, rule_type, file_path.name)
+        if replace_existing:
+            cur.execute("DELETE FROM network_rules WHERE rule_type = %s", (rule_type,))
+        for item in rows:
+            cur.execute(
+                """
+                INSERT INTO network_rules (
+                    rule_type, category, rule_name, concerned_objects, description,
+                    technical_constraints, examples, detected_errors, best_practices,
+                    source_file, sort_order
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    item["rule_type"],
+                    item["category"],
+                    item["rule_name"],
+                    item["concerned_objects"],
+                    item["description"],
+                    item["technical_constraints"],
+                    item["examples"],
+                    item["detected_errors"],
+                    item["best_practices"],
+                    item["source_file"],
+                    item["sort_order"],
+                ),
+            )
+            inserted_total += 1
+            by_type[rule_type] += 1
+    return {"inserted": inserted_total, "by_type": by_type}
+
+
 # SRID cible pour l'API : WGS84 (lon/lat) pour affichage carte web.
 OUTPUT_SRID = 4326
 # SRID par défaut si la géométrie n'a pas de SRID (0) : UTM zone 30N
@@ -566,9 +747,10 @@ def _trace_resolve_poste_source_gid(cur, ref_id: str) -> str | None:
             return str(row["resolved"]).strip()
     except Exception:
         pass
-    # Essayer par colonnes alternatives (numero_poste, name, objectid, etc.)
+    # Essayer par colonnes alternatives : codification (numéro de l'ouvrage), numero_poste, name, etc.
     alt_candidates = get_alternate_key_columns(meta, pk) + [
-        c for c in ("numero_poste", "name", "numero", "assetid") if c in all_cols
+        c for c in ("codification", "numero_ouvrage", "numero_poste", "name", "numero", "code", "assetid")
+        if c in all_cols
     ]
     for alt in alt_candidates:
         try:
@@ -584,15 +766,56 @@ def _trace_resolve_poste_source_gid(cur, ref_id: str) -> str | None:
     return None
 
 
+# Colonnes utilisées pour résoudre une codification (numéro de l'ouvrage) vers un gid
+_CODIFICATION_COLS = ["codification", "numero_ouvrage", "numero_poste", "numero", "code"]
+
+
+def _resolve_ref_by_codification(cur, ref_id: str) -> tuple[str, str] | None:
+    """
+    Résout ref_id (codification / numéro de l'ouvrage) en (slug, gid) en cherchant dans les tables
+    les colonnes codification, numero_ouvrage, numero_poste, numero, code.
+    Retourne le premier (slug, gid) trouvé, ou None.
+    """
+    if not ref_id or not str(ref_id).strip():
+        return None
+    ref_canon = _canon_id(ref_id)
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not _table_has_column(meta, "gid"):
+            continue
+        for col in _CODIFICATION_COLS:
+            if not _table_has_column(meta, col):
+                continue
+            try:
+                cur.execute(
+                    f"SELECT gid FROM {quote_ident(table_name)} WHERE {_canon_sql_expr(col)} = %s AND gid IS NOT NULL LIMIT 1",
+                    (ref_canon,),
+                )
+                row = cur.fetchone()
+                if row and row.get("gid") is not None:
+                    return (slug, str(row["gid"]).strip())
+            except Exception:
+                continue
+    return None
+
+
 def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     """
     Résout le point de départ (poste source, transfo, abonné) en nœuds du graphe.
-    Les tables de lignes référencent depart.gid, depart_bt.gid, poteau_bt.gid, poteau_hta.gid,
-    pas directement poste_source.gid. On retourne tous les gids à utiliser comme frontière initiale.
+    ref_id peut être un gid ou une codification (numéro de l'ouvrage).
     """
-    start = {ref_id}
+    start: set[str] = set()
     ref_canon = _canon_id(ref_id)
     trace_type = (trace_type or "").strip().lower()
+    # Résolution par codification (numéro de l'ouvrage) : si ref_id est une codification, on obtient le gid
+    try:
+        resolved = _resolve_ref_by_codification(cur, ref_id)
+        if resolved:
+            _slug, gid_resolved = resolved
+            ref_canon = _canon_id(gid_resolved)
+    except Exception:
+        pass
+    start.add(ref_canon)
     try:
         if trace_type == "poste_source":
             # Résoudre ref_id en gid du poste source (au cas où le frontend envoie numero_poste ou autre)
@@ -1576,6 +1799,1353 @@ def trace_ouvrages(
     return {"ouvrage_ids": ouvrage_ids, "message": detail}
 
 
+# --- Schéma unifilaire : graphe topologique (nœuds + arêtes) + layout NetworkX ---
+# Mapping (table_ligne, colonne) -> slug de la table de nœuds pour construire node_id = f"{slug}:{gid}"
+_SCHEMA_EDGE_NODE_COLS = [
+    ("ligne_hta", "ligne-hta", [("id_depart_hta", "depart"), ("id_poteau_hta", "poteau-hta")]),
+    ("ligne_bt", "ligne-bt", [("id_depart_bt", "depart-bt"), ("id_poteau_bt", "poteau-bt")]),
+    ("ligne_brcht", "ligne-brcht", [("id_depart_bt", "depart-bt"), ("id_poteau_bt", "poteau-bt"), ("id_poteau_hta", "poteau-hta")]),
+]
+
+
+def _schema_unifilaire_extract_edges_and_node_gids(cur) -> tuple[list[tuple[str, str, str, str, str, str]], set[str]]:
+    """
+    Extrait toutes les arêtes (s_slug, s_gid, t_slug, t_gid, line_slug, line_gid) et l'ensemble des gids de nœuds.
+    """
+    edges_with_gids: list[tuple[str, str, str, str, str, str]] = []
+    all_gids: set[str] = set()
+    for _table_name, line_slug, node_col_slugs in _SCHEMA_EDGE_NODE_COLS:
+        table_name_real = TABLE_BY_SLUG.get(line_slug, (None, {}))[0]
+        if not table_name_real:
+            continue
+        qtable = quote_ident(table_name_real)
+        cols = [c for c, _ in node_col_slugs]
+        try:
+            cur.execute(
+                f"SELECT gid, {', '.join(quote_ident(c) for c in cols)} FROM {qtable} "
+                "WHERE gid IS NOT NULL"
+            )
+        except Exception:
+            continue
+        for row in cur.fetchall() or []:
+            line_gid = row.get("gid")
+            if line_gid is None:
+                continue
+            line_gid_str = _canon_id(str(line_gid))
+            pairs = []
+            for col, node_slug in node_col_slugs:
+                v = row.get(col)
+                if v is not None and str(v).strip():
+                    gid_str = _canon_id(str(v))
+                    all_gids.add(gid_str)
+                    pairs.append((node_slug, gid_str))
+            if len(pairs) >= 2:
+                # Une arête par paire consécutive (pour ligne_brcht: depart_bt-poteau_bt, poteau_bt-poteau_hta)
+                for i in range(len(pairs) - 1):
+                    edges_with_gids.append((pairs[i][0], pairs[i][1], pairs[i + 1][0], pairs[i + 1][1], line_slug, line_gid_str))
+    return edges_with_gids, all_gids
+
+
+def _schema_unifilaire_resolve_gid_to_slug(cur, node_gids: set[str]) -> dict[str, str]:
+    """
+    Pour chaque gid, détermine le slug de la table (point) qui le contient.
+    Retourne dict gid -> slug (un seul slug par gid; si plusieurs tables, on prend le premier trouvé).
+    """
+    canon_list = sorted(node_gids)
+    if not canon_list:
+        return {}
+    placeholders = ", ".join(["%s"] * len(canon_list))
+    gid_to_slug: dict[str, str] = {}
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        if not _is_point_table(slug):
+            continue
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not _table_has_column(meta, "gid"):
+            continue
+        try:
+            cur.execute(
+                f"SELECT gid FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                tuple(canon_list),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is not None:
+                    gid_str = _canon_id(str(gid_val))
+                    if gid_str not in gid_to_slug:
+                        gid_to_slug[gid_str] = slug
+        except Exception:
+            continue
+    return gid_to_slug
+
+
+def _schema_unifilaire_node_labels(cur, gid_to_slug: dict[str, str]) -> dict[str, str]:
+    """
+    Retourne pour chaque node_id un libellé orienté métier (numéro/codification en priorité),
+    sans exposer le gid dans le texte affiché.
+    """
+    labels: dict[str, str] = {}
+    label_cols = ["codification", "numero_ouvrage", "numero_poste", "numero_depart", "numero", "name", "nom", "code", "assetid", "objectid"]
+    slug_counts: Counter[str] = Counter()
+    slug_base_map: dict[str, str] = {
+        "poste-source": "Poste source",
+        "depart": "Depart",
+        "depart-bt": "Depart BT",
+        "poste-cabine": "Poste cabine",
+        "poste-transformation": "Poste transfo",
+        "transformateur": "Transformateur",
+        "abonne": "Abonne",
+        "point-raccordement": "Point raccordement",
+        "branchement": "Branchement",
+    }
+
+    def _fallback_label_for_slug(slug: str) -> str:
+        slug_counts[slug] += 1
+        base = slug_base_map.get(slug, (slug or "Noeud").replace("-", " ").strip().title() or "Noeud")
+        return f"{base} #{slug_counts[slug]}"
+
+    for gid_str, slug in gid_to_slug.items():
+        node_id = f"{slug}:{gid_str}"
+        table_name, meta = TABLE_BY_SLUG.get(slug, (None, {}))
+        if not table_name:
+            labels[node_id] = _fallback_label_for_slug(slug)
+            continue
+        cols = get_all_columns(meta)
+        candidates = [c for c in label_cols if c in cols]
+        if not candidates:
+            labels[node_id] = _fallback_label_for_slug(slug)
+            continue
+        try:
+            cur.execute(
+                f"SELECT {', '.join(quote_ident(c) for c in candidates)} FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                (gid_str,),
+            )
+            row = cur.fetchone()
+            if not row:
+                labels[node_id] = _fallback_label_for_slug(slug)
+                continue
+            # Prendre la première valeur non vide ; sinon fallback lisible (sans gid)
+            value = ""
+            for c in candidates:
+                v = row.get(c)
+                if v is not None and str(v).strip():
+                    value = str(v).strip()[:60]
+                    break
+            if not value:
+                value = _fallback_label_for_slug(slug)
+            labels[node_id] = value
+        except Exception:
+            labels[node_id] = _fallback_label_for_slug(slug)
+    # Éviter les doublons sans utiliser le gid : suffixe numérique stable.
+    dup_count = Counter(labels.values())
+    dup_seq: Counter[str] = Counter()
+    for node_id, lbl in list(labels.items()):
+        if dup_count[lbl] > 1:
+            dup_seq[lbl] += 1
+            labels[node_id] = f"{lbl} ({dup_seq[lbl]})"
+    return labels
+
+
+def _schema_unifilaire_node_extra(cur, gid_to_slug: dict[str, str]) -> dict[str, dict]:
+    """
+    Retourne pour chaque node_id les attributs optionnels : state (ouvert/fermé), tension, courant, puissance.
+    Seules les colonnes présentes en base sont interrogées.
+    """
+    from collections import defaultdict
+    out: dict[str, dict] = defaultdict(dict)
+    by_slug: dict[str, list[str]] = defaultdict(list)
+    for gid_str, slug in gid_to_slug.items():
+        by_slug[slug].append(gid_str)
+    state_cols = ["etat", "state", "ouvert", "ferme"]
+    measure_cols = ["tension", "courant", "puissance"]
+    for slug, gids in by_slug.items():
+        table_name, meta = TABLE_BY_SLUG.get(slug, (None, {}))
+        if not table_name or not gids:
+            continue
+        cols = get_all_columns(meta)
+        opt_state = [c for c in state_cols if c in cols]
+        opt_measure = [c for c in measure_cols if c in cols]
+        if not opt_state and not opt_measure:
+            continue
+        select_cols = ["gid"] + opt_state + opt_measure
+        placeholders = ", ".join(["%s"] * len(gids))
+        try:
+            cur.execute(
+                f"SELECT {', '.join(quote_ident(c) for c in select_cols)} FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                tuple(gids),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                gid_str = _canon_id(gid_val) if gid_val is not None else None
+                if not gid_str:
+                    continue
+                node_id = f"{slug}:{gid_str}"
+                if opt_state:
+                    state_val = None
+                    for c in opt_state:
+                        v = row.get(c)
+                        if v is not None and str(v).strip():
+                            state_val = str(v).strip().lower()
+                            if state_val in ("1", "true", "oui", "ferme", "fermé", "closed"):
+                                state_val = "ferme"
+                            elif state_val in ("0", "false", "non", "ouvert", "open"):
+                                state_val = "ouvert"
+                            break
+                    if state_val:
+                        out[node_id]["state"] = state_val
+                for c in opt_measure:
+                    v = row.get(c)
+                    if v is not None:
+                        try:
+                            out[node_id][c] = float(v)
+                        except (TypeError, ValueError):
+                            out[node_id][c] = str(v)
+        except Exception:
+            pass
+    return dict(out)
+
+
+def _schema_unifilaire_node_slug(node_id: str) -> str:
+    """Partie slug d'un node_id « slug:gid »."""
+    if not node_id or ":" not in str(node_id):
+        return ""
+    return str(node_id).split(":", 1)[0].strip().lower()
+
+
+def _schema_unifilaire_node_gid_part(node_id: str) -> str:
+    if not node_id or ":" not in str(node_id):
+        return ""
+    return _canon_id(str(node_id).split(":", 1)[1])
+
+
+def _schema_unifilaire_slug_is_contractible(slug: str) -> bool:
+    """
+    Nœuds « tronçon » à supprimer / fusionner : poteaux, cellules, parafoudres.
+    On conserve : poste source, départs, transformateurs, postes cabines, clients (abonnés, points de raccordement, etc.).
+    """
+    s = (slug or "").lower()
+    if "poteau" in s:
+        return True
+    if "cellule" in s or "parafoudre" in s:
+        return True
+    return False
+
+
+def _schema_unifilaire_line_slug_priority(slug: str) -> int:
+    s = (slug or "").lower()
+    if "hta" in s:
+        return 3
+    if "bt" in s and "brcht" not in s:
+        return 2
+    if "brcht" in s:
+        return 1
+    return 0
+
+
+def _schema_unifilaire_merge_line_slug(a: str, b: str) -> str:
+    """Fusionne deux types de ligne pour un tronçon contracté (priorité métier HTA > BT > branchement)."""
+    a = (a or "").strip()
+    b = (b or "").strip()
+    if not a:
+        return b
+    if not b:
+        return a
+    if _schema_unifilaire_line_slug_priority(a) >= _schema_unifilaire_line_slug_priority(b):
+        return a
+    return b
+
+
+def _schema_unifilaire_simplify_graph(
+    edges_for_nx: list[tuple[str, str, str, str]],
+) -> tuple[list[tuple[str, str, str, str]], set[str]]:
+    """
+    Étape 1 — Nettoyage : suppression des nœuds intermédiaires (poteaux, etc.) et fusion des tronçons.
+    Retourne des arêtes non orientées (u, v) avec métadonnées de ligne fusionnées.
+    """
+    G = nx.Graph()
+    for s, t, ls, lg in edges_for_nx:
+        if s == t:
+            continue
+        ls = (ls or "").strip()
+        lg = (lg or "").strip()
+        if G.has_edge(s, t):
+            od = G[s][t]
+            od["line_slug"] = _schema_unifilaire_merge_line_slug(od.get("line_slug", ""), ls)
+            od["line_gid"] = (od.get("line_gid") or lg) or od.get("line_gid") or ""
+        else:
+            G.add_edge(s, t, line_slug=ls, line_gid=lg)
+    changed = True
+    safety = 0
+    while changed and safety < 50000:
+        safety += 1
+        changed = False
+        for v in list(G.nodes()):
+            slug = _schema_unifilaire_node_slug(str(v))
+            if not _schema_unifilaire_slug_is_contractible(slug):
+                continue
+            deg = G.degree(v)
+            if deg == 2:
+                a, b = list(G.neighbors(v))
+                d_a = G[v][a]
+                d_b = G[v][b]
+                ls_m = _schema_unifilaire_merge_line_slug(d_a.get("line_slug", ""), d_b.get("line_slug", ""))
+                lg_m = (d_a.get("line_gid") or d_b.get("line_gid") or "").strip()
+                G.remove_node(v)
+                if a == b:
+                    changed = True
+                    continue
+                if G.has_edge(a, b):
+                    od = G[a][b]
+                    od["line_slug"] = _schema_unifilaire_merge_line_slug(od.get("line_slug", ""), ls_m)
+                    od["line_gid"] = (od.get("line_gid") or lg_m) or od.get("line_gid") or ""
+                else:
+                    G.add_edge(a, b, line_slug=ls_m, line_gid=lg_m)
+                changed = True
+            elif deg == 1:
+                G.remove_node(v)
+                changed = True
+            elif deg == 0:
+                G.remove_node(v)
+                changed = True
+    out_edges: list[tuple[str, str, str, str]] = []
+    for a, b in G.edges():
+        ls = G[a][b].get("line_slug", "") or ""
+        lg = G[a][b].get("line_gid", "") or ""
+        out_edges.append((a, b, ls, lg))
+    nodes = set(G.nodes())
+    return out_edges, nodes
+
+
+def _schema_unifilaire_pick_tree_root(nodes: set[str], start_gids: set[str], gid_to_node_id: dict[str, str]) -> str | None:
+    """Racine de l'arbre logique : poste source si présent, sinon transfo PS, sinon nœud du tracé."""
+    if not nodes:
+        return None
+    postes = sorted(n for n in nodes if n.startswith("poste-source:"))
+    if postes:
+        return postes[0]
+    transfos = sorted(
+        n for n in nodes if "transfo" in _schema_unifilaire_node_slug(n) or "poste-cabine" in _schema_unifilaire_node_slug(n)
+    )
+    if transfos:
+        return transfos[0]
+    for gid in sorted(start_gids):
+        nid = gid_to_node_id.get(_canon_id(str(gid)))
+        if nid and nid in nodes:
+            return nid
+    return sorted(nodes)[0]
+
+
+def _schema_unifilaire_bfs_tree_edges(
+    undirected_edges: list[tuple[str, str, str, str]],
+    root: str | None,
+) -> tuple[list[tuple[str, str, str, str]], set[str]]:
+    """
+    Transforme le graphe simplifié en arbre logique (arêtes orientées parent → enfant).
+    Ne conserve que la composante connexe de la racine.
+    """
+    if not root:
+        return [], set()
+    adj: defaultdict[str, list[tuple[str, str, str]]] = defaultdict(list)
+    for s, t, ls, lg in undirected_edges:
+        adj[s].append((t, ls, lg))
+        adj[t].append((s, ls, lg))
+    if root not in adj:
+        return [], {root}
+    tree_edges: list[tuple[str, str, str, str]] = []
+    seen: set[str] = {root}
+    q: deque[str] = deque([root])
+    while q:
+        u = q.popleft()
+        for v, ls, lg in adj[u]:
+            if v not in seen:
+                seen.add(v)
+                tree_edges.append((u, v, ls, lg))
+                q.append(v)
+    return tree_edges, seen
+
+
+def _schema_unifilaire_layout_linear_tree(G: nx.DiGraph, root: str) -> dict[str, tuple[float, float]]:
+    """
+    Étape 3 — Linéarisation : placement orthogonal « synoptique ».
+
+    - **Horizontalement** : les nœuds qui partagent le même parent (frères) sont alignés sur une même
+      ligne horizontale (même ordonnée y).
+    - **Verticalement** : la profondeur dans l’arbre augmente vers le bas (y croissant) : les branches
+      descendent.
+    - **Sans croisement** : placement type arbre récursif (sous-arbres contigus en largeur, parent centré
+      au-dessus de l’enveloppe de ses enfants), ce qui évite les croisements d’arêtes pour un arbre.
+
+    Coordonnées en pixels (origine en haut à gauche, comme le SVG).
+    """
+    if root not in G:
+        return {}
+
+    # Espacements réduits pour tenir dans une zone d’affichage type 72vh côté front
+    VERTICAL_GAP = 72.0
+    LEAF_UNIT = 64.0
+    SIBLING_GAP = 24.0
+
+    children_cache: dict[str, list[str]] = {}
+    for n in G.nodes():
+        children_cache[n] = sorted(
+            list(G.successors(n)),
+            key=lambda x: (str(G.nodes[x].get("label") or x).lower(), x),
+        )
+
+    pos: dict[str, tuple[float, float]] = {}
+
+    def assign(n: str, x_left: float, depth: int) -> float:
+        """Place le sous-arbre enraciné en ``n`` ; retourne l’abscisse droite du bloc utilisé."""
+        ch = children_cache.get(n, [])
+        y = depth * VERTICAL_GAP
+        if not ch:
+            cx = x_left + LEAF_UNIT / 2.0
+            pos[n] = (cx, y)
+            return x_left + LEAF_UNIT
+        x_cur = x_left
+        centers: list[float] = []
+        for c in ch:
+            right = assign(c, x_cur, depth + 1)
+            centers.append(pos[c][0])
+            x_cur = right + SIBLING_GAP
+        cx = (min(centers) + max(centers)) / 2.0 if centers else x_left + LEAF_UNIT / 2.0
+        pos[n] = (cx, y)
+        return x_cur - SIBLING_GAP
+
+    assign(root, 0.0, 0)
+
+    if not pos:
+        return pos
+    xs = [p[0] for p in pos.values()]
+    ys = [p[1] for p in pos.values()]
+    margin = 48.0
+    min_x = min(xs)
+    min_y = min(ys)
+    for n in pos:
+        x, y = pos[n]
+        pos[n] = (x - min_x + margin, y - min_y + margin)
+    return pos
+
+
+def _trace_line_endpoints_gids_from_pairs(cur, line_pairs: list[tuple[str, str]]) -> set[str]:
+    """Gids des extrémités (id_depart_*, id_poteau_*) pour chaque ligne HTA/BT/branchement."""
+    out: set[str] = set()
+    for pair_slug, line_gid in line_pairs:
+        if pair_slug not in ("ligne-hta", "ligne-bt", "ligne-brcht"):
+            continue
+        lg = _canon_id(str(line_gid))
+        if not lg:
+            continue
+        for table_name, slug, node_cols in _TRACE_EDGE_TABLES:
+            if slug != pair_slug:
+                continue
+            try:
+                cur.execute(
+                    f'SELECT {", ".join(quote_ident(c) for c in node_cols)} FROM {quote_ident(table_name)} '
+                    f"WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                    (lg,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    break
+                for c in node_cols:
+                    v = row.get(c)
+                    if v is not None and str(v).strip():
+                        out.add(_canon_id(v))
+            except Exception:
+                pass
+            break
+    return out
+
+
+def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str, direction: str) -> set[str]:
+    """
+    Même logique de parcours que GET /gis/trace : HTA amont (poste cabine), extension BT aval,
+    postes cabine, fallback spatial, etc. — pour que le schéma unifilaire filtre les mêmes nœuds
+    que le tracé sur la carte.
+    """
+    direction = (direction or "tous").strip().lower()
+    if direction not in ("amont", "aval", "tous"):
+        direction = "tous"
+    trace_type = (trace_type or "ouvrage").strip().lower()
+    if trace_type not in ("poste_source", "poste_transformation", "abonne", "ouvrage"):
+        trace_type = "ouvrage"
+
+    from_point_raccordement = trace_type == "abonne" or _trace_ref_is_point_raccordement_or_abonne(cur, ref_id)
+    ligne_brcht_only_gid, _pt_racc_gid = _trace_get_ligne_brcht_only_for_raccord(cur, ref_id) if from_point_raccordement else (None, None)
+
+    if from_point_raccordement and ligne_brcht_only_gid and direction != "amont":
+        pairs = [("ligne-brcht", ligne_brcht_only_gid)]
+        visited = _trace_line_endpoints_gids_from_pairs(cur, pairs)
+        raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
+        for _slug, gid in raccord_pairs:
+            if gid:
+                visited.add(_canon_id(str(gid)))
+        return visited
+
+    effective_direction = direction
+    if direction == "tous" and from_point_raccordement:
+        effective_direction = "amont"
+    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
+    if not start_nodes:
+        return set()
+    restrict_to_bt = (
+        trace_type == "abonne"
+        or (trace_type == "poste_transformation" and direction != "amont")
+        or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
+    )
+    ligne_hta_cabine_gid: str | None = None
+    if effective_direction == "amont":
+        hta_entry = set()
+        if trace_type == "poste_transformation":
+            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, ref_id)
+        if not hta_entry:
+            hta_entry = _trace_hta_entry_from_start(cur, start_nodes)
+        if hta_entry:
+            pairs, visited_nodes = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+            if ligne_hta_cabine_gid and not any(
+                _canon_id(gid) == _canon_id(ligne_hta_cabine_gid) for _s, gid in pairs if _s == "ligne-hta"
+            ):
+                pairs.insert(0, ("ligne-hta", ligne_hta_cabine_gid))
+        else:
+            pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, effective_direction, restrict_to_bt=restrict_to_bt)
+    else:
+        pairs, visited_nodes = _trace_bfs_from_node(cur, start_nodes, effective_direction, restrict_to_bt=restrict_to_bt)
+
+    if trace_type == "ouvrage":
+        ref_canon = _canon_id(ref_id)
+        for _table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+            try:
+                qtable = quote_ident(_table_name)
+                cur.execute(
+                    f"SELECT gid FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                    (ref_canon,),
+                )
+                row = cur.fetchone()
+                if row and row.get("gid") is not None:
+                    pairs.append((slug, str(row["gid"])))
+            except Exception:
+                continue
+    point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
+    equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
+    raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
+    links_count = _trace_directional_links_count(cur)
+    if not pairs and links_count == 0:
+        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
+        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+        equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
+        raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
+        visited_nodes |= _trace_line_endpoints_gids_from_pairs(cur, pairs)
+
+    merged: list[tuple[str, str]] = []
+    seen_merged: set[tuple[str, str]] = set()
+    for item in (pairs + point_pairs + equip_pairs + raccord_pairs):
+        if item not in seen_merged:
+            seen_merged.add(item)
+            merged.append(item)
+
+    bt_start: set[str] = set()
+    if effective_direction == "aval":
+        bt_start = _trace_bt_start_from_hta_nodes(cur, visited_nodes)
+    poste_cabine_gids = [gid for slug, gid in merged if "poste-cabine" in (slug or "")]
+    if poste_cabine_gids and effective_direction in ("tous", "aval"):
+        for pc_gid in poste_cabine_gids:
+            bt_start |= _trace_resolve_start_nodes(cur, "poste_transformation", pc_gid)
+    bt_visited: set[str] = set()
+    if bt_start:
+        bt_direction = "tous" if effective_direction == "tous" else "aval"
+        bt_pairs, bt_visited = _trace_bfs_from_node(cur, bt_start, bt_direction, restrict_to_bt=True)
+        bt_point_pairs = _trace_points_from_node_ids(cur, bt_visited)
+        bt_equip_pairs = _trace_postes_transfos_from_node_ids(cur, bt_visited)
+        bt_raccord_pairs = _trace_points_raccordement_from_lines(cur, bt_pairs)
+        for item in (bt_pairs + bt_point_pairs + bt_equip_pairs + bt_raccord_pairs):
+            if item not in seen_merged:
+                seen_merged.add(item)
+                merged.append(item)
+
+    visited = set(visited_nodes)
+    visited |= bt_visited
+    for _slug, gid in merged:
+        if gid:
+            visited.add(_canon_id(str(gid)))
+    return visited
+
+
+@app.get("/gis/schema-unifilaire")
+def get_schema_unifilaire(
+    ref_id: str = Query(..., description="Codification (numéro de l'ouvrage) ou gid pour lequel générer le schéma"),
+    type_ouvrage: str = Query("ouvrage", description="Type d'ouvrage : poste_source | poste_transformation | abonne | ouvrage"),
+    direction: str = Query("tous", description="Direction du tracé : amont | aval | tous (réseau connecté)"),
+):
+    """
+    Schéma unifilaire du réseau **par ouvrage** : graphe topologique des nœuds et arêtes connectés
+    à l'ouvrage donné. ref_id = codification (numéro de l'ouvrage) ou gid. Même logique que le tracé.
+
+    **Alignement carte** : les nœuds inclus sont filtrés avec la même règle que GET /gis/trace (même type,
+    direction, remontée HTA amont, extension BT, poste cabine, fallback spatial).
+
+    **Étape 1 (nettoyage)** : fusion des tronçons en supprimant les nœuds intermédiaires (poteaux HTA/BT,
+    cellules, parafoudres) ; les types de ligne sont fusionnés avec priorité HTA > BT > branchement.
+
+    **Arbre logique** : le sous-graphe simplifié est ramené à un arbre (BFS) depuis la racine métier
+    (poste source si présent, sinon transfo / poste cabine, sinon le nœud du tracé). Seule la composante
+    connexe de cette racine est renvoyée (hiérarchie type poste → départs → transfo → clients).
+
+    **Étape 3 (linéarisation)** : coordonnées calculées pour un dessin de haut en bas — frères alignés
+    horizontalement, profondeur verticale vers le bas, placement type arbre sans croisement d’arêtes.
+    """
+    ref_id = (ref_id or "").strip()
+    if not ref_id:
+        raise HTTPException(status_code=400, detail="Codification (numéro de l'ouvrage) requise.")
+    type_ouvrage = (type_ouvrage or "ouvrage").strip().lower()
+    if type_ouvrage not in ("poste_source", "poste_transformation", "abonne", "ouvrage"):
+        type_ouvrage = "ouvrage"
+    direction = (direction or "tous").strip().lower()
+    if direction not in ("amont", "aval", "tous"):
+        direction = "tous"
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                # 1) Même ensemble de nœuds que le tracé carte (/gis/trace) pour ref_id + type + direction
+                visited = _trace_visited_nodes_for_schema_unifilaire(cur, type_ouvrage, ref_id, direction)
+                if not visited:
+                    return {
+                        "nodes": [],
+                        "edges": [],
+                        "message": "Ouvrage introuvable ou aucun nœud connecté (vérifiez la codification, le type et la même direction que sur la carte).",
+                    }
+                start_ids = _trace_resolve_start_nodes(cur, type_ouvrage, ref_id) or set()
+                # 3) Extraire toutes les arêtes puis garder seulement celles dont les deux extrémités sont dans visited
+                edges_raw, all_gids = _schema_unifilaire_extract_edges_and_node_gids(cur)
+                gid_to_slug: dict[str, str] = {}
+                for s_slug, s_gid, t_slug, t_gid, _line_slug, _line_gid in edges_raw:
+                    gid_to_slug[s_gid] = s_slug
+                    gid_to_slug[t_gid] = t_slug
+                gid_to_node_id = {gid_str: f"{slug}:{gid_str}" for gid_str, slug in gid_to_slug.items()}
+                allowed_node_ids = {gid_to_node_id[g] for g in visited if g in gid_to_node_id}
+                edges_for_nx: list[tuple[str, str, str, str]] = []
+                for s_slug, s_gid, t_slug, t_gid, line_slug, line_gid in edges_raw:
+                    sid = gid_to_node_id.get(s_gid) or f"{s_slug}:{s_gid}"
+                    tid = gid_to_node_id.get(t_gid) or f"{t_slug}:{t_gid}"
+                    if sid in allowed_node_ids and tid in allowed_node_ids:
+                        edges_for_nx.append((sid, tid, line_slug, line_gid))
+                if not edges_for_nx:
+                    return {
+                        "nodes": [],
+                        "edges": [],
+                        "message": "Aucune arête connectée à cet ouvrage (vérifiez la topologie des lignes).",
+                    }
+                # 4) Limiter gid_to_slug et labels aux nœuds effectivement dans le sous-graphe
+                node_set = set()
+                for s, t, _ls, _lg in edges_for_nx:
+                    node_set.add(s)
+                    node_set.add(t)
+                gid_to_slug = {
+                    gid_str: slug
+                    for gid_str, slug in gid_to_slug.items()
+                    if gid_to_node_id.get(gid_str) in node_set
+                }
+                # Nœuds racine : poste source (transfo de puissance) en tête pour chaque départ HTA
+                dep_meta = TABLE_BY_SLUG.get("depart", (None, {}))[1] or {}
+                if _table_has_column(dep_meta, "gid") and _table_has_column(dep_meta, "id_poste_source"):
+                    depart_node_ids = [n for n in node_set if n.startswith("depart:") and "depart-bt" not in n]
+                    depart_gids = [_canon_id(n.split(":", 1)[-1]) for n in depart_node_ids if ":" in n]
+                    if depart_gids:
+                        placeholders = ", ".join(["%s"] * len(depart_gids))
+                        try:
+                            cur.execute(
+                                f"SELECT {_canon_sql_expr('gid')} AS gid, id_poste_source FROM depart WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                                tuple(depart_gids),
+                            )
+                            for row in cur.fetchall() or []:
+                                ps_gid = _canon_id(row.get("id_poste_source"))
+                                dep_gid = _canon_id(row.get("gid"))
+                                if not ps_gid or not dep_gid:
+                                    continue
+                                ps_node_id = f"poste-source:{ps_gid}"
+                                dep_node_id = f"depart:{dep_gid}"
+                                if dep_node_id not in node_set:
+                                    continue
+                                node_set.add(ps_node_id)
+                                gid_to_slug[ps_gid] = "poste-source"
+                                edges_for_nx.append((ps_node_id, dep_node_id, "ligne-hta", ""))
+                        except Exception:
+                            pass
+                # 5) Simplification topologique (tronçons / poteaux) puis arbre logique depuis la racine métier
+                edges_simple, nodes_simple = _schema_unifilaire_simplify_graph(edges_for_nx)
+                if not nodes_simple:
+                    return {
+                        "nodes": [],
+                        "edges": [],
+                        "message": "Aucun équipement métier après fusion des tronçons intermédiaires.",
+                    }
+                tree_root = _schema_unifilaire_pick_tree_root(nodes_simple, start_ids, gid_to_node_id)
+                tree_edges, reachable = _schema_unifilaire_bfs_tree_edges(edges_simple, tree_root)
+                if not reachable:
+                    return {
+                        "nodes": [],
+                        "edges": [],
+                        "message": "Impossible de déterminer la racine du schéma (poste source / transfo).",
+                    }
+                reachable_gids = {_schema_unifilaire_node_gid_part(n) for n in reachable if ":" in str(n)}
+                gid_to_slug = {
+                    g: s for g, s in gid_to_slug.items() if g in reachable_gids
+                }
+                for n in reachable:
+                    g = _schema_unifilaire_node_gid_part(n)
+                    sl = _schema_unifilaire_node_slug(n)
+                    if g and sl and g not in gid_to_slug:
+                        gid_to_slug[g] = sl
+                node_labels = _schema_unifilaire_node_labels(cur, gid_to_slug)
+                node_list = sorted(reachable)
+                G = nx.DiGraph()
+                for n in node_list:
+                    gid_part = _schema_unifilaire_node_gid_part(n)
+                    slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
+                    G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
+                for s, t, line_slug, line_gid in tree_edges:
+                    G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
+                pos = _schema_unifilaire_layout_linear_tree(G, tree_root)
+                node_extra = _schema_unifilaire_node_extra(cur, gid_to_slug)
+                # Sortie JSON : nodes avec x, y, type (slug), label ; optionnel : state, tension, courant, puissance
+                nodes_out = []
+                for n in node_list:
+                    slug_attr = G.nodes[n].get("slug") or (n.split(":", 1)[0] if ":" in n else "")
+                    payload = {
+                        "id": n,
+                        "type": slug_attr,
+                        "symbol": _slug_to_symbol(slug_attr),
+                        "label": G.nodes[n].get("label") or n,
+                        "x": round(pos.get(n, (0, 0))[0], 2),
+                        "y": round(pos.get(n, (0, 0))[1], 2),
+                    }
+                    extra = node_extra.get(n) or {}
+                    if extra.get("state") is not None:
+                        payload["state"] = extra["state"]
+                    for key in ("tension", "courant", "puissance"):
+                        if key in extra:
+                            payload[key] = extra[key]
+                    nodes_out.append(payload)
+                edges_out = [
+                    {"source": s, "target": t, "line_type": line_slug, "line_gid": line_gid}
+                    for s, t, line_slug, line_gid in tree_edges
+                ]
+                return {"nodes": nodes_out, "edges": edges_out}
+    except Exception as e:
+        _log.exception("Schema unifilaire: %s", e)
+        raise HTTPException(status_code=500, detail=f"Erreur schéma unifilaire: {e}")
+
+
+def _unifilaire_stage_order(slug: str) -> int:
+    """Ordre d'étage pour le schéma unifilaire (1 = amont, 5 = aval). Aligné avec le frontend."""
+    s = (slug or "").lower()
+    if "poste-source" in s or "limite-poste" in s or "arrivee" in s:
+        return 1
+    if "ligne" in s and ("hta" in s or "ht" in s):
+        return 2
+    if "poteau" in s or "cellule" in s or "transformateur" in s or "transfo" in s or "parafoudre" in s or "poste-cabine" in s:
+        return 3
+    if "depart" in s and "bt" not in s:
+        return 3
+    if "ligne" in s and ("bt" in s or "brcht" in s):
+        return 4
+    if "abonne" in s or "raccordement" in s or "branchement" in s or "compteur" in s:
+        return 5
+    return 3
+
+
+def _unifilaire_label(slug: str) -> str:
+    """Libellé court d'un slug pour le schéma unifilaire. Aligné avec le frontend."""
+    labels = {
+        "poste-source": "Poste source",
+        "limite-poste-sourc": "Poste source",
+        "arrivee": "Arrivée HT",
+        "ligne-hta-aerien": "Ligne HTA",
+        "ligne-hta-souter": "Ligne HTA",
+        "ligne-hta": "Ligne HTA",
+        "depart-bt": "Départ BT",
+        "depart": "Départ MT",
+        "poteau-hta": "Poteau HTA",
+        "poteau-bt": "Poteau BT",
+        "transformateur-ps": "Transfo puissance",
+        "transfo-ht-bt": "Transfo MT/BT",
+        "cellule": "Cellule",
+        "parafoudre": "Parafoudre",
+        "poste-cabine": "Poste cabine",
+        "ligne-brcht": "Ligne branchement",
+        "ligne-bt": "Ligne BT",
+        "point-raccordement": "Point raccordement",
+        "branchement": "Branchement",
+        "abonne": "Abonné",
+        "compteur": "Compteur",
+    }
+    lower = (slug or "").lower()
+    for key, label in sorted(labels.items(), key=lambda x: -len(x[0])):
+        if lower == key or key in lower:
+            return label
+    return slug or "Ouvrage"
+
+
+def _is_poste_source_trace(by_stage: dict) -> bool:
+    """True si le tracé contient au moins un poste source / arrivée HT et des lignes HTA (schéma type poste source)."""
+    stage1 = by_stage.get(1, {})
+    stage2 = by_stage.get(2, {})
+    if not stage1 or not stage2:
+        return False
+    source_slugs = ["poste-source", "limite-poste", "arrivee", "transformateur-ps"]
+    for slug in stage1:
+        if any(s in (slug or "").lower() for s in source_slugs):
+            return True
+    return False
+
+
+# Correspondance symboles schéma unifilaire ↔ normes (alignée avec le frontend)
+# IEC 60617 : symboles graphiques pour schémas électrotechniques (CEI 60617).
+# CEI 61850 : nœuds logiques (Logical Nodes) pour modélisation équipements.
+SYMBOL_STANDARDS = {
+    "sym-transfo": {"iec60617": "06-02-01", "iec61850": "PTTR"},   # Transformateur puissance / poste source
+    "sym-transfo-bt": {"iec60617": "06-02-01", "iec61850": "YPTR"},  # Transfo MT/BT / poste cabine
+    "sym-depart": {"iec60617": "07-13-02", "iec61850": "XCBR"},      # Disjoncteur
+    "sym-poteau": {"iec60617": "—", "iec61850": "XCBR"},             # Poteau / cellule (structure)
+    "sym-point-livraison": {"iec60617": "03-02-01", "iec61850": "MMTR"},  # Point livraison / abonné
+}
+
+
+def _slug_to_symbol(slug: str) -> str:
+    """
+    Retourne l'id du symbole SVG pour un slug (logique électrique / topologique).
+    Les symboles sont alignés sur IEC 60617 (graphique) et CEI 61850 (nœuds logiques).
+    Voir SYMBOL_STANDARDS pour les références normatives.
+    """
+    s = (slug or "").lower()
+    if "poste-source" in s or "limite-poste" in s or "arrivee" in s or "transformateur-ps" in s:
+        return "sym-transfo"
+    if "transfo" in s or "poste-cabine" in s:
+        return "sym-transfo-bt"
+    if "ligne" in s and ("hta" in s or "ht" in s):
+        return "sym-depart"
+    if "depart" in s:
+        return "sym-depart"
+    if "ligne" in s and ("bt" in s or "brcht" in s):
+        return "sym-depart"
+    if "poteau" in s or "cellule" in s or "parafoudre" in s:
+        return "sym-poteau"
+    if "abonne" in s or "raccordement" in s or "branchement" in s or "compteur" in s or "point-raccordement" in s:
+        return "sym-point-livraison"
+    return "sym-poteau"
+
+
+def _build_unifilaire_svg_poste_source(by_stage: dict) -> str:
+    """
+    Schéma unifilaire type « Poste Source » (inspiré poste_source.jsx) :
+    Zone HTB → Arrivée(s) / Barres HTB → Transformateur(s) → Barres HTA → Départs HTA.
+    Symboles IEC 60617 : sectionneur, disjoncteur, TC, TT, parafoudre, arrivée ligne.
+    """
+    # Palette fond clair (analyse.md) : fond blanc, zones pastel, fils et barres foncés lisibles
+    c_htb = "#c2410c"       # Orange foncé (fils HTB, barre JB-HTB)
+    c_hta = "#0369a1"       # Bleu foncé (fils HTA, barre JB-HTA)
+    c_wire = "#334155"      # Gris (symboles)
+    c_ground = "#15803d"    # Terre
+    c_dim = "#1e293b"       # Labels secondaires (lisibles sur blanc)
+    c_title = "#1e293b"     # Titre et textes
+    c_bg = "#ffffff"        # Fond SVG / modale
+    c_zone_label = "#9a3412"  # Labels de zones (ZONE HTB, TABLEAU HTA) — rouge-brun sur blanc
+    c_on_busbar = "#ffffff"
+    fill_zone_htb = "#fff7f5"
+    fill_zone_transfo = "#f8fafc"
+    fill_zone_hta = "#f0f9ff"
+    stroke_zone_transfo = "#64748b"
+    marge = 24
+
+    n_sources = sum(by_stage.get(1, {}).values()) or 1
+    n_hta = sum(by_stage.get(2, {}).values()) or 1
+    n_transfo = min(max(1, n_sources), 4)
+    n_departs = min(max(1, n_hta), 12)
+
+    # Largeur SVG (analyse.md) : largeur minimale 90 px par départ pour éviter chevauchement labels
+    largeur_min_depart = 90
+    largeur_utile = max(n_departs * largeur_min_depart, n_transfo * 200, 800)
+    w = largeur_utile + 2 * marge
+
+    # Unité de référence (analyse.md) : UNIT = largeurSVG/70 pour symboles plus visibles
+    unit = w / 70
+    u = unit  # alias
+    # Tailles symboles (analyse.md) — sectionneur, disj, TC, TT, parafoudre plus grands
+    sym_sect_w = round(u * 3.5)
+    sym_sect_h = round(u * 2.8)
+    sym_disj = round(u * 2.8)
+    sym_tc_w, sym_tc_h = round(u * 2.8), round(u * 2.8)  # TC_R = UNIT*1.4 → diamètre ~2.8
+    sym_tt = round(u * 2.4)  # TT rayon ~17px
+    sym_paraf_w = round(u * 1.6)
+    sym_paraf_h = round(u * 4)  # PARA_H = UNIT*4
+    sym_arrivee_w, sym_arrivee_h = round(u * 6), round(u * 7)
+    sym_transfo_w, sym_transfo_h = round(u * 8), round(u * 11)
+    # Fils et contours
+    stroke_htb = max(1.5, round(u * 0.4 * 10) / 10)
+    stroke_hta = max(1.5, round(u * 0.35 * 10) / 10)
+    stroke_sym = max(1, round(u * 0.25 * 10) / 10)
+    # Polices (relatives à UNIT)
+    font_label = max(8, round(u * 1.4))
+    font_zone = max(10, round(u * 1.8))
+    font_value = max(7, round(u * 1.2))
+    font_titre = max(14, round(u * 1.9))
+    barre_h = max(8, round(u * 1.2))
+    gap_coupleur = round(u * 4.4)
+    # GAP minimum 35px entre symboles (analyse.md) — sectionneur / disj / TC bien séparés
+    gap = max(35, round(u * 4))
+    # Sous transformateur : sectionneur HTA ↔ disjoncteur HTA : Y_DISJ2 >= Y_DISJ1 + DISJ_H + GAP (53 px min, analyse.md)
+    gap_sous_transfo = max(gap, (49 - sym_tc_h + 1) // 2, (53 - sym_tc_h + 1) // 2)
+
+    # Colonnes alignées verticalement
+    x_col = [int(marge + (i + 0.5) * largeur_utile / n_transfo) for i in range(n_transfo)]
+    x_depart = [int(marge + (i + 0.5) * largeur_utile / n_departs) for i in range(n_departs)]
+    x_center = w / 2
+    largeur_par_depart = largeur_utile / n_departs  # pour labels 2 lignes ou court
+
+    # Calcul Y en cascade (analyse.md) : Y_suivant = Y_actuel + hauteur_symbole + GAP
+    y_debut_zones = 80
+    y_zone_htb = y_debut_zones
+    margin_zone = 20
+    y = y_zone_htb + margin_zone
+    y_arrivee = y
+    y += sym_arrivee_h + gap
+    y_sect = y  # parafoudre en dérivation au même niveau (analyse.md)
+    y += sym_sect_h + gap
+    y_disj_l = y
+    y += sym_disj + gap
+    y_tc1 = y
+    y += sym_tc_h + gap
+    y_htb_bar = y
+    y += barre_h
+    hauteur_htb = y - y_zone_htb + 10  # zone collée au contenu, peu de vide (analyse.md)
+
+    y_zone_transfo = y_zone_htb + hauteur_htb + 10
+    y = y_zone_transfo + margin_zone
+    y_sect_htb = y
+    y += sym_sect_h + gap
+    y_disj_t = y
+    y += sym_disj + gap
+    y_tc_htb = y
+    y += sym_tc_h + gap
+    y_trafo = y
+    y += sym_transfo_h + gap_sous_transfo
+    y_sect_hta = y  # sectionneur HTA — distance ≥ 49px jusqu'au disj HTA (analyse.md)
+    y += sym_sect_h + gap_sous_transfo
+    y_tc3 = y
+    y += sym_tc_h + gap_sous_transfo
+    y_disj_h = y
+    y += sym_disj + gap_sous_transfo
+    y_hta_bar = y
+    y += barre_h
+    hauteur_transfo = y - y_zone_transfo + margin_zone
+
+    y_zone_hta = y_zone_transfo + hauteur_transfo + 10
+    y_sect_d = y_hta_bar + barre_h + gap
+    y_disj_d = y_sect_d + sym_sect_h + gap
+    y_tc_d = y_disj_d + sym_disj + gap
+    arrow_sz = max(4, round(u * 0.6))
+    y_arrow = y_tc_d + sym_tc_h + gap
+    y_label = y_arrow + arrow_sz * 2 + gap
+    hauteur_hta = int(y_label - y_zone_hta + font_label * 2.5 + margin_zone)
+    legend_height = 58
+    h = y_zone_hta + hauteur_hta + 30 + legend_height
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 {w} {h}" width="{w}" height="{h}">',
+        "<defs>",
+        '<marker id="arrow" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#333"/></marker>',
+        # Sectionneur vertical (IEC 60617)
+        '<symbol id="sym-sect" viewBox="0 0 20 28">',
+        f'<line x1="10" y1="0" x2="10" y2="8" stroke="{c_wire}" stroke-width="1.8"/>',
+        f'<line x1="3" y1="10" x2="17" y2="10" stroke="{c_wire}" stroke-width="1.8"/>',
+        f'<line x1="3" y1="18" x2="17" y2="18" stroke="{c_wire}" stroke-width="1.8"/>',
+        f'<line x1="10" y1="20" x2="10" y2="28" stroke="{c_wire}" stroke-width="1.8"/>',
+        "</symbol>",
+        # Disjoncteur fermé (IEC) — trait plein, sans pointillés (analyse.md)
+        '<symbol id="sym-disj" viewBox="0 0 24 24">',
+        f'<rect x="2" y="2" width="20" height="20" rx="3" fill="#ffffff" stroke="{c_wire}" stroke-width="1.5" stroke-dasharray="none"/>',
+        f'<line x1="12" y1="6" x2="12" y2="18" stroke="{c_wire}" stroke-width="2" stroke-dasharray="none"/>',
+        "</symbol>",
+        # TC (transformateur de courant)
+        '<symbol id="sym-tc" viewBox="0 0 20 18">',
+        f'<circle cx="10" cy="9" r="7" fill="none" stroke="{c_wire}" stroke-width="1.4"/>',
+        f'<text x="10" y="13" text-anchor="middle" fill="{c_wire}" font-size="6" font-weight="bold">TC</text>',
+        "</symbol>",
+        # TT (transformateur de tension)
+        '<symbol id="sym-tt" viewBox="0 0 24 24">',
+        f'<circle cx="8" cy="12" r="6" fill="none" stroke="{c_wire}" stroke-width="1.3"/>',
+        f'<circle cx="16" cy="12" r="6" fill="none" stroke="{c_wire}" stroke-width="1.3"/>',
+        f'<text x="12" y="24" text-anchor="middle" fill="{c_wire}" font-size="6">TT</text>',
+        "</symbol>",
+        # Parafoudre
+        '<symbol id="sym-parafoudre" viewBox="0 0 14 32">',
+        f'<line x1="7" y1="0" x2="7" y2="10" stroke="{c_wire}" stroke-width="1.5"/>',
+        f'<polygon points="7,18 2,10 12,10" fill="{c_wire}" opacity="0.8"/>',
+        f'<line x1="7" y1="18" x2="7" y2="24" stroke="{c_wire}" stroke-width="1.5"/>',
+        f'<line x1="2" y1="24" x2="12" y2="24" stroke="{c_ground}" stroke-width="1.5"/>',
+        f'<line x1="4" y1="27" x2="10" y2="27" stroke="{c_ground}" stroke-width="1"/>',
+        "</symbol>",
+        # Arrivée ligne (pylône)
+        '<symbol id="sym-arrivee" viewBox="0 0 60 70">',
+        f'<line x1="30" y1="0" x2="0" y2="35" stroke="{c_htb}" stroke-width="2" stroke-dasharray="5 3"/>',
+        f'<line x1="30" y1="0" x2="60" y2="35" stroke="{c_htb}" stroke-width="2" stroke-dasharray="5 3"/>',
+        f'<line x1="30" y1="0" x2="30" y2="50" stroke="{c_htb}" stroke-width="2"/>',
+        f'<polygon points="30,8 27,18 33,18" fill="{c_htb}" opacity="0.9"/>',
+        "</symbol>",
+        # Transformateur HTB/HTA (deux cercles Y/yn)
+        '<symbol id="sym-transfo-htb-hta" viewBox="0 0 80 110">',
+        f'<rect x="2" y="8" width="76" height="94" rx="6" fill="#ffffff" stroke="{c_wire}" stroke-width="1.2"/>',
+        f'<circle cx="40" cy="38" r="22" fill="none" stroke="{c_htb}" stroke-width="2"/>',
+        f'<circle cx="40" cy="72" r="22" fill="none" stroke="{c_hta}" stroke-width="2"/>',
+        f'<text x="40" y="34" text-anchor="middle" fill="{c_htb}" font-size="9" font-weight="bold">Y</text>',
+        f'<text x="40" y="68" text-anchor="middle" fill="{c_hta}" font-size="9" font-weight="bold">yn</text>',
+        "</symbol>",
+        "</defs>",
+        f'<rect x="0" y="0" width="{w}" height="{h}" fill="{c_bg}"/>',
+        f"<style>.tit{{ font: bold {font_titre}px sans-serif; fill: {c_title}; }} .zone{{ font: {font_zone}px sans-serif; fill: {c_dim}; }} .lb{{ font: {font_label}px sans-serif; fill: {c_dim}; }}</style>",
+    ]
+    # Balise SVG : viewBox = dimensions réelles (analyse.md)
+    parts[1] = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 {w} {h}" width="100%" style="max-width:{w}px;height:auto">'
+
+    # Titre et sous-titre
+    parts.append(f'<text x="{x_center}" y="28" text-anchor="middle" font-size="{font_titre}" font-weight="bold" fill="{c_title}">Schéma unifilaire — Poste source</text>')
+    parts.append(f'<text x="{x_center}" y="46" text-anchor="middle" font-size="{font_zone}" fill="{c_dim}">Ouvrage source et connexions · IEC 60617</text>')
+
+    # ═══ ZONE HTB ═══
+    parts.append(f'<rect x="12" y="{y_zone_htb}" width="{w - 24}" height="{hauteur_htb}" rx="6" fill="{fill_zone_htb}" stroke="{c_htb}" stroke-width="{stroke_sym}" stroke-dasharray="5 4"/>')
+    parts.append(f'<text x="24" y="{y_zone_htb + 18}" fill="{c_zone_label}" font-size="{font_zone}" font-weight="bold" letter-spacing="2">ZONE HTB</text>')
+
+    # Arrivées (colonnes transfo) — positions Y en cascade
+    for i, x_l in enumerate(x_col):
+        parts.append(f'<text x="{x_l}" y="{y_arrivee - 8}" text-anchor="middle" fill="{c_title}" font-size="{font_zone}" font-weight="bold">LIGNE {i + 1}</text>')
+        parts.append(f'<use href="#sym-arrivee" x="{x_l - sym_arrivee_w // 2}" y="{y_arrivee}" width="{sym_arrivee_w}" height="{sym_arrivee_h}"/>')
+    # Fil vertical : bord bas → bord haut (analyse.md) pour éviter chevauchement
+    for x_l in x_col:
+        parts.append(f'<line x1="{x_l}" y1="{y_arrivee + sym_arrivee_h}" x2="{x_l}" y2="{y_sect}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+    # Sectionneur SEUL sur sa ligne ; parafoudre/TT en dérivation (analyse.md) : fil (xCol±10) → (X±15)
+    offset_deriv = max(50, round(u * 5))
+    x_para = lambda x_l: x_l - offset_deriv
+    x_tt = lambda x_l: x_l + offset_deriv
+    for i, x_l in enumerate(x_col):
+        parts.append(f'<use href="#sym-sect" x="{x_l - sym_sect_w // 2}" y="{y_sect}" width="{sym_sect_w}" height="{sym_sect_h}"/>')
+        y_deriv = y_sect + sym_sect_h // 2
+        # Fil horizontal vers parafoudre (gauche) : ne pas partir du centre pour éviter chevauchement
+        parts.append(f'<line x1="{x_l - 10}" y1="{y_deriv}" x2="{x_para(x_l) + 15}" y2="{y_deriv}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-parafoudre" x="{x_para(x_l) - sym_paraf_w // 2}" y="{y_sect}" width="{sym_paraf_w}" height="{sym_paraf_h}"/>')
+        # Fil horizontal vers TT (droite)
+        parts.append(f'<line x1="{x_l + 10}" y1="{y_deriv}" x2="{x_tt(x_l) - 15}" y2="{y_deriv}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-tt" x="{x_tt(x_l) - sym_tt // 2}" y="{y_sect}" width="{sym_tt}" height="{sym_tt}"/>')
+    for i, x_l in enumerate(x_col):
+        parts.append(f'<line x1="{x_l}" y1="{y_sect + sym_sect_h}" x2="{x_l}" y2="{y_disj_l}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-disj" x="{x_l - sym_disj // 2}" y="{y_disj_l}" width="{sym_disj}" height="{sym_disj}"/>')
+        parts.append(f'<line x1="{x_l}" y1="{y_disj_l + sym_disj}" x2="{x_l}" y2="{y_tc1}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-tc" x="{x_l - sym_tc_w // 2}" y="{y_tc1}" width="{sym_tc_w}" height="{sym_tc_h}"/>')
+    barre_htb_top = y_htb_bar - barre_h // 2
+    barre_hta_top = y_hta_bar - barre_h // 2
+    for x_l in x_col:
+        parts.append(f'<line x1="{x_l}" y1="{y_tc1 + sym_tc_h}" x2="{x_l}" y2="{barre_htb_top}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+    jb_htb_left = min(x_col) - round(u * 4)
+    jb_htb_w = max(x_col) - min(x_col) + round(u * 8)
+    parts.append(f'<rect x="{jb_htb_left}" y="{y_htb_bar - barre_h // 2}" width="{jb_htb_w}" height="{barre_h}" rx="{max(2, round(u * 0.5))}" fill="{c_htb}"/>')
+    parts.append(f'<text x="{x_center}" y="{y_htb_bar - barre_h // 2 - 2}" text-anchor="middle" fill="{c_on_busbar}" font-size="{font_zone}" font-weight="bold">JB-HTB</text>')
+
+    # ═══ TRANSFORMATEURS ═══
+    parts.append(f'<rect x="12" y="{y_zone_transfo}" width="{w - 24}" height="{hauteur_transfo}" rx="6" fill="{fill_zone_transfo}" stroke="{stroke_zone_transfo}" stroke-width="{stroke_sym}" stroke-dasharray="4 4"/>')
+    parts.append(f'<text x="24" y="{y_zone_transfo + 18}" fill="{c_zone_label}" font-size="{font_zone}" font-weight="bold">TRANSFORMATEURS HTB / HTA</text>')
+    for idx, x_t in enumerate(x_col):
+        parts.append(f'<line x1="{x_t}" y1="{barre_htb_top + barre_h}" x2="{x_t}" y2="{y_sect_htb}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-sect" x="{x_t - sym_sect_w // 2}" y="{y_sect_htb}" width="{sym_sect_w}" height="{sym_sect_h}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_sect_htb + sym_sect_h}" x2="{x_t}" y2="{y_disj_t}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-disj" x="{x_t - sym_disj // 2}" y="{y_disj_t}" width="{sym_disj}" height="{sym_disj}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_disj_t + sym_disj}" x2="{x_t}" y2="{y_tc_htb}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-tc" x="{x_t - sym_tc_w // 2}" y="{y_tc_htb}" width="{sym_tc_w}" height="{sym_tc_h}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_tc_htb + sym_tc_h}" x2="{x_t}" y2="{y_trafo}" stroke="{c_htb}" stroke-width="{stroke_htb}"/>')
+        parts.append(f'<use href="#sym-transfo-htb-hta" x="{x_t - sym_transfo_w // 2}" y="{y_trafo}" width="{sym_transfo_w}" height="{sym_transfo_h}"/>')
+        x_t1_label = x_t + sym_transfo_w // 2 + max(15, round(u * 1.8))
+        y_trafo_center = y_trafo + sym_transfo_h // 2
+        parts.append(f'<line x1="{x_t + sym_transfo_w // 2}" y1="{y_trafo_center}" x2="{x_t1_label - 4}" y2="{y_trafo_center}" stroke="{c_dim}" stroke-width="1"/>')
+        parts.append(f'<text x="{x_t1_label}" y="{y_trafo_center}" text-anchor="start" dominant-baseline="middle" fill="{c_dim}" font-size="{font_value}" font-weight="bold">T{idx + 1}</text>')
+        parts.append(f'<line x1="{x_t}" y1="{y_trafo + sym_transfo_h}" x2="{x_t}" y2="{y_sect_hta}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-sect" x="{x_t - sym_sect_w // 2}" y="{y_sect_hta}" width="{sym_sect_w}" height="{sym_sect_h}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_sect_hta + sym_sect_h}" x2="{x_t}" y2="{y_tc3}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-tc" x="{x_t - sym_tc_w // 2}" y="{y_tc3}" width="{sym_tc_w}" height="{sym_tc_h}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_tc3 + sym_tc_h}" x2="{x_t}" y2="{y_disj_h}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-disj" x="{x_t - sym_disj // 2}" y="{y_disj_h}" width="{sym_disj}" height="{sym_disj}"/>')
+        parts.append(f'<line x1="{x_t}" y1="{y_disj_h + sym_disj}" x2="{x_t}" y2="{barre_hta_top}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+
+    # ═══ ZONE HTA ═══
+    parts.append(f'<rect x="12" y="{y_zone_hta}" width="{w - 24}" height="{hauteur_hta}" rx="6" fill="{fill_zone_hta}" stroke="{c_hta}" stroke-width="{stroke_sym}" stroke-dasharray="5 4"/>')
+    parts.append(f'<text x="24" y="{y_zone_hta + 18}" fill="{c_zone_label}" font-size="{font_zone}" font-weight="bold">TABLEAU HTA</text>')
+    jb_hta_left = min(x_depart) - round(u * 4)
+    jb_hta_w = max(x_depart) - min(x_depart) + round(u * 8)
+    parts.append(f'<rect x="{jb_hta_left}" y="{y_hta_bar - barre_h // 2}" width="{x_center - jb_hta_left - gap_coupleur // 2}" height="{barre_h}" rx="{max(2, round(u * 0.5))}" fill="{c_hta}"/>')
+    parts.append(f'<rect x="{x_center + gap_coupleur // 2}" y="{y_hta_bar - barre_h // 2}" width="{jb_hta_left + jb_hta_w - x_center - gap_coupleur // 2}" height="{barre_h}" rx="{max(2, round(u * 0.5))}" fill="{c_hta}"/>')
+    parts.append(f'<use href="#sym-disj" x="{x_center - sym_disj // 2}" y="{y_hta_bar - barre_h // 2 - sym_disj - 2}" width="{sym_disj}" height="{sym_disj}"/>')
+    # NO à droite du coupleur, centré verticalement sur le symbole, en noir pour désigner l'ouvrage
+    y_coupleur_center = y_hta_bar - barre_h // 2 - sym_disj // 2 - 2
+    parts.append(f'<text x="{x_center + sym_disj // 2 + max(6, round(u * 0.8))}" y="{y_coupleur_center}" text-anchor="start" dominant-baseline="middle" fill="#000000" font-size="{font_value}" font-weight="bold">NO</text>')
+    # JB-HTA à gauche de la barre, centré sur la barre, en noir
+    parts.append(f'<text x="{jb_hta_left - max(10, round(u * 1.2))}" y="{y_hta_bar + 4}" text-anchor="end" dominant-baseline="middle" fill="#000000" font-size="{font_zone}" font-weight="bold">JB-HTA</text>')
+
+    # Départs HTA — positions Y en cascade (sect → disj → TC → flèche) ; labels 2 lignes ou court (analyse.md)
+    use_label_2_lignes = largeur_par_depart >= 85
+    for i in range(n_departs):
+        fx = x_depart[i]
+        parts.append(f'<line x1="{fx}" y1="{barre_hta_top + barre_h}" x2="{fx}" y2="{y_sect_d}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-sect" x="{fx - sym_sect_w // 2}" y="{y_sect_d}" width="{sym_sect_w}" height="{sym_sect_h}"/>')
+        parts.append(f'<line x1="{fx}" y1="{y_sect_d + sym_sect_h}" x2="{fx}" y2="{y_disj_d}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-disj" x="{fx - sym_disj // 2}" y="{y_disj_d}" width="{sym_disj}" height="{sym_disj}"/>')
+        parts.append(f'<line x1="{fx}" y1="{y_disj_d + sym_disj}" x2="{fx}" y2="{y_tc_d}" stroke="{c_hta}" stroke-width="{stroke_hta}"/>')
+        parts.append(f'<use href="#sym-tc" x="{fx - sym_tc_w // 2}" y="{y_tc_d}" width="{sym_tc_w}" height="{sym_tc_h}"/>')
+        parts.append(f'<line x1="{fx}" y1="{y_tc_d + sym_tc_h}" x2="{fx}" y2="{y_arrow}" stroke="{c_hta}" stroke-width="{stroke_hta}" marker-end="url(#arrow)"/>')
+        parts.append(f'<polygon points="{fx - arrow_sz},{y_arrow + arrow_sz} {fx + arrow_sz},{y_arrow + arrow_sz} {fx},{y_arrow + arrow_sz * 2}" fill="{c_hta}"/>')
+        if use_label_2_lignes:
+            parts.append(f'<text x="{fx}" y="{y_label}" text-anchor="middle" fill="{c_title}" font-size="{font_label}" font-weight="bold">D{i + 1}</text>')
+            font_ligne_hta = max(7, int(font_label * 0.62))
+            parts.append(f'<text x="{fx}" y="{y_label + font_label + 10}" text-anchor="middle" fill="{c_dim}" font-size="{font_ligne_hta}">Ligne HTA</text>')
+        else:
+            parts.append(f'<text x="{fx}" y="{y_label}" text-anchor="middle" fill="{c_title}" font-size="{font_label}" font-weight="bold">D{i + 1}</text>')
+
+    # Légende des symboles
+    y_leg = y_zone_hta + hauteur_hta + 8
+    font_leg = max(8, round(u * 1.0))
+    sym_leg = max(18, round(u * 2.0))
+    legend_items = [
+        ("sym-arrivee", "Arrivée"),
+        ("sym-sect", "Sectionneur"),
+        ("sym-parafoudre", "Parafoudre"),
+        ("sym-tt", "TT"),
+        ("sym-disj", "Disjoncteur"),
+        ("sym-tc", "TC"),
+        ("sym-transfo-htb-hta", "Transformateur"),
+    ]
+    n_leg = len(legend_items)
+    leg_step = (w - 2 * marge) / n_leg if n_leg else 0
+    for i, (sym_id, lib) in enumerate(legend_items):
+        x_leg = marge + (i + 0.5) * leg_step
+        parts.append(f'<use href="#{sym_id}" x="{int(x_leg - sym_leg // 2)}" y="{int(y_leg)}" width="{sym_leg}" height="{sym_leg}"/>')
+        parts.append(f'<text x="{int(x_leg)}" y="{int(y_leg + sym_leg + font_leg + 2)}" text-anchor="middle" fill="#000000" font-size="{font_leg}">{_escape_svg(lib)}</text>')
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def _build_unifilaire_svg(ouvrage_ids: list[dict]) -> str:
+    """
+    Génère un schéma unifilaire à partir du tracé : représentation de l'ouvrage source
+    et de tous les équipements connectés, selon la logique électrique et topologique
+    (étages 1→2→3→4→5 avec connexions). Si le tracé correspond à un poste source (stage 1 + lignes HTA),
+    utilise le rendu type poste_source.jsx (zones HTB, transfo, HTA, départs).
+    """
+    from collections import defaultdict
+
+    by_stage: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for o in ouvrage_ids:
+        slug = (o.get("slug") or "").strip() or "autre"
+        order = _unifilaire_stage_order(slug)
+        by_stage[order][slug] += 1
+
+    if _is_poste_source_trace(by_stage):
+        return _build_unifilaire_svg_poste_source(by_stage)
+
+    stage_order = [1, 2, 3, 4, 5]
+    stage_labels = {
+        1: "Source / Arrivée HT",
+        2: "Lignes HTA",
+        3: "Ouvrages MT (poteaux, cellules, transfo)",
+        4: "Lignes BT",
+        5: "Raccordements / Abonnés",
+    }
+    rows: list[tuple[int, list[tuple[str, int]]]] = []
+    for order in stage_order:
+        items = by_stage.get(order, {})
+        if not items:
+            continue
+        rows.append((order, sorted(items.items(), key=lambda x: -x[1])))
+
+    if not rows:
+        return _build_unifilaire_svg_empty()
+
+    w = 720
+    row_h = 72
+    margin_top = 36
+    h = margin_top + len(rows) * row_h + 40
+    sym_w, sym_h = 44, 50
+    spacing = 56
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 {w} {h}" width="{w}" height="{h}">',
+        "<defs>",
+        '<marker id="arrow" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">',
+        '<path d="M0,0 L8,3 L0,6 Z" fill="#333"/>',
+        "</marker>",
+        '<symbol id="sym-transfo" viewBox="0 0 40 50">',
+        '<circle cx="20" cy="15" r="12" fill="none" stroke="#222" stroke-width="1.8"/>',
+        '<circle cx="20" cy="15" r="6" fill="none" stroke="#222" stroke-width="1.2"/>',
+        '<line x1="20" y1="27" x2="20" y2="35" stroke="#222" stroke-width="1.5"/>',
+        '<circle cx="20" cy="42" r="6" fill="none" stroke="#222" stroke-width="1.2"/>',
+        "</symbol>",
+        '<symbol id="sym-transfo-bt" viewBox="0 0 40 50">',
+        '<circle cx="20" cy="15" r="12" fill="none" stroke="#222" stroke-width="1.5"/>',
+        '<circle cx="20" cy="15" r="6" fill="none" stroke="#222" stroke-width="1"/>',
+        '<line x1="20" y1="27" x2="20" y2="35" stroke="#222" stroke-width="1.2"/>',
+        '<circle cx="20" cy="42" r="6" fill="none" stroke="#222" stroke-width="1"/>',
+        "</symbol>",
+        '<symbol id="sym-busbar" viewBox="0 0 100 8">',
+        '<rect x="0" y="2" width="100" height="4" fill="none" stroke="#222" stroke-width="2"/>',
+        "</symbol>",
+        '<symbol id="sym-point-livraison" viewBox="0 0 12 12">',
+        '<circle cx="6" cy="6" r="4" fill="#222" stroke="#222" stroke-width="1"/>',
+        "</symbol>",
+        '<symbol id="sym-poteau" viewBox="0 0 24 24">',
+        '<circle cx="12" cy="12" r="8" fill="none" stroke="#222" stroke-width="1.5"/>',
+        "</symbol>",
+        '<symbol id="sym-depart" viewBox="0 0 4 30">',
+        '<line x1="2" y1="0" x2="2" y2="28" stroke="#222" stroke-width="1.5" marker-end="url(#arrow)"/>',
+        "</symbol>",
+        "</defs>",
+        "<style>",
+        ".title { font: bold 14px sans-serif; fill: #111; }",
+        ".label { font: 10px sans-serif; fill: #333; }",
+        ".small { font: 9px sans-serif; fill: #555; }",
+        ".solid { stroke: #222; stroke-width: 2; fill: none; }",
+        "</style>",
+    ]
+
+    parts.append(f'<text x="{w // 2}" y="24" text-anchor="middle" class="title">Schéma unifilaire – Ouvrage source et connexions</text>')
+
+    y_centers: list[float] = []
+    x_center = w / 2
+    for row_idx, (stage_num, row_items) in enumerate(rows):
+        y_row = margin_top + row_idx * row_h + row_h // 2
+        y_centers.append(y_row)
+        n_syms = len(row_items)
+        total_width = (n_syms - 1) * spacing + sym_w if n_syms else sym_w
+        x_start = x_center - total_width / 2 + sym_w / 2
+        stage_label = stage_labels.get(stage_num, "")
+        parts.append(f'<text x="12" y="{y_row - row_h // 2 + 14}" class="label">{_escape_svg(stage_label)}</text>')
+        x_pos = x_start
+        for slug, count in row_items:
+            sym_id = _slug_to_symbol(slug)
+            lbl = _unifilaire_label(slug)
+            parts.append(
+                f'<use href="#{sym_id}" x="{int(x_pos - sym_w // 2)}" y="{int(y_row - sym_h // 2)}" width="{sym_w}" height="{sym_h}"/>'
+            )
+            parts.append(f'<text x="{int(x_pos)}" y="{int(y_row + sym_h // 2 + 14)}" text-anchor="middle" class="small">{_escape_svg(lbl)} ({count})</text>')
+            x_pos += spacing
+    for row_idx in range(1, len(rows)):
+        y_prev = y_centers[row_idx - 1]
+        y_curr = y_centers[row_idx]
+        parts.append(f'<line x1="{int(x_center)}" y1="{int(y_prev + sym_h // 2)}" x2="{int(x_center)}" y2="{int(y_curr - sym_h // 2)}" class="solid"/>')
+
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+def _build_unifilaire_svg_empty() -> str:
+    """SVG minimal quand aucun ouvrage (tracé vide)."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">'
+        '<text x="200" y="60" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">'
+        "Aucun ouvrage : effectuez un tracé (Amont, Aval ou Tous) à partir d&#39;un équipement."
+        "</text>"
+        "</svg>"
+    )
+
+
+def _escape_svg(s: str) -> str:
+    """Échappe les caractères spéciaux pour un contenu texte SVG."""
+    if not s:
+        return ""
+    return (
+        s.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+@app.post("/gis/unifilaire/svg")
+def unifilaire_svg(body: dict = Body(default=None)):
+    """
+    Génère un SVG de schéma unifilaire à partir de la liste d'ouvrages du tracé.
+    Body: { "ouvrage_ids": [ {"slug": "ligne-hta", "id": "123"}, ... ] }.
+    Retourne le SVG (image/svg+xml).
+    """
+    from fastapi.responses import Response
+
+    ouvrage_ids = (body or {}).get("ouvrage_ids") or []
+    if not ouvrage_ids:
+        return Response(
+            content='<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><text x="10" y="20">Aucun ouvrage : effectuez un tracé d\'abord.</text></svg>',
+            media_type="image/svg+xml",
+        )
+    svg = _build_unifilaire_svg(ouvrage_ids)
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@app.post("/gis/unifilaire/pdf")
+def unifilaire_pdf(body: dict = Body(default=None)):
+    """
+    Génère un PDF du schéma unifilaire à partir de la liste d'ouvrages du tracé.
+    Body: { "ouvrage_ids": [ {"slug": "ligne-hta", "id": "123"}, ... ] }.
+    Retourne le PDF en téléchargement (application/pdf).
+    """
+    from io import BytesIO, StringIO
+
+    from fastapi.responses import Response
+
+    ouvrage_ids = (body or {}).get("ouvrage_ids") or []
+    if not ouvrage_ids:
+        return Response(
+            content=b"",
+            status_code=400,
+            media_type="application/pdf",
+        )
+    svg = _build_unifilaire_svg(ouvrage_ids)
+    try:
+        from reportlab.graphics import renderPDF
+        from svglib.svglib import svg2rlg
+
+        # svglib n'accepte pas width="100%" ni height:auto → remplacer par dimensions explicites (viewBox)
+        _vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', svg)
+        if _vb:
+            _w, _h = _vb.group(1), _vb.group(2)
+            svg = re.sub(
+                r'<svg\s+xmlns="[^"]*"[^>]*viewBox="0 0 \d+ \d+"[^>]*>',
+                f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 {_w} {_h}" width="{_w}" height="{_h}">',
+                svg,
+                count=1,
+            )
+        # svglib n'accepte pas une chaîne Unicode avec déclaration XML → passer des bytes
+        drawing = svg2rlg(BytesIO(svg.encode("utf-8")))
+        if drawing is None:
+            return Response(
+                content=b"",
+                status_code=500,
+                media_type="application/pdf",
+            )
+        buffer = BytesIO()
+        renderPDF.drawToFile(drawing, buffer)
+        pdf_bytes = buffer.getvalue()
+    except Exception as e:
+        _log.exception("Export PDF schéma unifilaire: %s", e)
+        return Response(
+            content=b"",
+            status_code=500,
+            media_type="application/pdf",
+        )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'attachment; filename="schema-unifilaire.pdf"',
+        },
+    )
+
+
 def _is_line_table(slug: str) -> bool:
     """True si le slug correspond à une table de lignes (conducteurs, etc.)."""
     s = slug.lower()
@@ -1624,6 +3194,99 @@ def _get_branchement_table_for_counting(table_slug: str) -> tuple[str, str, str]
     return (qtable, qgeom, geog_expr)
 
 
+def _build_points_utm_collect_sql() -> str | None:
+    """
+    SQL interne : agrégat des géométries ponctuelles (poteaux, postes, etc.) en UTM pour snap.
+    Retourne None si aucune table de points avec géométrie.
+    """
+    UTM_SRID = 32630
+    WGS84_SRID = 4326
+    point_tables = [
+        (slug, TABLE_BY_SLUG[slug][0], TABLE_BY_SLUG[slug][1])
+        for slug in TABLE_BY_SLUG
+        if _is_point_table(slug)
+    ]
+    point_geom_cols = []
+    for _slug, table_name, meta in point_tables:
+        geom_cols = get_geometry_columns(meta)
+        if not geom_cols:
+            continue
+        qtable = quote_ident(table_name)
+        qgeom = quote_ident(geom_cols[0])
+        point_geom_cols.append(f"SELECT {qgeom} AS geom FROM {qtable} WHERE {qgeom} IS NOT NULL")
+
+    if not point_geom_cols:
+        return None
+    points_union = " UNION ALL ".join(point_geom_cols)
+    return f"""
+        SELECT ST_Collect(
+            CASE WHEN ST_SRID(geom) IN (0, {WGS84_SRID}) THEN ST_Transform(ST_SetSRID(geom, {WGS84_SRID}), {UTM_SRID})
+            ELSE ST_Transform(geom, {UTM_SRID}) END
+        ) AS geom FROM ({points_union}) t
+    """
+
+
+def _line_ws84_endpoint_expr(qgeom: str, col_index: int, n_specs: int) -> str:
+    """Expression SQL : point sur la ligne (4326) pour le i-ème attribut de connectivité."""
+    g = f"""ST_LineMerge(
+      CASE WHEN ST_SRID({qgeom}) IN (0, 4326) THEN ST_SetSRID({qgeom}, 4326)
+      ELSE ST_Transform({qgeom}, 4326) END
+    )"""
+    if n_specs <= 1:
+        return f"ST_StartPoint({g})"
+    if n_specs == 2:
+        return f"ST_StartPoint({g})" if col_index == 0 else f"ST_EndPoint({g})"
+    frac = col_index / (n_specs - 1)
+    return f"ST_LineInterpolatePoint({g}, {frac})"
+
+
+def _edge_node_specs_for_line_slug(line_slug: str) -> list[tuple[str, str]] | None:
+    """Colonnes de connectivité et slug de table nœud cible (aligné sur _SCHEMA_EDGE_NODE_COLS)."""
+    for _table_name, slug, pairs in _SCHEMA_EDGE_NODE_COLS:
+        if slug == line_slug:
+            return list(pairs)
+    return None
+
+
+def _cell_empty_for_connectivity(val) -> bool:
+    return val is None or (isinstance(val, str) and not val.strip())
+
+
+def _nearest_gid_from_point(
+    cur, node_slug: str, lx: float, ly: float, radius_m: float
+) -> tuple[str | None, float | None]:
+    """Plus proche nœud (table point) d'un point WGS84 ; distance en mètres (géodésique)."""
+    if node_slug not in TABLE_BY_SLUG:
+        return None, None
+    table_name, meta = TABLE_BY_SLUG[node_slug]
+    geom_cols = get_geometry_columns(meta)
+    if not geom_cols:
+        return None, None
+    qgeom = quote_ident(geom_cols[0])
+    qtable = quote_ident(table_name)
+    pk = get_primary_key(meta)
+    qpk = quote_ident(pk)
+    sql = f"""
+    SELECT {qpk}::text AS pk_val,
+      ST_Distance(
+        ST_Transform({qgeom}, 4326)::geography,
+        ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography
+      ) AS d
+    FROM {qtable}
+    WHERE {qgeom} IS NOT NULL
+    ORDER BY d
+    LIMIT 1
+    """
+    cur.execute(sql, (lx, ly))
+    row = cur.fetchone()
+    if not row or row.get("d") is None:
+        return None, None
+    d = float(row["d"])
+    if d > radius_m:
+        return None, d
+    return str(row["pk_val"]).strip(), d
+
+
 @app.post("/gis/topology/correct")
 def topology_correct(
     body: dict = Body(default=None),
@@ -1648,35 +3311,14 @@ def topology_correct(
         for slug in TABLE_BY_SLUG
         if _is_line_table(slug)
     ]
-    point_tables = [
-        (slug, TABLE_BY_SLUG[slug][0], TABLE_BY_SLUG[slug][1])
-        for slug in TABLE_BY_SLUG
-        if _is_point_table(slug)
-    ]
 
-    point_geom_cols = []
-    for _slug, table_name, meta in point_tables:
-        geom_cols = get_geometry_columns(meta)
-        if not geom_cols:
-            continue
-        qtable = quote_ident(table_name)
-        qgeom = quote_ident(geom_cols[0])
-        point_geom_cols.append(f"SELECT {qgeom} AS geom FROM {qtable} WHERE {qgeom} IS NOT NULL")
-
-    if not point_geom_cols:
+    points_utm_sql = _build_points_utm_collect_sql()
+    if not points_utm_sql:
         return {
             "corrected": 0,
             "by_table": {},
             "message": "Aucune table de points (poteaux, transfo, postes, abonnés) trouvée.",
         }
-
-    points_union = " UNION ALL ".join(point_geom_cols)
-    points_utm_sql = f"""
-        SELECT ST_Collect(
-            CASE WHEN ST_SRID(geom) IN (0, {WGS84_SRID}) THEN ST_Transform(ST_SetSRID(geom, {WGS84_SRID}), {UTM_SRID})
-            ELSE ST_Transform(geom, {UTM_SRID}) END
-        ) AS geom FROM ({points_union}) t
-    """
 
     by_table = {}
     total = 0
@@ -1726,6 +3368,417 @@ def topology_correct(
         "by_table": by_table,
         "tolerance_m": tolerance_m,
         "message": f"{total} segment(s) corrigé(s) avec une tolérance de {tolerance_m} m.",
+    }
+
+
+@app.post("/gis/topology/validate")
+def topology_validate(
+    body: dict = Body(default=None),
+):
+    """
+    Vérifie la conformité connectivité/topologie et remonte les ouvrages en défaut
+    pour mise en évidence sur la carte.
+    Body:
+      - check_type: connectivite | topologie | all (défaut all)
+      - limit_per_table: nombre max de défauts par table (défaut 300)
+    """
+    check_type = str((body or {}).get("check_type") or "all").strip().lower()
+    if check_type not in {"connectivite", "topologie", "all"}:
+        raise HTTPException(status_code=400, detail="check_type invalide (connectivite|topologie|all).")
+    try:
+        limit_per_table = int((body or {}).get("limit_per_table") or 300)
+    except Exception:
+        limit_per_table = 300
+    limit_per_table = max(10, min(limit_per_table, 2000))
+
+    issues: list[dict] = []
+    by_slug: dict[str, int] = {}
+    by_rule_type = {"connectivite": 0, "topologie": 0}
+
+    edge_node_cols = {
+        "id_depart_hta",
+        "id_poteau_hta",
+        "id_depart_bt",
+        "id_poteau_bt",
+        "id_ligne_bt",
+        "id_ligne_hta",
+        "id_poste_source",
+        "id_poste_cabine",
+        "id_poste_sur_poteau",
+        "id_transfo_ht_bt",
+        "id_transfo_poteau",
+        "id_branchement",
+    }
+
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            for slug in sorted(TABLE_BY_SLUG.keys()):
+                table_name, meta = TABLE_BY_SLUG[slug]
+                qtable = quote_ident(table_name)
+                pk = get_primary_key(meta)
+                qpk = quote_ident(pk)
+                cols = [c.get("Field") for c in (meta.get("columns") or []) if c.get("Field")]
+                if not cols:
+                    continue
+                qgeom = quote_ident("geom") if "geom" in cols else None
+
+                # 1) Connectivité: références id_* manquantes sur les lignes
+                if check_type in {"connectivite", "all"} and _is_line_table(slug):
+                    node_cols = [c for c in cols if c in edge_node_cols]
+                    if node_cols:
+                        missing_expr = " OR ".join(
+                            [f"{quote_ident(c)} IS NULL OR BTRIM(CAST({quote_ident(c)} AS TEXT)) = ''" for c in node_cols]
+                        )
+                        try:
+                            cur.execute(
+                                f"""
+                                SELECT {qpk} AS id
+                                FROM {qtable}
+                                WHERE ({missing_expr})
+                                LIMIT %s
+                                """,
+                                (limit_per_table,),
+                            )
+                            for row in cur.fetchall() or []:
+                                issue = {
+                                    "rule_type": "connectivite",
+                                    "slug": slug,
+                                    "id": str(row.get("id")),
+                                    "reason": "Référence de connectivité manquante sur la ligne.",
+                                    "severity": "warning",
+                                    "suggestion": "Renseigner les identifiants attendus sur la ligne (départ, arrivée, postes, poteaux, branchements, etc.) selon le modèle de données.",
+                                }
+                                issues.append(issue)
+                                by_slug[slug] = by_slug.get(slug, 0) + 1
+                                by_rule_type["connectivite"] += 1
+                        except Exception:
+                            pass
+
+                # 2) Topologie: géométries invalides / vides (+ ligne sans segment)
+                if check_type in {"topologie", "all"} and qgeom is not None:
+                    try:
+                        cur.execute(
+                            f"""
+                            SELECT {qpk} AS id
+                            FROM {qtable}
+                            WHERE {qgeom} IS NOT NULL
+                              AND (NOT ST_IsValid({qgeom}) OR ST_IsEmpty({qgeom}))
+                            LIMIT %s
+                            """,
+                            (limit_per_table,),
+                        )
+                        for row in cur.fetchall() or []:
+                            issue = {
+                                "rule_type": "topologie",
+                                "slug": slug,
+                                "id": str(row.get("id")),
+                                "reason": "Géométrie invalide ou vide.",
+                                "severity": "error",
+                                "suggestion": "Corriger la géométrie dans l'outil SIG (validité, topologie) ou utiliser la correction topologique par tolérance si les extrémités doivent être raccrochées aux nœuds.",
+                            }
+                            issues.append(issue)
+                            by_slug[slug] = by_slug.get(slug, 0) + 1
+                            by_rule_type["topologie"] += 1
+                    except Exception:
+                        pass
+
+                    if _is_line_table(slug):
+                        try:
+                            cur.execute(
+                                f"""
+                                SELECT {qpk} AS id
+                                FROM {qtable}
+                                WHERE {qgeom} IS NOT NULL
+                                  AND ST_NPoints({qgeom}) < 2
+                                LIMIT %s
+                                """,
+                                (limit_per_table,),
+                            )
+                            for row in cur.fetchall() or []:
+                                issue = {
+                                    "rule_type": "topologie",
+                                    "slug": slug,
+                                    "id": str(row.get("id")),
+                                    "reason": "Ligne avec moins de 2 sommets.",
+                                    "severity": "error",
+                                    "suggestion": "Compléter la ligne avec au moins deux sommets ou fusionner/supprimer le segment incohérent.",
+                                }
+                                issues.append(issue)
+                                by_slug[slug] = by_slug.get(slug, 0) + 1
+                                by_rule_type["topologie"] += 1
+                        except Exception:
+                            pass
+
+    return {
+        "check_type": check_type,
+        "total_issues": len(issues),
+        "by_rule_type": by_rule_type,
+        "by_slug": by_slug,
+        "issues": issues,
+        "message": "Analyse terminée.",
+    }
+
+
+def _topology_correct_issue_row(cur, slug: str, row_id: str, tolerance_m: float) -> dict:
+    """
+    Topologie ciblée : ST_MakeValid sur la géométrie, puis pour les lignes snap des extrémités
+    vers l'agrégat des nœuds (même logique que POST /gis/topology/correct mais une seule entité).
+    """
+    UTM_SRID = 32630
+    WGS84_SRID = 4326
+    if slug not in TABLE_BY_SLUG:
+        return {"success": False, "message": "Couche inconnue."}
+    table_name, meta = TABLE_BY_SLUG[slug]
+    geom_cols = get_geometry_columns(meta)
+    if not geom_cols:
+        return {"success": False, "message": "Pas de colonne géométrique sur cette couche."}
+    pk = get_primary_key(meta)
+    qgeom = quote_ident(geom_cols[0])
+    qtable = quote_ident(table_name)
+    qpk = quote_ident(pk)
+
+    try:
+        cur.execute(
+            f"""
+            UPDATE {qtable} SET {qgeom} = ST_MakeValid({qgeom})
+            WHERE {_canon_sql_expr(pk)} = %s AND {qgeom} IS NOT NULL AND NOT ST_IsValid({qgeom})
+            """,
+            (_canon_id(row_id),),
+        )
+        make_valid_n = cur.rowcount
+    except Exception as e:
+        return {"success": False, "message": f"Correction géométrique impossible : {e}"}
+
+    if _is_line_table(slug):
+        cur.execute(
+            f"""
+            SELECT ST_NPoints(ST_LineMerge(
+                CASE WHEN ST_SRID({qgeom}) IN (0, 4326) THEN ST_SetSRID({qgeom}, 4326)
+                ELSE ST_Transform({qgeom}, 4326) END
+            )) AS n
+            FROM {qtable} WHERE {_canon_sql_expr(pk)} = %s
+            """,
+            (_canon_id(row_id),),
+        )
+        nrow = cur.fetchone()
+        n = int(nrow.get("n") or 0) if nrow else 0
+        if n < 2:
+            return {
+                "success": False,
+                "message": "La ligne a moins de 2 sommets : correction automatique impossible sans édition manuelle.",
+                "make_valid_updated": make_valid_n,
+            }
+
+        points_utm_sql = _build_points_utm_collect_sql()
+        if not points_utm_sql:
+            return {
+                "success": make_valid_n > 0,
+                "message": "Géométrie corrigée (validité). Aucune table de points pour le snap.",
+                "make_valid_updated": make_valid_n,
+                "snap_updated": 0,
+            }
+
+        sql = f"""
+            WITH points_utm AS ({points_utm_sql}),
+            snapped AS (
+                SELECT t.{qpk} AS pk_val,
+                    ST_Transform(
+                        ST_Snap(
+                            CASE WHEN ST_SRID(t.{qgeom}) IN (0, {WGS84_SRID}) THEN ST_Transform(ST_SetSRID(t.{qgeom}, {WGS84_SRID}), {UTM_SRID})
+                            ELSE ST_Transform(t.{qgeom}, {UTM_SRID}) END,
+                            (SELECT geom FROM points_utm),
+                            %s
+                        ),
+                        {WGS84_SRID}
+                    ) AS new_geom
+                FROM {qtable} t
+                WHERE {_canon_sql_expr(pk)} = %s AND t.{qgeom} IS NOT NULL
+            )
+            UPDATE {qtable} tbl SET {qgeom} = s.new_geom
+            FROM snapped s WHERE tbl.{qpk} = s.pk_val
+            AND NOT ST_Equals(tbl.{qgeom}, s.new_geom)
+        """
+        try:
+            cur.execute(sql, (tolerance_m, _canon_id(row_id)))
+            snap_n = cur.rowcount
+        except Exception as e:
+            return {"success": False, "message": str(e), "make_valid_updated": make_valid_n}
+        msg = []
+        if make_valid_n:
+            msg.append("géométrie rendue valide")
+        if snap_n:
+            msg.append(f"snap des extrémités ({snap_n} mise(s) à jour)")
+        if not msg:
+            msg.append("aucun changement nécessaire")
+        return {
+            "success": True,
+            "message": "; ".join(msg) + ".",
+            "make_valid_updated": make_valid_n,
+            "snap_updated": snap_n,
+        }
+
+    return {
+        "success": True,
+        "message": "Géométrie corrigée (ST_MakeValid)." if make_valid_n else "Aucun changement nécessaire.",
+        "make_valid_updated": make_valid_n,
+        "snap_updated": 0,
+    }
+
+
+def _connectivity_correct_issue_row(cur, slug: str, row_id: str, search_radius_m: float) -> dict:
+    """
+    Connectivité ciblée : pour les lignes connues (ligne-hta, ligne-bt, ligne-brcht),
+    complète les champs id_* vides en prenant le nœud le plus proche géographiquement
+    (départ / poteau selon le modèle de données, aligné sur _SCHEMA_EDGE_NODE_COLS).
+    """
+    if not _is_line_table(slug):
+        return {"success": False, "message": "La correction automatique de connectivité s'applique aux couches de lignes."}
+    specs = _edge_node_specs_for_line_slug(slug)
+    if not specs:
+        return {
+            "success": False,
+            "message": "Aucune règle de connectivité automatique pour cette couche (ligne-hta, ligne-bt, ligne-brcht).",
+        }
+
+    table_name, meta = TABLE_BY_SLUG[slug]
+    geom_cols = get_geometry_columns(meta)
+    if not geom_cols:
+        return {"success": False, "message": "Pas de géométrie sur cette couche."}
+    pk = get_primary_key(meta)
+    qgeom = quote_ident(geom_cols[0])
+    qtable = quote_ident(table_name)
+    qpk = quote_ident(pk)
+
+    try:
+        cur.execute(
+            f"""
+            UPDATE {qtable} SET {qgeom} = ST_MakeValid({qgeom})
+            WHERE {_canon_sql_expr(pk)} = %s AND {qgeom} IS NOT NULL AND NOT ST_IsValid({qgeom})
+            """,
+            (_canon_id(row_id),),
+        )
+    except Exception:
+        pass
+
+    cur.execute(f"SELECT * FROM {qtable} WHERE {_canon_sql_expr(pk)} = %s LIMIT 1", (_canon_id(row_id),))
+    row = cur.fetchone()
+    if not row:
+        return {"success": False, "message": "Ouvrage introuvable."}
+
+    n_specs = len(specs)
+    updates: list[dict] = []
+    for idx, (col_name, node_slug) in enumerate(specs):
+        if col_name not in row:
+            continue
+        if not _cell_empty_for_connectivity(row.get(col_name)):
+            continue
+        pt_expr = _line_ws84_endpoint_expr(f"t.{qgeom}", idx, n_specs)
+        try:
+            cur.execute(
+                f"SELECT ST_X(({pt_expr})) AS lx, ST_Y(({pt_expr})) AS ly FROM {qtable} t WHERE {_canon_sql_expr(pk)} = %s",
+                (_canon_id(row_id),),
+            )
+        except Exception as e:
+            updates.append({"column": col_name, "ok": False, "error": str(e), "node_slug": node_slug})
+            continue
+        pr = cur.fetchone()
+        if not pr or pr.get("lx") is None or pr.get("ly") is None:
+            updates.append({"column": col_name, "ok": False, "reason": "point_sur_ligne_introuvable", "node_slug": node_slug})
+            continue
+        lx, ly = float(pr["lx"]), float(pr["ly"])
+        gid, dist = _nearest_gid_from_point(cur, node_slug, lx, ly, search_radius_m)
+        if gid is None:
+            updates.append(
+                {
+                    "column": col_name,
+                    "ok": False,
+                    "node_slug": node_slug,
+                    "distance_m": dist,
+                    "reason": "aucun_noeud_dans_le_rayon",
+                }
+            )
+            continue
+        qcol = quote_ident(col_name)
+        try:
+            cur.execute(
+                f"UPDATE {qtable} SET {qcol} = %s WHERE {_canon_sql_expr(pk)} = %s",
+                (gid, _canon_id(row_id)),
+            )
+        except Exception as e:
+            updates.append({"column": col_name, "ok": False, "error": str(e), "node_slug": node_slug})
+            continue
+        row[col_name] = gid
+        updates.append(
+            {"column": col_name, "ok": True, "value": gid, "node_slug": node_slug, "distance_m": dist}
+        )
+
+    ok_count = sum(1 for u in updates if u.get("ok"))
+    if ok_count:
+        return {
+            "success": True,
+            "message": f"{ok_count} référence(s) de connectivité mise(s) à jour (plus proche nœud dans le rayon).",
+            "updates": updates,
+        }
+    if not updates:
+        return {"success": True, "message": "Aucun champ vide à compléter pour cette ligne.", "updates": []}
+    return {
+        "success": False,
+        "message": "Impossible de déduire des nœuds dans le rayon pour les champs manquants.",
+        "updates": updates,
+    }
+
+
+@app.post("/gis/topology/correct-issue")
+def topology_correct_issue(body: dict = Body(default=None)):
+    """
+    Correction automatique ciblée pour une anomalie détectée par /gis/topology/validate.
+
+    Body:
+      - slug: couche (ex. ligne-hta)
+      - id: identifiant de l'ouvrage (pk ou valeur alternative canonique)
+      - rule_type: connectivite | topologie
+      - tolerance_m: tolérance snap (m), défaut 2, max 50 — pour topologie
+      - search_radius_m: rayon de recherche du nœud le plus proche (m) — pour connectivité, défaut 800, max 3000
+    """
+    data = body or {}
+    slug = str(data.get("slug") or "").strip()
+    row_id = str(data.get("id") or "").strip()
+    rule_type = str(data.get("rule_type") or "").strip().lower()
+    if not slug or not row_id:
+        raise HTTPException(status_code=400, detail="slug et id sont requis.")
+    if slug not in TABLE_BY_SLUG:
+        raise HTTPException(status_code=400, detail="Couche inconnue.")
+    if rule_type not in {"connectivite", "topologie"}:
+        raise HTTPException(status_code=400, detail="rule_type invalide (connectivite|topologie).")
+
+    tol = float(data.get("tolerance_m") or 2.0)
+    tol = max(0.5, min(tol, 50.0))
+
+    # Connectivité : recherche du nœud le plus proche (m). Les lignes BT/branchement peuvent
+    # être à plusieurs centaines de mètres du poteau HTA de rattachement — rayon par défaut large.
+    if rule_type == "connectivite":
+        try:
+            sr = float(data.get("search_radius_m") or 800.0)
+        except Exception:
+            sr = 800.0
+        sr = min(max(sr, 5.0), 3000.0)
+    else:
+        sr = 35.0
+
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            if rule_type == "connectivite":
+                result = _connectivity_correct_issue_row(cur, slug, row_id, sr)
+            else:
+                result = _topology_correct_issue_row(cur, slug, row_id, tol)
+
+    return {
+        "rule_type": rule_type,
+        "slug": slug,
+        "id": row_id,
+        "tolerance_m": tol,
+        "search_radius_m": sr if rule_type == "connectivite" else None,
+        **result,
     }
 
 
@@ -1819,6 +3872,168 @@ def modelisation_calculate(body: dict = Body(default=None)):
     }
 
 
+@app.post("/gis/rules/load-defaults")
+def load_default_rules(replace_existing: bool = Query(True, description="Remplacer les regles existantes par les fichiers .md")):
+    """Charge les règles depuis scripts/script_bd/connectivity_rule.md et topologie_rule.md."""
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            result = _load_default_rules(cur, replace_existing=replace_existing)
+    return {"success": True, **result}
+
+
+@app.get("/gis/rules")
+def list_rules(rule_type: str = Query(..., description="connectivite | topologie")):
+    """Liste les règles par type avec tri stable."""
+    rt = (rule_type or "").strip().lower()
+    if rt not in RULE_TYPES:
+        raise HTTPException(status_code=400, detail="rule_type invalide (connectivite|topologie).")
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_rules_table(cur)
+            cur.execute(
+                """
+                SELECT id, rule_type, category, rule_name, concerned_objects, description,
+                       technical_constraints, examples, detected_errors, best_practices,
+                       source_file, sort_order, created_at, updated_at
+                FROM network_rules
+                WHERE rule_type = %s
+                ORDER BY sort_order ASC, id ASC
+                """,
+                (rt,),
+            )
+            rows = cur.fetchall() or []
+    return [row_to_json(r) for r in rows]
+
+
+@app.get("/gis/rules/{rule_id}")
+def get_rule_by_id(rule_id: int = Path(..., description="ID de la regle")):
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_rules_table(cur)
+            cur.execute(
+                """
+                SELECT id, rule_type, category, rule_name, concerned_objects, description,
+                       technical_constraints, examples, detected_errors, best_practices,
+                       source_file, sort_order, created_at, updated_at
+                FROM network_rules
+                WHERE id = %s
+                """,
+                (rule_id,),
+            )
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Regle non trouvee")
+    return row_to_json(row)
+
+
+@app.post("/gis/rules")
+def create_rule(body: dict = Body(default=None)):
+    data = body or {}
+    rt = str(data.get("rule_type") or "").strip().lower()
+    if rt not in RULE_TYPES:
+        raise HTTPException(status_code=400, detail="rule_type invalide (connectivite|topologie).")
+    rule_name = str(data.get("rule_name") or "").strip()
+    if not rule_name:
+        raise HTTPException(status_code=400, detail="rule_name est requis.")
+
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_rules_table(cur)
+            cur.execute(
+                """
+                INSERT INTO network_rules (
+                    rule_type, category, rule_name, concerned_objects, description,
+                    technical_constraints, examples, detected_errors, best_practices,
+                    source_file, sort_order
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    rt,
+                    data.get("category"),
+                    rule_name,
+                    data.get("concerned_objects"),
+                    data.get("description"),
+                    data.get("technical_constraints"),
+                    data.get("examples"),
+                    data.get("detected_errors"),
+                    data.get("best_practices"),
+                    data.get("source_file"),
+                    int(data.get("sort_order") or 0),
+                ),
+            )
+            row = cur.fetchone()
+    return row_to_json(row)
+
+
+@app.put("/gis/rules/{rule_id}")
+def update_rule(rule_id: int = Path(..., description="ID de la regle"), body: dict = Body(default=None)):
+    data = body or {}
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_rules_table(cur)
+            cur.execute("SELECT id, rule_type FROM network_rules WHERE id = %s", (rule_id,))
+            current = cur.fetchone()
+            if not current:
+                raise HTTPException(status_code=404, detail="Regle non trouvee")
+
+            next_rt = str(data.get("rule_type") or current.get("rule_type") or "").strip().lower()
+            if next_rt not in RULE_TYPES:
+                raise HTTPException(status_code=400, detail="rule_type invalide (connectivite|topologie).")
+            next_name = str(data.get("rule_name") or "").strip() or str(current.get("rule_name") or "")
+            if not next_name:
+                raise HTTPException(status_code=400, detail="rule_name est requis.")
+
+            cur.execute(
+                """
+                UPDATE network_rules
+                SET
+                    rule_type = %s,
+                    category = %s,
+                    rule_name = %s,
+                    concerned_objects = %s,
+                    description = %s,
+                    technical_constraints = %s,
+                    examples = %s,
+                    detected_errors = %s,
+                    best_practices = %s,
+                    source_file = %s,
+                    sort_order = %s,
+                    updated_at = NOW()
+                WHERE id = %s
+                RETURNING *
+                """,
+                (
+                    next_rt,
+                    data.get("category"),
+                    next_name,
+                    data.get("concerned_objects"),
+                    data.get("description"),
+                    data.get("technical_constraints"),
+                    data.get("examples"),
+                    data.get("detected_errors"),
+                    data.get("best_practices"),
+                    data.get("source_file"),
+                    int(data.get("sort_order") or 0),
+                    rule_id,
+                ),
+            )
+            row = cur.fetchone()
+    return row_to_json(row)
+
+
+@app.delete("/gis/rules/{rule_id}")
+def delete_rule(rule_id: int = Path(..., description="ID de la regle")):
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_rules_table(cur)
+            cur.execute("DELETE FROM network_rules WHERE id = %s", (rule_id,))
+            deleted = cur.rowcount > 0
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Regle non trouvee")
+    return {"deleted": True, "id": rule_id}
+
+
 @app.get("/gis/{table_slug}")
 def list_rows(
     table_slug: str = Path(..., description="Slug de la table (ex: distributionpanel-branchement)"),
@@ -1842,6 +4057,7 @@ def list_rows(
                 (limit, offset),
             )
             rows = cur.fetchall()
+            _attach_code_equipement(cur, table_name, rows)
     return [row_to_json(r) for r in rows]
 
 
@@ -2058,6 +4274,7 @@ def get_by_id(
                 )
                 row = cur.fetchone()
                 if row is not None:
+                    _attach_code_equipement(cur, table_name, [row])
                     break
     if not row:
         raise HTTPException(status_code=404, detail="Non trouvé")
@@ -2112,7 +4329,10 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
                     cur.execute(f'UPDATE {quoted_table} SET {", ".join(set_parts)} WHERE {quoted_pk} = %s', values)
                     select_list = build_select_list(meta)
                     cur.execute(f'SELECT {select_list} FROM {quoted_table} WHERE {quoted_pk} = %s', (pk_val,))
-                    return row_to_json(cur.fetchone())
+                    row = cur.fetchone()
+                    if row is not None:
+                        _attach_code_equipement(cur, table_name, [row])
+                    return row_to_json(row)
             cols = [c for c in data.keys()]
             placeholders = []
             for c in cols:
@@ -2138,6 +4358,8 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
                 select_list = build_select_list(meta)
                 cur.execute(f'SELECT {select_list} FROM {quoted_table} WHERE {quote_ident(pk)} = %s', (pk_val,))
                 row = cur.fetchone()
+                if row is not None:
+                    _attach_code_equipement(cur, table_name, [row])
             return row_to_json(row)
 
 

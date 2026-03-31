@@ -1,0 +1,359 @@
+<div class="schema-reseau">
+	<header class="schema-reseau-header">
+		<div class="schema-reseau-title">
+			<i class="fa fa-sitemap"></i>
+			<span>Schéma du réseau</span>
+		</div>
+		<div class="schema-reseau-actions">
+			<label class="schema-reseau-label">Codification</label>
+			<input
+				type="text"
+				class="schema-reseau-ref"
+				placeholder="Numéro de l'ouvrage (ex. PS-DORI-V01)"
+				[(ngModel)]="refId"
+				(keyup.enter)="loadSchema()"
+			/>
+			<label class="schema-reseau-label">Type</label>
+			<select class="schema-reseau-select" [(ngModel)]="typeOuvrage">
+				<option value="ouvrage">Ouvrage</option>
+				<option value="poste_source">Poste source</option>
+				<option value="poste_transformation">Poste de transformation</option>
+				<option value="abonne">Abonné</option>
+			</select>
+			<label class="schema-reseau-label">Direction</label>
+			<select class="schema-reseau-select" [(ngModel)]="direction">
+				<option value="tous">Tous (connecté)</option>
+				<option value="aval">Aval</option>
+				<option value="amont">Amont</option>
+			</select>
+			<button type="button" class="schema-reseau-btn" (click)="loadSchema()" [disabled]="loading || !refId?.trim()">
+				@if (loading) {
+					<i class="fa fa-spinner fa-spin"></i>
+					Chargement…
+				} @else {
+					<i class="fa fa-sitemap"></i>
+					Générer le schéma
+				}
+			</button>
+		</div>
+	</header>
+
+	<div class="schema-reseau-body">
+		@if (error) {
+			<div class="schema-reseau-error">
+				<i class="fa fa-exclamation-triangle"></i>
+				<span>{{ error }}</span>
+			</div>
+		}
+		@if (data?.message && !data.nodes?.length) {
+			<p class="schema-reseau-intro">{{ data.message }}</p>
+		}
+		@if (data && nodes.length > 0) {
+			<div class="schema-reseau-main">
+				<aside class="schema-reseau-sidebar" aria-label="Légende du synoptique">
+					<h3 class="schema-reseau-sidebar-heading">Synoptique SCADA</h3>
+					<p class="schema-reseau-sidebar-intro">Vue métier : mêmes paramètres (codification, type, direction) que le tracé sur la carte pour le même réseau connecté.</p>
+					<h4 class="schema-reseau-sidebar-sub">Niveaux de tension</h4>
+					<ul class="schema-reseau-scada-voltage-list">
+						@for (v of scadaVoltageLegend; track v.key) {
+							<li class="schema-reseau-scada-voltage-item">
+								<span class="schema-reseau-scada-voltage-swatch" [style.background]="v.color"></span>
+								<div class="schema-reseau-scada-voltage-text">
+									<span class="schema-reseau-scada-voltage-label">{{ v.label }}</span>
+									<span class="schema-reseau-scada-voltage-hint">{{ v.hint }}</span>
+								</div>
+							</li>
+						}
+					</ul>
+					<h4 class="schema-reseau-sidebar-sub">Équipements (IEC)</h4>
+					<ul class="schema-reseau-legend-list">
+						@for (entry of legendEntries; track entry.symbol) {
+							<li class="schema-reseau-legend-item" [attr.data-iec60617]="entry.iec60617" [attr.data-iec61850]="entry.iec61850">
+								@switch (entry.symbol) {
+									@case ('sym-transfo') {
+										<!-- Synoptique type poste : deux cercles imbriqués (transfo puissance) -->
+										<svg class="schema-reseau-legend-symbol" viewBox="-22 -22 44 44" width="32" height="32">
+											<circle cx="0" cy="-9" r="9" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="2"/>
+											<circle cx="0" cy="9" r="9" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="2"/>
+											<line x1="-16" y1="0" x2="-9" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<line x1="9" y1="0" x2="16" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+										</svg>
+									}
+									@case ('sym-transfo-bt') {
+										<svg class="schema-reseau-legend-symbol" viewBox="-22 -22 44 44" width="32" height="32">
+											<rect x="-14" y="-14" width="28" height="28" rx="3" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<circle cx="0" cy="-6" r="6" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<circle cx="0" cy="6" r="6" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<line x1="-18" y1="0" x2="-14" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<line x1="14" y1="0" x2="18" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+										</svg>
+									}
+									@case ('sym-depart') {
+										<!-- Disjoncteur F : carré vert + diagonale (type synoptique opérateur) -->
+										<svg class="schema-reseau-legend-symbol" viewBox="-16 -16 32 32" width="32" height="32">
+											<rect x="-9" y="-9" width="18" height="18" rx="1" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+											<line x1="-5" y1="5" x2="5" y2="-5" stroke="#14532d" stroke-width="2" stroke-linecap="square"/>
+											<line x1="-14" y1="0" x2="-9" y2="0" stroke="#15803d" stroke-width="1.5"/>
+											<line x1="9" y1="0" x2="14" y2="0" stroke="#15803d" stroke-width="1.5"/>
+										</svg>
+									}
+									@case ('sym-poteau') {
+										<!-- Parafoudre : triangle + prise de terre -->
+										<svg class="schema-reseau-legend-symbol" viewBox="-20 -22 40 44" width="32" height="32">
+											<path d="M0,-14 L11,6 L-11,6 Z" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="2" stroke-linejoin="miter"/>
+											<line x1="-14" y1="0" x2="-11" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<line x1="11" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.5"/>
+											<path d="M-6,8 H6 M-4,8 V11 M0,8 V12 M4,8 V11" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1.2"/>
+										</svg>
+									}
+									@case ('sym-point-livraison') {
+										<svg class="schema-reseau-legend-symbol" viewBox="-20 -20 40 40" width="32" height="32">
+											<circle r="11" fill="#fff" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="2"/>
+											<line x1="-16" y1="0" x2="-11" y2="0" [attr.stroke]="edgeColor" stroke-width="1.2"/>
+											<line x1="11" y1="0" x2="16" y2="0" [attr.stroke]="edgeColor" stroke-width="1.2"/>
+											<text x="0" y="3" text-anchor="middle" font-size="8" font-weight="600" [attr.fill]="getSymbolColor(entry.symbol)">kWh</text>
+										</svg>
+									}
+									@default {
+										<svg class="schema-reseau-legend-symbol" viewBox="-20 -20 40 40" width="32" height="32">
+											<circle r="10" fill="none" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="2"/>
+											<line x1="-14" y1="0" x2="-10" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1"/>
+											<line x1="10" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(entry.symbol)" stroke-width="1"/>
+										</svg>
+									}
+								}
+								<div class="schema-reseau-legend-text">
+									<span class="schema-reseau-legend-label">{{ entry.label }}</span>
+									<span class="schema-reseau-legend-ref" title="IEC 60617 · CEI 61850">IEC 60617: {{ entry.iec60617 }}{{ entry.iec61850 ? ' · ' + entry.iec61850 : '' }}</span>
+								</div>
+							</li>
+						}
+					</ul>
+					<h4 class="schema-reseau-sidebar-sub">Types de liaisons</h4>
+					<ul class="schema-reseau-legend-list">
+						@for (lineEntry of legendLineTypes; track lineEntry.lineType) {
+							<li class="schema-reseau-legend-item schema-reseau-legend-item--line">
+								<span class="schema-reseau-legend-line schema-reseau-legend-line--thick" [style.background]="lineEntry.color"></span>
+								<span>{{ lineEntry.label }}</span>
+							</li>
+						}
+					</ul>
+					@if (panelNodes.length) {
+						<div class="schema-reseau-label-panel-head">
+							<h4 class="schema-reseau-sidebar-sub">Libellés</h4>
+							<button type="button" class="schema-reseau-label-reset" (click)="clearSelectedNode()">Tout afficher</button>
+						</div>
+						<ul class="schema-reseau-label-list">
+							@for (n of panelNodes; track n.id) {
+								<li>
+									<button
+										type="button"
+										class="schema-reseau-label-btn"
+										[class.schema-reseau-label-btn--selected]="isNodeSelected(n)"
+										(click)="selectNode(n)"
+										[attr.title]="(n.label || n.id) + ' (' + getPanelNodeType(n) + ')'"
+									>
+										<span class="schema-reseau-label-btn-main">{{ n.label || n.id }}</span>
+										<span class="schema-reseau-label-btn-type">{{ getPanelNodeType(n) }}</span>
+									</button>
+								</li>
+							}
+						</ul>
+					}
+					@if (scadaDeparts.length) {
+						<h4 class="schema-reseau-sidebar-sub">Départs / organes</h4>
+						<ul class="schema-reseau-scada-departs">
+							@for (d of scadaDeparts; track d.id) {
+								<li class="schema-reseau-scada-depart-row">
+									<span class="schema-reseau-scada-depart-name">{{ d.label || d.id }}</span>
+									<span
+										class="schema-reseau-scada-depart-badge"
+										[class.schema-reseau-scada-depart-badge--open]="isDepartOuvert(d)"
+										[class.schema-reseau-scada-depart-badge--closed]="!isDepartOuvert(d)"
+									>{{ isDepartOuvert(d) ? 'OUV' : 'EN' }}</span>
+								</li>
+							}
+						</ul>
+					}
+					@if (scadaMeasurePoints.length) {
+						<h4 class="schema-reseau-sidebar-sub">Mesures (extrait)</h4>
+						<ul class="schema-reseau-scada-measures">
+							@for (m of scadaMeasurePoints; track m.id) {
+								<li class="schema-reseau-scada-measure-row">{{ formatMeasureLine(m) }}</li>
+							}
+						</ul>
+					}
+				</aside>
+				<div class="schema-reseau-diagram">
+					<div class="schema-scada-toolbar">
+						<div class="schema-scada-toolbar-left">
+							<span class="schema-scada-toolbar-kicker">Vue unifilaire</span>
+							<span class="schema-scada-toolbar-title">{{ refId?.trim() || '—' }}</span>
+						</div>
+						<div class="schema-scada-toolbar-right">
+							<span class="schema-scada-toolbar-chip">{{ nodes.length }} objets</span>
+							<span class="schema-scada-toolbar-chip">{{ edges.length }} liaisons</span>
+						</div>
+					</div>
+					<div class="schema-reseau-svg-wrap schema-reseau-svg-wrap--scada" #svgWrap (scroll)="onWrapScroll()">
+				<svg
+					#schemaSvg
+					[attr.viewBox]="viewBox"
+					class="schema-reseau-svg schema-scada-svg"
+					preserveAspectRatio="xMidYMid meet"
+				>
+					<!-- Liaisons (câbles / bus) — traits épais type synoptique -->
+					<g class="schema-reseau-edges schema-scada-edges">
+						@for (edge of edges; track edge.source + '-' + edge.target + '-' + edge.line_gid) {
+							@let src = nodeById(edge.source);
+							@let tgt = nodeById(edge.target);
+							@if (src && tgt) {
+								<path
+									fill="none"
+									[attr.d]="getOrthogonalEdgePath(src, tgt)"
+									class="schema-reseau-edge schema-reseau-edge--scada schema-reseau-edge--orthogonal"
+									[class.schema-reseau-edge--active]="selectedNodeId && isEdgeLinked(edge)"
+									[class.schema-reseau-edge--dimmed]="selectedNodeId && !isEdgeLinked(edge)"
+									[attr.stroke]="getEdgeColor(edge)"
+									[attr.stroke-width]="getEdgeStrokeWidth(edge)"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									[attr.data-line-type]="edge.line_type"
+								/>
+							}
+						}
+					</g>
+					<!-- Nœuds (symboles IEC 60617 / CEI 61850) -->
+					<g class="schema-reseau-nodes schema-scada-nodes">
+						@for (node of nodes; track node.id) {
+							<g
+								class="schema-scada-node"
+								[class.schema-scada-node--selected]="isNodeSelected(node)"
+								[class.schema-scada-node--dimmed]="selectedNodeId && !isNodeSelected(node)"
+								[attr.transform]="'translate(' + node.x + ',' + node.y + ')'"
+								[attr.data-symbol]="node.symbol"
+								[attr.data-iec60617]="getIec60617(node.symbol)"
+								[attr.data-iec61850]="getIec61850(node.symbol)"
+								(click)="selectNode(node)"
+							>
+								@if (node.symbol === 'sym-transfo') {
+									<rect class="schema-scada-node-card" x="-30" y="-34" width="60" height="72" rx="8" />
+								}
+								@if (node.symbol === 'sym-transfo-bt') {
+									<rect class="schema-scada-node-card" x="-32" y="-36" width="64" height="76" rx="8" />
+								}
+								@switch (node.symbol) {
+									@case ('sym-transfo') {
+										<circle cx="0" cy="-9" r="9" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+										<circle cx="0" cy="9" r="9" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+										<line x1="-16" y1="0" x2="-9" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<line x1="9" y1="0" x2="16" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+									}
+									@case ('sym-transfo-bt') {
+										<rect x="-14" y="-14" width="28" height="28" rx="3" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+										<circle cx="0" cy="-6" r="6" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<circle cx="0" cy="6" r="6" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<line x1="-18" y1="0" x2="-14" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<line x1="14" y1="0" x2="18" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+									}
+									@case ('sym-depart') {
+										<!-- Disjoncteur F/O : carré vert ou rouge + diagonale (synoptique opérateur) -->
+										<rect
+											x="-10"
+											y="-10"
+											width="20"
+											height="20"
+											rx="1.5"
+											[attr.fill]="isDepartOuvert(node) ? '#fee2e2' : '#dcfce7'"
+											[attr.stroke]="isDepartOuvert(node) ? '#b91c1c' : '#15803d'"
+											stroke-width="2"
+										/>
+										<line
+											x1="-5"
+											y1="5"
+											x2="5"
+											y2="-5"
+											[attr.stroke]="isDepartOuvert(node) ? '#991b1b' : '#14532d'"
+											stroke-width="2"
+											stroke-linecap="square"
+										/>
+										<line x1="-16" y1="0" x2="-10" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<line x1="10" y1="0" x2="16" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+									}
+									@case ('sym-poteau') {
+										<path d="M0,-14 L11,6 L-11,6 Z" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2" stroke-linejoin="miter"/>
+										<line x1="-14" y1="0" x2="-11" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<line x1="11" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<path d="M-6,8 H6 M-4,8 V11 M0,8 V12 M4,8 V11" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.2"/>
+									}
+									@case ('sym-point-livraison') {
+										<circle r="11" fill="#fff" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+										<line x1="-16" y1="0" x2="-11" y2="0" [attr.stroke]="edgeColor" stroke-width="1.2"/>
+										<line x1="11" y1="0" x2="16" y2="0" [attr.stroke]="edgeColor" stroke-width="1.2"/>
+										<text x="0" y="3" text-anchor="middle" font-size="8" font-weight="600" [attr.fill]="getSymbolColor(node.symbol)">kWh</text>
+									}
+									@default {
+										<circle r="10" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+										<line x1="-14" y1="0" x2="-10" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
+										<line x1="10" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
+									}
+								}
+							</g>
+						}
+					</g>
+				</svg>
+						@if (popupNode) {
+							<div
+								class="schema-node-popup"
+								[style.left.px]="popupPosition.left"
+								[style.top.px]="popupPosition.top"
+								role="dialog"
+								aria-label="Informations ouvrage"
+							>
+								<div class="schema-node-popup-head">
+									<strong class="schema-node-popup-title">{{ popupNode.label || popupNode.id }}</strong>
+									<button type="button" class="schema-node-popup-close" (click)="closePopup()">×</button>
+								</div>
+								<div class="schema-node-popup-row">
+									<span class="k">Type</span>
+									<span class="v">{{ getPanelNodeType(popupNode) }}</span>
+								</div>
+								<div class="schema-node-popup-row">
+									<span class="k">Identifiant</span>
+									<span class="v">{{ popupNode.id }}</span>
+								</div>
+								<div class="schema-node-popup-row">
+									<span class="k">Liaisons</span>
+									<span class="v">{{ popupConnectedEdges }}</span>
+								</div>
+								<div class="schema-node-popup-db-title">Informations BD (tous champs)</div>
+								@if (popupDetailsLoading) {
+									<div class="schema-node-popup-db-loading">Chargement des informations...</div>
+								}
+								@if (popupDetailsError) {
+									<div class="schema-node-popup-db-error">{{ popupDetailsError }}</div>
+								}
+								@if (!popupDetailsLoading && !popupDetailsError) {
+									<div class="schema-node-popup-db-list">
+										@for (entry of popupDetailsEntries; track entry.key) {
+											<div class="schema-node-popup-db-item">
+												<span class="db-k">{{ entry.key }}</span>
+												<span class="db-v">{{ entry.value }}</span>
+											</div>
+										}
+									</div>
+								}
+							</div>
+						}
+					</div>
+					<p class="schema-reseau-meta">{{ nodes.length }} nœud(s), {{ edges.length }} liaison(s)</p>
+				</div>
+			</div>
+		} @else if (!loading && !error) {
+			<div class="schema-reseau-placeholder">
+				<i class="fa fa-sitemap schema-reseau-placeholder-icon"></i>
+				<span>Indiquez la codification (numéro de l'ouvrage) et le type, puis cliquez sur « Générer le schéma » pour afficher le schéma unifilaire du réseau connecté.</span>
+			</div>
+		}
+	</div>
+</div>

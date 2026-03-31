@@ -84,6 +84,27 @@
 					</div>
 				</section>
 				<section class="trace-reseau-block">
+					<h2 class="trace-reseau-block-title"><i class="fa fa-shield"></i> Contrôle des règles</h2>
+					<p class="trace-reseau-topology-desc">Vérifie les règles de connectivité/topologie et met en évidence en rouge les ouvrages non conformes sur la carte.</p>
+					<div class="trace-reseau-form">
+						<label class="trace-reseau-label">Type de contrôle</label>
+						<select class="trace-reseau-input" [(ngModel)]="topologyValidationType">
+							<option value="all">Connectivité + Topologie</option>
+							<option value="connectivite">Connectivité</option>
+							<option value="topologie">Topologie</option>
+						</select>
+						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="lancerValidationTopologie()" [disabled]="topologyValidating || mapLoading">
+							@if (topologyValidating) {
+								<i class="fa fa-spinner fa-spin"></i>
+								Vérification en cours…
+							} @else {
+								<i class="fa fa-search"></i>
+								Vérifier les règles
+							}
+						</button>
+					</div>
+				</section>
+				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-power-off"></i> Simulation de coupure</h2>
 					<div class="trace-reseau-form">
 						<p class="trace-reseau-topology-desc">Simule l'impact d'une coupure sur un point ou une ligne. Une modale s'ouvrira sur la carte pour choisir la cause et valider avant d'exécuter.</p>
@@ -111,16 +132,6 @@
 								</button>
 							</div>
 						}
-					</div>
-				</section>
-				<section class="trace-reseau-block">
-					<h2 class="trace-reseau-block-title"><i class="fa fa-bolt"></i> Schéma unifilaire</h2>
-					<div class="trace-reseau-form">
-						<p class="trace-reseau-topology-desc">Représentation simplifiée du flux d’énergie (source → HT → ouvrages → BT → raccordements). Génération à partir du tracé courant.</p>
-						<button type="button" class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-btn--block" (click)="openUnifilaireModal()" [disabled]="traceDetails.length === 0">
-							<i class="fa fa-sitemap"></i>
-							Générer le schéma unifilaire
-						</button>
 					</div>
 				</section>
 			}
@@ -182,6 +193,104 @@
 						<i class="fa fa-home"></i>
 						<span>Home</span>
 					</button>
+				</div>
+				<div class="trace-reseau-validation-float">
+					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="topologyValidationFloatOpen" (click)="topologyValidationFloatOpen = !topologyValidationFloatOpen" [attr.aria-expanded]="topologyValidationFloatOpen" title="Résultat du contrôle des règles">
+						<i class="fa fa-shield"></i>
+						<span>Contrôle règles</span>
+						@if (topologyValidationResult && !topologyValidationResult.error) {
+							<span class="trace-reseau-validation-badge">{{ topologyValidationResult.total_issues }}</span>
+						}
+						@if (topologyValidationResult?.error) {
+							<span class="trace-reseau-validation-badge trace-reseau-validation-badge--error" title="Erreur">!</span>
+						}
+					</button>
+					@if (topologyValidationFloatOpen) {
+						<div class="trace-reseau-legend-panel trace-reseau-validation-panel">
+							@if (topologyValidating) {
+								<p class="trace-reseau-topology-desc"><i class="fa fa-spinner fa-spin"></i> Vérification en cours…</p>
+							} @else if (topologyValidationResult) {
+								<div class="trace-reseau-topology-result trace-reseau-topology-result--float" [class.trace-reseau-topology-result--error]="topologyValidationResult.error">
+									@if (topologyValidationResult.error) {
+										<p class="trace-reseau-topology-msg">{{ topologyValidationResult.error }}</p>
+									} @else {
+										<p class="trace-reseau-topology-msg">{{ topologyValidationResult.total_issues }} ouvrage(s) non conforme(s) détecté(s).</p>
+										<p class="trace-reseau-topology-desc">
+											Connectivité: {{ topologyValidationResult.by_rule_type.connectivite || 0 }}
+											- Topologie: {{ topologyValidationResult.by_rule_type.topologie || 0 }}
+										</p>
+										@if (topologyCorrectionFeedback) {
+											<div
+												class="trace-reseau-correction-feedback"
+												[class.trace-reseau-correction-feedback--ok]="topologyCorrectionFeedback.success"
+												[class.trace-reseau-correction-feedback--fail]="!topologyCorrectionFeedback.success"
+											>
+												<p class="trace-reseau-correction-feedback-title">{{ topologyCorrectionFeedback.title }}</p>
+												<ul class="trace-reseau-correction-feedback-list">
+													@for (line of topologyCorrectionFeedback.lines; track $index) {
+														<li>{{ line }}</li>
+													}
+												</ul>
+											</div>
+										}
+										@if (topologyValidationResult.issues?.length) {
+											<div class="trace-reseau-validation-table-wrap">
+												<table class="trace-reseau-insights-table trace-reseau-validation-table">
+													<thead>
+														<tr>
+															<th>Couche</th>
+															<th>ID</th>
+															<th>Problème</th>
+															<th>Motif</th>
+															<th>Suggestion</th>
+															<th>Correction automatique</th>
+														</tr>
+													</thead>
+													<tbody>
+														@for (issue of topologyValidationResult.issues; track issue.slug + ':' + issue.id + ':' + issue.rule_type + ':' + issue.reason + ':' + $index) {
+															<tr class="trace-reseau-insights-row-clickable trace-reseau-validation-row" [class.trace-reseau-insights-row-clickable--active]="isTraceRowSelected(issue)" (click)="onTopologyValidationRowClick(issue)">
+																<td><span class="trace-reseau-validation-slug">{{ issue.slug }}</span></td>
+																<td class="trace-reseau-validation-id">{{ issue.id }}</td>
+																<td class="trace-reseau-validation-col--problem">{{ topologyProblemLabel(issue.rule_type) }}</td>
+																<td class="trace-reseau-validation-col--reason">{{ issue.reason }}</td>
+																<td class="trace-reseau-validation-col--suggestion">{{ issue.suggestion || '—' }}</td>
+																<td class="trace-reseau-validation-col--auto-fix">
+																	@if (canAutoCorrectIssue(issue)) {
+																		<button
+																			type="button"
+																			class="trace-reseau-btn trace-reseau-btn--primary trace-reseau-validation-fix-btn"
+																			(click)="corrigerIssueTopologie(issue, $event)"
+																			[disabled]="topologyAutoCorrectionInProgress || topologyValidating"
+																		>
+																			@if (isAutoCorrectingIssue(issue)) {
+																				<i class="fa fa-spinner fa-spin"></i>
+																				Correction...
+																			} @else {
+																				<i class="fa fa-magic"></i>
+																				Corriger
+																			}
+																		</button>
+																	} @else {
+																		<span class="trace-reseau-validation-no-fix">Non disponible</span>
+																	}
+																</td>
+															</tr>
+														}
+													</tbody>
+												</table>
+											</div>
+										}
+									}
+									<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="effacerValidationTopologie()">
+										<i class="fa fa-eraser"></i>
+										Effacer la mise en évidence
+									</button>
+								</div>
+							} @else {
+								<p class="trace-reseau-topology-desc">Lancez une vérification depuis le panneau latéral (« Contrôle des règles »).</p>
+							}
+						</div>
+					}
 				</div>
 				<div class="trace-reseau-layers-float">
 					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="layersOpen" (click)="layersOpen = !layersOpen" [attr.aria-expanded]="layersOpen" [title]="layersOpen ? 'Masquer les couches' : 'Afficher les couches'">
@@ -376,34 +485,26 @@
 		[closable]="true"
 		[closeOnEscape]="true"
 		styleClass="trace-reseau-unifilaire-dialog"
-		[style]="{ width: 'min(95vw, 720px)' }"
+		[style]="{ width: 'min(95vw, 960px)' }"
+		(onShow)="onUnifilaireDialogShow()"
 		(onHide)="closeUnifilaireModal()"
 	>
-		<p class="trace-reseau-unifilaire-intro">Représentation simplifiée du tracé : de la source (poste source / arrivée HT) vers les lignes HTA, les ouvrages MT, les lignes BT et les raccordements.</p>
-		<div class="trace-reseau-unifilaire-flow">
-			@for (section of unifilaireSections; track section.order) {
-				<div class="trace-reseau-unifilaire-stage">
-					<div class="trace-reseau-unifilaire-stage-label">{{ section.stageLabel }}</div>
-					<div class="trace-reseau-unifilaire-stage-items">
-						@for (item of section.items; track item.slug) {
-							<div class="trace-reseau-unifilaire-item" [style.--item-color]="item.color">
-								<span class="trace-reseau-unifilaire-item-label">{{ item.label }}</span>
-								<span class="trace-reseau-unifilaire-item-count">{{ item.count }}</span>
-							</div>
-						}
-					</div>
-					@if (!$last) {
-						<div class="trace-reseau-unifilaire-arrow" aria-hidden="true">
-							<i class="fa fa-arrow-right"></i>
-						</div>
-					}
-				</div>
-			}
-		</div>
-		@if (unifilaireSections.length === 0) {
-			<p class="trace-reseau-unifilaire-empty">Effectuez d’abord un tracé (Amont, Aval ou Tous connectés) pour générer le schéma.</p>
-		}
+		<!-- Schéma unifilaire (PowSyBL) -->
+		<section class="trace-reseau-unifilaire-mermaid">
+			<h3 class="trace-reseau-unifilaire-mermaid-title">Schéma unifilaire (PowSyBL)</h3>
+			<p class="trace-reseau-unifilaire-mermaid-desc">Schéma généré à partir du tracé courant (ouvrage source et équipements connectés).</p>
+			<div class="trace-reseau-unifilaire-mermaid-preview-wrap">
+				<h4 class="trace-reseau-unifilaire-mermaid-preview-title">Résultat</h4>
+				@if (safeUnifilaireSvgContent) {
+					<div class="trace-reseau-unifilaire-svg-wrap" [innerHTML]="safeUnifilaireSvgContent"></div>
+				}
+				@if (unifilaireDiagramError) {
+					<p class="trace-reseau-unifilaire-mermaid-error">{{ unifilaireDiagramError }}</p>
+				}
+			</div>
+		</section>
 		<ng-template pTemplate="footer">
+			<button pButton label="Exporter en PDF" icon="pi pi-file-pdf" class="p-button-outlined" (click)="exportUnifilairePdf()" [disabled]="!safeUnifilaireSvgContent"></button>
 			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="closeUnifilaireModal()"></button>
 		</ng-template>
 	</p-dialog>
