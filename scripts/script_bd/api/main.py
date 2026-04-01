@@ -851,20 +851,15 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
                     if row.get("gid"):
                         start.add(str(row["gid"]).strip())
         elif trace_type == "abonne":
-            # Point de raccordement : s'il porte un id_ligne_brcht, on prend ses nœuds
-            # de ligne branchement comme points de départ (amont/aval directionnel ensuite).
+            # Point de raccordement / abonné : résoudre d'abord la ligne de branchement
+            # via le helper robuste (accepte gid point_raccordement, abonne ou branchement).
             try:
-                cur.execute(
-                    "SELECT id_ligne_brcht FROM point_raccordement "
-                    "WHERE REPLACE(REPLACE(LOWER(CAST(gid AS TEXT)), '{', ''), '}', '') = %s",
-                    (ref_canon,),
-                )
-                row = cur.fetchone()
-                line_id = str(row.get("id_ligne_brcht")).strip() if row and row.get("id_ligne_brcht") else ""
+                line_id, _pt_gid = _trace_get_ligne_brcht_only_for_raccord(cur, ref_id)
                 if line_id:
                     cur.execute(
-                        "SELECT id_depart_bt, id_poteau_bt, id_poteau_hta FROM ligne_brcht WHERE gid = %s",
-                        (line_id,),
+                        "SELECT id_depart_bt, id_poteau_bt, id_poteau_hta FROM ligne_brcht "
+                        "WHERE " + _canon_sql_expr("gid") + " = %s",
+                        (_canon_id(line_id),),
                     )
                     line = cur.fetchone()
                     if line:
@@ -1321,6 +1316,99 @@ def _trace_bt_start_from_hta_nodes(cur, visited_nodes: set[str]) -> set[str]:
     return bt_start
 
 
+def _trace_first_poste_cabine_from_nodes(cur, node_ids: set[str]) -> str | None:
+    """Retourne le gid d'un poste cabine trouvé depuis un ensemble de nœuds visités BT."""
+    if not node_ids:
+        return None
+    try:
+        equip_pairs = _trace_postes_transfos_from_node_ids(cur, node_ids)
+        cabine_gids = [
+            _canon_id(str(gid))
+            for slug, gid in (equip_pairs or [])
+            if "poste-cabine" in (_resolve_slug(slug) or "")
+        ]
+        cabine_gids = [g for g in cabine_gids if g]
+        return sorted(cabine_gids)[0] if cabine_gids else None
+    except Exception:
+        return None
+
+
+def _trace_bfs_bt_to_cabine(cur, start_nodes: set[str]) -> tuple[list[tuple[str, str]], set[str], str | None]:
+    """
+    Remonte en amont uniquement sur le réseau BT (ligne_bt + côté BT de ligne_brcht),
+    jusqu'à trouver un poste cabine.
+    Retourne (segments_bt, nœuds_visités_bt, poste_cabine_gid_ou_None).
+    """
+    start = {_canon_id(n) for n in (start_nodes or set()) if _canon_id(n)}
+    if not start:
+        return [], set(), None
+
+    visited: set[str] = set(start)
+    frontier: set[str] = set(start)
+    pairs: list[tuple[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+    poste_cabine_gid = _trace_first_poste_cabine_from_nodes(cur, visited)
+
+    while frontier and not poste_cabine_gid:
+        next_frontier: set[str] = set()
+        fvals = sorted(frontier)
+        placeholders = ", ".join(["%s"] * len(fvals))
+        # 1) Remontée BT classique
+        try:
+            cur.execute(
+                f"SELECT gid, {quote_ident('id_depart_bt')}, {quote_ident('id_poteau_bt')} "
+                f"FROM {quote_ident('ligne_bt')} "
+                f"WHERE {_canon_sql_expr('id_poteau_bt')} IN ({placeholders})",
+                tuple(fvals),
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is not None:
+                    key = ("ligne-bt", str(gid_val))
+                    if key not in seen_pairs:
+                        seen_pairs.add(key)
+                        pairs.append(key)
+                up = row.get("id_depart_bt")
+                up_canon = _canon_id(up) if up is not None else ""
+                if up_canon and up_canon not in visited:
+                    next_frontier.add(up_canon)
+        except Exception:
+            pass
+
+        # 2) Branchement BT : accepter aussi id_poteau_hta quand id_poteau_bt est absent
+        # (cas fréquent des jeux de données où le branchement est accroché directement au HTA).
+        try:
+            cur.execute(
+                f"SELECT gid, {quote_ident('id_depart_bt')}, {quote_ident('id_poteau_bt')}, {quote_ident('id_poteau_hta')} "
+                f"FROM {quote_ident('ligne_brcht')} "
+                f"WHERE {_canon_sql_expr('id_poteau_bt')} IN ({placeholders}) "
+                f"OR {_canon_sql_expr('id_poteau_hta')} IN ({placeholders})",
+                tuple(fvals) * 2,
+            )
+            for row in cur.fetchall() or []:
+                gid_val = row.get("gid")
+                if gid_val is not None:
+                    key = ("ligne-brcht", str(gid_val))
+                    if key not in seen_pairs:
+                        seen_pairs.add(key)
+                        pairs.append(key)
+                up = row.get("id_depart_bt")
+                up_canon = _canon_id(up) if up is not None else ""
+                if up_canon and up_canon not in visited:
+                    next_frontier.add(up_canon)
+        except Exception:
+            pass
+
+        next_frontier -= visited
+        if not next_frontier:
+            break
+        visited |= next_frontier
+        poste_cabine_gid = _trace_first_poste_cabine_from_nodes(cur, next_frontier)
+        frontier = next_frontier
+
+    return pairs, visited, poste_cabine_gid
+
+
 def _trace_directional_links_count(cur) -> int:
     """Nombre total de références de connectivité non nulles dans les tables de lignes."""
     total = 0
@@ -1710,12 +1798,44 @@ def trace_ouvrages(
                     ligne_hta_cabine_gid: str | None = None
                     if effective_direction == "amont":
                         hta_entry = set()
-                        if trace_type == "poste_transformation":
-                            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, ref_id)
+                        bt_pairs_amont: list[tuple[str, str]] = []
+                        bt_visited_amont: set[str] = set()
+                        poste_cabine_found: str | None = None
+
+                        # Nouveau flux métier amont :
+                        # 1) Remonter BT jusqu'au poste cabine (si départ BT/abonné)
+                        # 2) Puis remonter HTA depuis ce poste cabine.
+                        needs_bt_bridge = (
+                            trace_type in ("abonne", "poste_transformation")
+                            or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
+                        )
+                        if needs_bt_bridge:
+                            bt_bridge_start = set(start_nodes)
+                            # Depuis un point de raccordement/abonné en amont, inclure explicitement
+                            # la ligne de branchement pour ne pas perdre le segment BT de départ.
+                            if from_point_raccordement and ligne_brcht_only_gid:
+                                seed_pairs = [("ligne-brcht", ligne_brcht_only_gid)]
+                                bt_pairs_amont.extend(seed_pairs)
+                                bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
+                            bt_pairs_walk, bt_visited_walk, poste_cabine_found = _trace_bfs_bt_to_cabine(cur, bt_bridge_start)
+                            bt_pairs_amont.extend(bt_pairs_walk)
+                            bt_visited_amont |= bt_visited_walk
+
+                        if poste_cabine_found:
+                            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, poste_cabine_found)
+                            if hta_entry:
+                                _log.debug("hta_entry résolu via poste_cabine %s", poste_cabine_found)
+
+                        # Fallback si poste cabine introuvable ou topologie incomplète
                         if not hta_entry:
-                            hta_entry = _trace_hta_entry_from_start(cur, start_nodes)
+                            bridge_start = bt_visited_amont if bt_visited_amont else start_nodes
+                            hta_entry = _trace_hta_entry_from_start(cur, bridge_start)
+                            _log.warning("hta_entry fallback via pont BT→HTA pour nœud %s", sorted(bridge_start))
+
                         if hta_entry:
-                            pairs, visited_nodes = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+                            hta_pairs, hta_visited = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+                            pairs = list(bt_pairs_amont) + list(hta_pairs)
+                            visited_nodes = set(bt_visited_amont) | set(hta_visited)
                             # Garantir que la ligne HTA qui alimente le poste cabine est bien dans le résultat
                             if ligne_hta_cabine_gid and not any(_canon_id(gid) == _canon_id(ligne_hta_cabine_gid) for _s, gid in pairs if _s == "ligne-hta"):
                                 pairs.insert(0, ("ligne-hta", ligne_hta_cabine_gid))
@@ -1760,7 +1880,7 @@ def trace_ouvrages(
                     # En "tous" : ajouter tout le réseau BT en aval des postes cabine.
                     # En "aval" depuis poste source : descendre jusqu'aux points de raccordement (réseau BT en aval).
                     bt_start: set[str] = set()
-                    if effective_direction == "aval":
+                    if effective_direction in ("aval", "tous"):
                         # Le BFS aval HTA s'arrête aux poteaux HTA ; on relie au BT via ligne_brcht (id_poteau_hta).
                         bt_start = _trace_bt_start_from_hta_nodes(cur, visited_nodes)
                     poste_cabine_gids = [gid for slug, gid in merged if "poste-cabine" in (slug or "")]
@@ -2296,12 +2416,38 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     ligne_hta_cabine_gid: str | None = None
     if effective_direction == "amont":
         hta_entry = set()
-        if trace_type == "poste_transformation":
-            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, ref_id)
+        bt_pairs_amont: list[tuple[str, str]] = []
+        bt_visited_amont: set[str] = set()
+        poste_cabine_found: str | None = None
+
+        needs_bt_bridge = (
+            trace_type in ("abonne", "poste_transformation")
+            or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
+        )
+        if needs_bt_bridge:
+            bt_bridge_start = set(start_nodes)
+            if from_point_raccordement and ligne_brcht_only_gid:
+                seed_pairs = [("ligne-brcht", ligne_brcht_only_gid)]
+                bt_pairs_amont.extend(seed_pairs)
+                bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
+            bt_pairs_walk, bt_visited_walk, poste_cabine_found = _trace_bfs_bt_to_cabine(cur, bt_bridge_start)
+            bt_pairs_amont.extend(bt_pairs_walk)
+            bt_visited_amont |= bt_visited_walk
+
+        if poste_cabine_found:
+            hta_entry, ligne_hta_cabine_gid = _trace_hta_entry_from_poste_cabine(cur, poste_cabine_found)
+            if hta_entry:
+                _log.debug("schema-unifilaire: hta_entry via poste_cabine %s", poste_cabine_found)
+
         if not hta_entry:
-            hta_entry = _trace_hta_entry_from_start(cur, start_nodes)
+            bridge_start = bt_visited_amont if bt_visited_amont else start_nodes
+            hta_entry = _trace_hta_entry_from_start(cur, bridge_start)
+            _log.warning("schema-unifilaire: hta_entry fallback BT→HTA pour nœud %s", sorted(bridge_start))
+
         if hta_entry:
-            pairs, visited_nodes = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+            hta_pairs, hta_visited = _trace_bfs_from_node(cur, hta_entry, "amont", restrict_to_hta=True)
+            pairs = list(bt_pairs_amont) + list(hta_pairs)
+            visited_nodes = set(bt_visited_amont) | set(hta_visited)
             if ligne_hta_cabine_gid and not any(
                 _canon_id(gid) == _canon_id(ligne_hta_cabine_gid) for _s, gid in pairs if _s == "ligne-hta"
             ):
@@ -2344,7 +2490,7 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
             merged.append(item)
 
     bt_start: set[str] = set()
-    if effective_direction == "aval":
+    if effective_direction in ("aval", "tous"):
         bt_start = _trace_bt_start_from_hta_nodes(cur, visited_nodes)
     poste_cabine_gids = [gid for slug, gid in merged if "poste-cabine" in (slug or "")]
     if poste_cabine_gids and effective_direction in ("tous", "aval"):
@@ -2375,6 +2521,7 @@ def get_schema_unifilaire(
     ref_id: str = Query(..., description="Codification (numéro de l'ouvrage) ou gid pour lequel générer le schéma"),
     type_ouvrage: str = Query("ouvrage", description="Type d'ouvrage : poste_source | poste_transformation | abonne | ouvrage"),
     direction: str = Query("tous", description="Direction du tracé : amont | aval | tous (réseau connecté)"),
+    mode: str = Query("complet", description="Mode de rendu : complet | compact"),
 ):
     """
     Schéma unifilaire du réseau **par ouvrage** : graphe topologique des nœuds et arêtes connectés
@@ -2402,6 +2549,9 @@ def get_schema_unifilaire(
     direction = (direction or "tous").strip().lower()
     if direction not in ("amont", "aval", "tous"):
         direction = "tous"
+    mode = (mode or "complet").strip().lower()
+    if mode not in ("complet", "compact"):
+        mode = "complet"
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
@@ -2420,6 +2570,16 @@ def get_schema_unifilaire(
                 for s_slug, s_gid, t_slug, t_gid, _line_slug, _line_gid in edges_raw:
                     gid_to_slug[s_gid] = s_slug
                     gid_to_slug[t_gid] = t_slug
+                # Canoniser le type réel de chaque gid via les tables de points.
+                # Evite les doublons du style "poteau-hta:<gid>" + "poste-cabine:<gid>"
+                # quand ligne_hta.id_poteau_hta référence en réalité un poste cabine.
+                try:
+                    gids_for_resolution = set(gid_to_slug.keys()) | {g for g in visited if _canon_id(g)}
+                    resolved_slug = _schema_unifilaire_resolve_gid_to_slug(cur, gids_for_resolution)
+                    if resolved_slug:
+                        gid_to_slug.update(resolved_slug)
+                except Exception:
+                    pass
                 gid_to_node_id = {gid_str: f"{slug}:{gid_str}" for gid_str, slug in gid_to_slug.items()}
                 allowed_node_ids = {gid_to_node_id[g] for g in visited if g in gid_to_node_id}
                 edges_for_nx: list[tuple[str, str, str, str]] = []
@@ -2470,41 +2630,309 @@ def get_schema_unifilaire(
                                 edges_for_nx.append((ps_node_id, dep_node_id, "ligne-hta", ""))
                         except Exception:
                             pass
-                # 5) Simplification topologique (tronçons / poteaux) puis arbre logique depuis la racine métier
-                edges_simple, nodes_simple = _schema_unifilaire_simplify_graph(edges_for_nx)
-                if not nodes_simple:
-                    return {
-                        "nodes": [],
-                        "edges": [],
-                        "message": "Aucun équipement métier après fusion des tronçons intermédiaires.",
+                # Liaisons métier HTA→BT : relier explicitement les départs BT à leur poste/transfo
+                # pour conserver la logique de transition (poste cabine / transfo) dans le schéma.
+                dep_bt_table, dep_bt_meta = TABLE_BY_SLUG.get("depart-bt", (None, {}))
+                dep_bt_fk_cols = [
+                    c for c in ("id_poste_cabine", "id_poste_sur_poteau", "id_transfo_ht_bt", "id_transfo_poteau")
+                    if _table_has_column(dep_bt_meta, c)
+                ]
+                depart_bt_node_ids = [n for n in node_set if n.startswith("depart-bt:")]
+                depart_bt_gids = [_canon_id(n.split(":", 1)[-1]) for n in depart_bt_node_ids if ":" in n]
+                if dep_bt_table and depart_bt_gids and dep_bt_fk_cols:
+                    try:
+                        placeholders = ", ".join(["%s"] * len(depart_bt_gids))
+                        select_cols = ["gid"] + dep_bt_fk_cols
+                        cur.execute(
+                            f"SELECT {', '.join(quote_ident(c) for c in select_cols)} "
+                            f"FROM {quote_ident(dep_bt_table)} "
+                            f"WHERE {_canon_sql_expr('gid')} IN ({placeholders})",
+                            tuple(depart_bt_gids),
+                        )
+                        dep_bt_links: list[tuple[str, str]] = []
+                        transfo_gids: set[str] = set()
+                        for row in cur.fetchall() or []:
+                            dep_gid = _canon_id(row.get("gid"))
+                            if not dep_gid:
+                                continue
+                            for fk in dep_bt_fk_cols:
+                                target_gid = _canon_id(row.get(fk))
+                                if target_gid:
+                                    dep_bt_links.append((dep_gid, target_gid))
+                                    transfo_gids.add(target_gid)
+                        if transfo_gids:
+                            transfo_gid_to_slug = _schema_unifilaire_resolve_gid_to_slug(cur, transfo_gids)
+                            existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
+                            for dep_gid, target_gid in dep_bt_links:
+                                target_slug = transfo_gid_to_slug.get(target_gid)
+                                if not target_slug:
+                                    continue
+                                dep_node_id = f"depart-bt:{dep_gid}"
+                                target_node_id = f"{target_slug}:{target_gid}"
+                                node_set.add(dep_node_id)
+                                node_set.add(target_node_id)
+                                gid_to_slug[target_gid] = target_slug
+                                synthetic_edge = (target_node_id, dep_node_id, "ligne-bt", "")
+                                if synthetic_edge not in existing_edges:
+                                    edges_for_nx.append(synthetic_edge)
+                                    existing_edges.add(synthetic_edge)
+                    except Exception:
+                        pass
+                # Liaisons métier HTA -> poste cabine/transfo :
+                # dans certains jeux de données, le poste n'est pas endpoint direct de ligne_hta
+                # (seul id_ligne_hta est renseigné sur le poste). On reconnecte explicitement.
+                cabine_like = [
+                    (g, s) for g, s in gid_to_slug.items()
+                    if ("poste-cabine" in (s or "")) or ("transfo-ht-bt" in (s or ""))
+                ]
+                if cabine_like:
+                    try:
+                        existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
+                        for cab_gid, cab_slug in cabine_like:
+                            table_name, meta = TABLE_BY_SLUG.get(cab_slug, (None, {}))
+                            if not table_name or not _table_has_column(meta, "id_ligne_hta"):
+                                continue
+                            cur.execute(
+                                f"SELECT id_ligne_hta FROM {quote_ident(table_name)} "
+                                f"WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                                (cab_gid,),
+                            )
+                            r = cur.fetchone()
+                            line_gid = _canon_id(r.get("id_ligne_hta")) if r and r.get("id_ligne_hta") else ""
+                            if not line_gid:
+                                continue
+                            cur.execute(
+                                "SELECT gid, id_depart_hta, id_poteau_hta FROM ligne_hta "
+                                f"WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                                (line_gid,),
+                            )
+                            lr = cur.fetchone()
+                            if not lr:
+                                continue
+                            l_gid = _canon_id(lr.get("gid"))
+                            hta_targets = [_canon_id(lr.get("id_poteau_hta")), _canon_id(lr.get("id_depart_hta"))]
+                            source_node = f"{cab_slug}:{cab_gid}"
+                            node_set.add(source_node)
+                            for tgt_gid in hta_targets:
+                                if not tgt_gid:
+                                    continue
+                                tgt_slug = gid_to_slug.get(tgt_gid)
+                                if not tgt_slug:
+                                    continue
+                                target_node = f"{tgt_slug}:{tgt_gid}"
+                                node_set.add(target_node)
+                                synthetic_edge = (target_node, source_node, "ligne-hta", l_gid or line_gid)
+                                if synthetic_edge not in existing_edges:
+                                    edges_for_nx.append(synthetic_edge)
+                                    existing_edges.add(synthetic_edge)
+                    except Exception:
+                        pass
+                # Liaisons métier BT aval: ligne de branchement -> point de raccordement -> branchement
+                # afin d'afficher correctement les extrémités clients dans le schéma unifilaire.
+                try:
+                    existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
+                    line_brcht_anchor: dict[str, str] = {}
+                    line_brcht_gids: set[str] = set()
+                    for s_slug, s_gid, t_slug, t_gid, line_slug, line_gid in edges_raw:
+                        if line_slug != "ligne-brcht":
+                            continue
+                        lg = _canon_id(line_gid)
+                        if not lg:
+                            continue
+                        line_brcht_gids.add(lg)
+                        s_node = gid_to_node_id.get(s_gid) or f"{s_slug}:{s_gid}"
+                        t_node = gid_to_node_id.get(t_gid) or f"{t_slug}:{t_gid}"
+                        # Priorité de rattachement visuel: poteau BT > depart BT > autre
+                        cand = None
+                        for n in (s_node, t_node):
+                            if n.startswith("poteau-bt:"):
+                                cand = n
+                                break
+                        if not cand:
+                            for n in (s_node, t_node):
+                                if n.startswith("depart-bt:"):
+                                    cand = n
+                                    break
+                        if not cand:
+                            cand = s_node
+                        if lg not in line_brcht_anchor and cand:
+                            line_brcht_anchor[lg] = cand
+
+                    if line_brcht_gids:
+                        placeholders = ", ".join(["%s"] * len(line_brcht_gids))
+                        candidate_pr_slugs = [s for s in sorted(TABLE_BY_SLUG.keys()) if ("point" in s and "raccord" in s)]
+                        pr_node_by_gid: dict[str, str] = {}
+                        pr_gids: set[str] = set()
+                        for pr_slug in candidate_pr_slugs:
+                            pr_table, pr_meta = TABLE_BY_SLUG.get(pr_slug, (None, {}))
+                            if not pr_table or not (_table_has_column(pr_meta, "gid") and _table_has_column(pr_meta, "id_ligne_brcht")):
+                                continue
+                            try:
+                                cur.execute(
+                                    f"SELECT gid, id_ligne_brcht FROM {quote_ident(pr_table)} "
+                                    f"WHERE {_canon_sql_expr('id_ligne_brcht')} IN ({placeholders})",
+                                    tuple(line_brcht_gids),
+                                )
+                                for row in cur.fetchall() or []:
+                                    pr_gid = _canon_id(row.get("gid"))
+                                    l_gid = _canon_id(row.get("id_ligne_brcht"))
+                                    if not pr_gid or not l_gid:
+                                        continue
+                                    anchor = line_brcht_anchor.get(l_gid)
+                                    if not anchor:
+                                        continue
+                                    pr_node = f"{pr_slug}:{pr_gid}"
+                                    node_set.add(pr_node)
+                                    gid_to_slug[pr_gid] = pr_slug
+                                    pr_node_by_gid[pr_gid] = pr_node
+                                    pr_gids.add(pr_gid)
+                                    rec = (anchor, pr_node, "ligne-brcht", l_gid)
+                                    if rec not in existing_edges:
+                                        edges_for_nx.append(rec)
+                                        existing_edges.add(rec)
+                            except Exception:
+                                continue
+
+                        # Branchements client relies au point de raccordement
+                        if pr_gids:
+                            candidate_br_slugs = [s for s in sorted(TABLE_BY_SLUG.keys()) if "branchement" in s]
+                            br_placeholders = ", ".join(["%s"] * len(pr_gids))
+                            for br_slug in candidate_br_slugs:
+                                br_table, br_meta = TABLE_BY_SLUG.get(br_slug, (None, {}))
+                                if not br_table or not (_table_has_column(br_meta, "gid") and _table_has_column(br_meta, "id_point_raccordement")):
+                                    continue
+                                try:
+                                    cur.execute(
+                                        f"SELECT gid, id_point_raccordement FROM {quote_ident(br_table)} "
+                                        f"WHERE {_canon_sql_expr('id_point_raccordement')} IN ({br_placeholders})",
+                                        tuple(pr_gids),
+                                    )
+                                    for row in cur.fetchall() or []:
+                                        br_gid = _canon_id(row.get("gid"))
+                                        pr_gid = _canon_id(row.get("id_point_raccordement"))
+                                        if not br_gid or not pr_gid:
+                                            continue
+                                        pr_node = pr_node_by_gid.get(pr_gid)
+                                        if not pr_node:
+                                            continue
+                                        br_node = f"{br_slug}:{br_gid}"
+                                        node_set.add(br_node)
+                                        gid_to_slug[br_gid] = br_slug
+                                        rec = (pr_node, br_node, "ligne-brcht", "")
+                                        if rec not in existing_edges:
+                                            edges_for_nx.append(rec)
+                                            existing_edges.add(rec)
+                                except Exception:
+                                    continue
+                except Exception:
+                    pass
+                if mode == "compact":
+                    # 5) Simplification topologique (tronçons / poteaux) puis arbre logique depuis la racine métier
+                    edges_simple, nodes_simple = _schema_unifilaire_simplify_graph(edges_for_nx)
+                    if not nodes_simple:
+                        return {
+                            "nodes": [],
+                            "edges": [],
+                            "message": "Aucun équipement métier après fusion des tronçons intermédiaires.",
+                        }
+                    tree_root = _schema_unifilaire_pick_tree_root(nodes_simple, start_ids, gid_to_node_id)
+                    tree_edges, reachable = _schema_unifilaire_bfs_tree_edges(edges_simple, tree_root)
+                    if not reachable:
+                        return {
+                            "nodes": [],
+                            "edges": [],
+                            "message": "Impossible de déterminer la racine du schéma (poste source / transfo).",
+                        }
+                    reachable_gids = {_schema_unifilaire_node_gid_part(n) for n in reachable if ":" in str(n)}
+                    gid_to_slug = {
+                        g: s for g, s in gid_to_slug.items() if g in reachable_gids
                     }
-                tree_root = _schema_unifilaire_pick_tree_root(nodes_simple, start_ids, gid_to_node_id)
-                tree_edges, reachable = _schema_unifilaire_bfs_tree_edges(edges_simple, tree_root)
-                if not reachable:
-                    return {
-                        "nodes": [],
-                        "edges": [],
-                        "message": "Impossible de déterminer la racine du schéma (poste source / transfo).",
-                    }
-                reachable_gids = {_schema_unifilaire_node_gid_part(n) for n in reachable if ":" in str(n)}
-                gid_to_slug = {
-                    g: s for g, s in gid_to_slug.items() if g in reachable_gids
-                }
-                for n in reachable:
-                    g = _schema_unifilaire_node_gid_part(n)
-                    sl = _schema_unifilaire_node_slug(n)
-                    if g and sl and g not in gid_to_slug:
-                        gid_to_slug[g] = sl
-                node_labels = _schema_unifilaire_node_labels(cur, gid_to_slug)
-                node_list = sorted(reachable)
-                G = nx.DiGraph()
-                for n in node_list:
-                    gid_part = _schema_unifilaire_node_gid_part(n)
-                    slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
-                    G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
-                for s, t, line_slug, line_gid in tree_edges:
-                    G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
-                pos = _schema_unifilaire_layout_linear_tree(G, tree_root)
+                    for n in reachable:
+                        g = _schema_unifilaire_node_gid_part(n)
+                        sl = _schema_unifilaire_node_slug(n)
+                        if g and sl and g not in gid_to_slug:
+                            gid_to_slug[g] = sl
+                    node_labels = _schema_unifilaire_node_labels(cur, gid_to_slug)
+                    node_list = sorted(reachable)
+                    G = nx.DiGraph()
+                    for n in node_list:
+                        gid_part = _schema_unifilaire_node_gid_part(n)
+                        slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
+                        G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
+                    for s, t, line_slug, line_gid in tree_edges:
+                        G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
+                    pos = _schema_unifilaire_layout_linear_tree(G, tree_root)
+                    edge_records = tree_edges
+                else:
+                    # Mode complet: conserver les objets connectés sans simplification ni réduction en arbre.
+                    visited_gids = {_canon_id(g) for g in visited if _canon_id(g)}
+                    unresolved = {g for g in visited_gids if g not in gid_to_slug}
+                    if unresolved:
+                        gid_to_slug.update(_schema_unifilaire_resolve_gid_to_slug(cur, unresolved))
+                    node_set_full = set(node_set)
+                    if not node_set_full:
+                        return {
+                            "nodes": [],
+                            "edges": [],
+                            "message": "Aucun nœud exploitable en mode complet.",
+                        }
+                    node_labels = _schema_unifilaire_node_labels(cur, gid_to_slug)
+                    all_nodes = sorted(node_set_full)
+                    G = nx.DiGraph()
+                    for n in all_nodes:
+                        gid_part = _schema_unifilaire_node_gid_part(n)
+                        slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
+                        G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
+                    seen_edges: set[tuple[str, str, str, str]] = set()
+                    all_edge_records: list[tuple[str, str, str, str]] = []
+                    for s, t, line_slug, line_gid in edges_for_nx:
+                        if s not in G.nodes or t not in G.nodes:
+                            continue
+                        rec = (s, t, line_slug, line_gid)
+                        if rec in seen_edges:
+                            continue
+                        seen_edges.add(rec)
+                        G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
+                        all_edge_records.append(rec)
+                    UG = nx.Graph()
+                    UG.add_nodes_from(all_nodes)
+                    UG.add_edges_from([(s, t) for s, t, _ls, _lg in all_edge_records])
+
+                    # Garder uniquement la composante connectée à la racine métier, pour rester cohérent
+                    # avec le tracé carte (évite les nœuds/segments isolés visuellement).
+                    root_full = _schema_unifilaire_pick_tree_root(set(all_nodes), start_ids, gid_to_node_id)
+                    if root_full and root_full in UG:
+                        keep_nodes = set(nx.node_connected_component(UG, root_full))
+                    else:
+                        comps = list(nx.connected_components(UG))
+                        keep_nodes = set(max(comps, key=len)) if comps else set(all_nodes)
+                    node_list = sorted(keep_nodes)
+                    edge_records = [
+                        (s, t, line_slug, line_gid)
+                        for s, t, line_slug, line_gid in all_edge_records
+                        if s in keep_nodes and t in keep_nodes
+                    ]
+
+                    if len(node_list) == 1:
+                        pos = {node_list[0]: (120.0, 120.0)}
+                    else:
+                        UG_keep = UG.subgraph(keep_nodes).copy()
+                        raw_pos = nx.spring_layout(UG_keep, seed=42, k=0.9, iterations=120)
+                        xs = [p[0] for p in raw_pos.values()] or [0.0]
+                        ys = [p[1] for p in raw_pos.values()] or [0.0]
+                        min_x, max_x = min(xs), max(xs)
+                        min_y, max_y = min(ys), max(ys)
+                        span_x = (max_x - min_x) if (max_x - min_x) > 1e-9 else 1.0
+                        span_y = (max_y - min_y) if (max_y - min_y) > 1e-9 else 1.0
+                        margin = 64.0
+                        width = 1200.0
+                        height = 760.0
+                        pos = {}
+                        for nid, (rx, ry) in raw_pos.items():
+                            x = margin + ((rx - min_x) / span_x) * (width - 2 * margin)
+                            y = margin + ((ry - min_y) / span_y) * (height - 2 * margin)
+                            pos[nid] = (x, y)
+
                 node_extra = _schema_unifilaire_node_extra(cur, gid_to_slug)
                 # Sortie JSON : nodes avec x, y, type (slug), label ; optionnel : state, tension, courant, puissance
                 nodes_out = []
@@ -2527,7 +2955,7 @@ def get_schema_unifilaire(
                     nodes_out.append(payload)
                 edges_out = [
                     {"source": s, "target": t, "line_type": line_slug, "line_gid": line_gid}
-                    for s, t, line_slug, line_gid in tree_edges
+                    for s, t, line_slug, line_gid in edge_records
                 ]
                 return {"nodes": nodes_out, "edges": edges_out}
     except Exception as e:
@@ -2602,11 +3030,20 @@ def _is_poste_source_trace(by_stage: dict) -> bool:
 # IEC 60617 : symboles graphiques pour schémas électrotechniques (CEI 60617).
 # CEI 61850 : nœuds logiques (Logical Nodes) pour modélisation équipements.
 SYMBOL_STANDARDS = {
-    "sym-transfo": {"iec60617": "06-02-01", "iec61850": "PTTR"},   # Transformateur puissance / poste source
-    "sym-transfo-bt": {"iec60617": "06-02-01", "iec61850": "YPTR"},  # Transfo MT/BT / poste cabine
-    "sym-depart": {"iec60617": "07-13-02", "iec61850": "XCBR"},      # Disjoncteur
-    "sym-poteau": {"iec60617": "—", "iec61850": "XCBR"},             # Poteau / cellule (structure)
-    "sym-point-livraison": {"iec60617": "03-02-01", "iec61850": "MMTR"},  # Point livraison / abonné
+    "sym-poste-source": {"iec60617": "06-02-01", "iec61850": "PTTR"},
+    "sym-poste-cabine": {"iec60617": "06-02-01", "iec61850": "YPTR"},
+    "sym-transfo-bt": {"iec60617": "06-02-01", "iec61850": "YPTR"},
+    "sym-depart-hta": {"iec60617": "07-13-02", "iec61850": "XCBR"},
+    "sym-depart-bt": {"iec60617": "07-13-02", "iec61850": "XCBR"},
+    "sym-poteau-hta": {"iec60617": "—", "iec61850": "XSWI"},
+    "sym-poteau-bt": {"iec60617": "—", "iec61850": "XSWI"},
+    "sym-cellule": {"iec60617": "07-13-02", "iec61850": "XCBR"},
+    "sym-parafoudre": {"iec60617": "07-14-11", "iec61850": "YSPD"},
+    "sym-point-raccordement": {"iec60617": "03-02-01", "iec61850": "MMTR"},
+    "sym-abonne": {"iec60617": "03-02-01", "iec61850": "MMTR"},
+    "sym-compteur": {"iec60617": "03-02-01", "iec61850": "MMTR"},
+    "sym-branchement": {"iec60617": "—", "iec61850": "—"},
+    "sym-ouvrage": {"iec60617": "—", "iec61850": "—"},
 }
 
 
@@ -2618,20 +3055,32 @@ def _slug_to_symbol(slug: str) -> str:
     """
     s = (slug or "").lower()
     if "poste-source" in s or "limite-poste" in s or "arrivee" in s or "transformateur-ps" in s:
-        return "sym-transfo"
-    if "transfo" in s or "poste-cabine" in s:
+        return "sym-poste-source"
+    if "poste-cabine" in s:
+        return "sym-poste-cabine"
+    if "transfo" in s:
         return "sym-transfo-bt"
-    if "ligne" in s and ("hta" in s or "ht" in s):
-        return "sym-depart"
-    if "depart" in s:
-        return "sym-depart"
-    if "ligne" in s and ("bt" in s or "brcht" in s):
-        return "sym-depart"
-    if "poteau" in s or "cellule" in s or "parafoudre" in s:
-        return "sym-poteau"
-    if "abonne" in s or "raccordement" in s or "branchement" in s or "compteur" in s or "point-raccordement" in s:
-        return "sym-point-livraison"
-    return "sym-poteau"
+    if "depart-bt" in s:
+        return "sym-depart-bt"
+    if "depart" in s or ("ligne" in s and ("hta" in s or "ht" in s)):
+        return "sym-depart-hta"
+    if "poteau-hta" in s:
+        return "sym-poteau-hta"
+    if "poteau-bt" in s:
+        return "sym-poteau-bt"
+    if "parafoudre" in s:
+        return "sym-parafoudre"
+    if "cellule" in s or "ocr" in s or "tur" in s or "coffret" in s:
+        return "sym-cellule"
+    if "point-raccordement" in s or "raccordement" in s:
+        return "sym-point-raccordement"
+    if "abonne" in s:
+        return "sym-abonne"
+    if "compteur" in s:
+        return "sym-compteur"
+    if "branchement" in s:
+        return "sym-branchement"
+    return "sym-ouvrage"
 
 
 def _build_unifilaire_svg_poste_source(by_stage: dict) -> str:
@@ -4265,6 +4714,11 @@ def get_by_id(
     row = None
     canon = _canon_id(pk_value)
     search_cols = [pk, *get_alternate_key_columns(meta, pk)]
+    # Fallback utile pour les nœuds de schéma dont l'identifiant vient parfois d'une codification
+    # présente dans les colonnes métier plutôt que dans la PK stricte.
+    for c in ("gid", "codification", "numero_ouvrage", "numero_poste", "numero_depart", "numero", "code", "name", "nom"):
+        if _table_has_column(meta, c) and c not in search_cols:
+            search_cols.append(c)
     with get_connection() as conn:
         with get_cursor(conn) as cur:
             for col in search_cols:

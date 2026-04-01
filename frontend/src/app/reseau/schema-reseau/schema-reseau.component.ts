@@ -37,11 +37,20 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 	 * Couleurs symboles — palette type synoptique SCADA (contraste sur fond clair).
 	 */
 	readonly symbolColors: Record<string, string> = {
-		'sym-transfo': '#ea580c',           // Orange — HT / poste source / transfo puissance
-		'sym-transfo-bt': '#0284c7',        // Bleu — Transfo MT/BT, poste cabine
-		'sym-depart': '#0891b2',            // Cyan — Départ HTA / disjoncteur
-		'sym-poteau': '#16a34a',            // Vert — Poteau, raccord BT
-		'sym-point-livraison': '#c2410c'    // Orange foncé — point de livraison / abonné
+		'sym-poste-source': '#ea580c',
+		'sym-poste-cabine': '#0284c7',
+		'sym-transfo-bt': '#0ea5e9',
+		'sym-depart-hta': '#0891b2',
+		'sym-depart-bt': '#16a34a',
+		'sym-poteau-hta': '#3b82f6',
+		'sym-poteau-bt': '#22c55e',
+		'sym-cellule': '#7c3aed',
+		'sym-parafoudre': '#10b981',
+		'sym-point-raccordement': '#f97316',
+		'sym-abonne': '#c2410c',
+		'sym-compteur': '#b45309',
+		'sym-branchement': '#d97706',
+		'sym-ouvrage': '#64748b'
 	};
 
 	/** Couleurs des liaisons par type de ligne (niveau de tension métier) */
@@ -84,7 +93,7 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 
 	/** Départs / organes de coupure (sym-depart) pour panneau type SCADA */
 	get scadaDeparts(): SchemaUnifilaireNode[] {
-		return this.nodes.filter((n) => n.symbol === 'sym-depart');
+		return this.nodes.filter((n) => n.symbol === 'sym-depart-hta' || n.symbol === 'sym-depart-bt');
 	}
 
 	/** Points avec mesures affichables (T°/U/I/P si présents en base) */
@@ -125,11 +134,19 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 	 * CEI 61850 : nœuds logiques (Logical Nodes) pour modélisation des équipements.
 	 */
 	readonly legendEntries: { symbol: string; label: string; iec60617: string; iec61850?: string }[] = [
-		{ symbol: 'sym-transfo', label: 'Transformateur de puissance / Poste source', iec60617: '06-02-01', iec61850: 'PTTR' },
-		{ symbol: 'sym-transfo-bt', label: 'Transformateur MT/BT / Poste cabine', iec60617: '06-02-01', iec61850: 'YPTR' },
-		{ symbol: 'sym-depart', label: 'Départ / Disjoncteur', iec60617: '07-13-02', iec61850: 'XCBR' },
-		{ symbol: 'sym-poteau', label: 'Poteau / Cellule', iec60617: '—', iec61850: 'XCBR' },
-		{ symbol: 'sym-point-livraison', label: 'Point de livraison / Abonné', iec60617: '03-02-01', iec61850: 'MMTR' },
+		{ symbol: 'sym-poste-source', label: 'Poste source', iec60617: '06-02-01', iec61850: 'PTTR' },
+		{ symbol: 'sym-poste-cabine', label: 'Poste cabine', iec60617: '06-02-01', iec61850: 'YPTR' },
+		{ symbol: 'sym-transfo-bt', label: 'Transformateur MT/BT', iec60617: '06-02-01', iec61850: 'YPTR' },
+		{ symbol: 'sym-depart-hta', label: 'Départ HTA / Disjoncteur', iec60617: '07-13-02', iec61850: 'XCBR' },
+		{ symbol: 'sym-depart-bt', label: 'Départ BT', iec60617: '07-13-02', iec61850: 'XCBR' },
+		{ symbol: 'sym-poteau-hta', label: 'Poteau HTA', iec60617: '—', iec61850: 'XSWI' },
+		{ symbol: 'sym-poteau-bt', label: 'Poteau BT', iec60617: '—', iec61850: 'XSWI' },
+		{ symbol: 'sym-cellule', label: 'Cellule / OCR / TUR', iec60617: '07-13-02', iec61850: 'XCBR' },
+		{ symbol: 'sym-parafoudre', label: 'Parafoudre', iec60617: '07-14-11', iec61850: 'YSPD' },
+		{ symbol: 'sym-point-raccordement', label: 'Point de raccordement', iec60617: '03-02-01', iec61850: 'MMTR' },
+		{ symbol: 'sym-abonne', label: 'Abonné', iec60617: '03-02-01', iec61850: 'MMTR' },
+		{ symbol: 'sym-compteur', label: 'Compteur', iec60617: '03-02-01', iec61850: 'MMTR' },
+		{ symbol: 'sym-branchement', label: 'Branchement', iec60617: '—' },
 	];
 	/** Légende des types de lignes (couleurs par tension) */
 	readonly legendLineTypes: { lineType: string; label: string; color: string }[] = [
