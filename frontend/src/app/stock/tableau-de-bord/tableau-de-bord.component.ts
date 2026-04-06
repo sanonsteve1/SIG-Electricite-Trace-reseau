@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChartModule } from 'primeng/chart';
@@ -29,6 +29,38 @@ const MAP_COLORS = [
 	'#a78bfa', '#f87171', '#52b788', '#e63946', '#457b9d', '#1d3557', '#9d4edd', '#7b2cbf'
 ];
 
+// Alias frontend dashboard (slug KPI) -> slug réel des couches chargées sur la carte.
+const DASHBOARD_SLUG_ALIASES: Record<string, string> = {
+	'structurejunction-electricmediumvoltagepole-poteau-hta': 'poteau-hta',
+	'structurejunction-electriclowvoltagepole-poteau-bt': 'poteau-bt',
+	'electricdevice-lowvoltagecontrolunit-tur': 'tur',
+	'electricdevice-lowvoltagenetworkprotection-disjoncteur': 'tur',
+	'electricjunction-lowvoltageconnection-point-noeud-bt': 'point-connecte',
+	'electricdevice-ground-terre': 'point-raccordement',
+	'electricdevice-mediumvoltageswitch-cellule-ocr': 'ocr',
+	'electricdevice-mediumvoltagetransformer-transfo-ht-bt': 'transfo-ht-bt',
+	'electricdevice-highvoltagetransformer-transfo-ps': 'transformateur-ps',
+	'electricdevice-mediumvoltagearrester-parafoudre': 'parafoudre',
+	'electricline-lowvoltageundergroundconductor-ligne-bt-souterrain': 'ligne-bt',
+	'electricline-lowvoltageoverheadconductor-ligne-bt-aerien': 'ligne-bt',
+	'electricjunction-lowvoltagelineend-findeligne': 'point-non-connecte',
+	'electricline-mediumvoltageundergroundconductor-ligne-hta-souter': 'ligne-hta',
+	'electricline-mediumvoltageoverheadconductor-ligne-hta-aerien': 'ligne-hta',
+	'structureboundary-electricsubstationboundary-limite-poste-sourc': 'poste-source',
+	'structueboundary-electricdistributionstationboundary-limite-po': 'poste-cabine',
+	'structurejunction-electricjunctionbox-coffret': 'coffret',
+	'subscriberform-abonne': 'abonne',
+	'meters-compteur': 'compteur',
+	'distributionpanel-branchement': 'branchement',
+	'electricline-lowvoltageservice-ligne-branchement-bt': 'ligne-brcht'
+};
+
+const NON_SPATIAL_KPI_SLUGS = new Set([
+	'subscriberform-abonne',
+	'meters-compteur',
+	'distributionpanel-branchement'
+]);
+
 @Component({
 	selector: 'app-tableau-de-bord',
 	standalone: true,
@@ -40,46 +72,50 @@ const MAP_COLORS = [
 export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	selectedDate: Date | null = null;
 	selectedUser: { name: string; id: string } | null = null;
+	filtersCollapsed = true;
+	dateFilterOpen = true;
+	userFilterOpen = false;
 	users = [
 		{ name: 'Aucun', id: 'none' }
 	];
 
 	// Données des cartes (réseau électrique) – apiSlug = table GIS (script_bd)
 	cardsRow1: StatCard[] = [
-		{ label: 'Poteau HTA', value: 0, color: '#ec4899', subtitle: 'Electric Medium Voltage Pole', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricmediumvoltagepole-poteau-hta' },
-		{ label: 'Poteau BT', value: 0, color: '#38bdf8', subtitle: 'Electric Low Voltage Pole', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electriclowvoltagepole-poteau-bt' },
-		{ label: 'Nœud HTA', value: 0, color: '#a855f7', subtitle: 'Medium Voltage Connection Point', icon: 'fa fa-crosshairs' },
-		{ label: 'Point de Connection BT', value: 0, color: '#22c55e', subtitle: 'Low Voltage Connection Point', icon: 'fa fa-link', apiSlug: 'electricjunction-lowvoltageconnection-point-noeud-bt' },
-		{ label: 'TUR', value: 0, color: '#a855f7', subtitle: 'Low Voltage Control Unit', icon: 'fa fa-square', apiSlug: 'electricdevice-lowvoltagecontrolunit-tur' },
-		{ label: 'Connecteur', value: 0, color: '#22c55e', subtitle: 'Ground Attachment', icon: 'fa fa-anchor', apiSlug: 'electricdevice-ground-terre' },
-		{ label: 'Disjoncteur DLBT', value: 0, color: '#f97316', subtitle: 'Low Voltage Network Protection', icon: 'fa fa-shield', apiSlug: 'electricdevice-lowvoltagenetworkprotection-disjoncteur' },
-		{ label: 'Parafoudre HTA', value: 0, color: '#a855f7', subtitle: 'Medium Voltage Arrester', icon: 'fa fa-minus', apiSlug: 'electricdevice-mediumvoltagearrester-parafoudre' },
-		{ label: 'Transformateur HTA/BT', value: 0, color: '#f97316', subtitle: 'High Voltage Transformer', icon: 'fa fa-cog', apiSlug: 'electricdevice-highvoltagetransformer-transfo-ps' },
-		{ label: 'Borne Souterraine', value: 0, color: '#22c55e', subtitle: 'Underground Terminal', icon: 'fa fa-square-o' },
-		{ label: 'Interrupteur HTA', value: 0, color: '#38bdf8', subtitle: 'Medium Voltage Switch', icon: 'fa fa-square', apiSlug: 'electricdevice-mediumvoltageswitch-cellule-ocr' },
-		{ label: 'Transformateur BT/BT', value: 0, color: '#d97706', subtitle: 'Medium Voltage Transformer', icon: 'fa fa-cog', apiSlug: 'electricdevice-mediumvoltagetransformer-transfo-ht-bt' }
+		{ label: 'Poteau HTA', value: 0, color: '#ec4899', subtitle: 'Poteau moyenne tension', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricmediumvoltagepole-poteau-hta' },
+		{ label: 'Poteau BT', value: 0, color: '#38bdf8', subtitle: 'Poteau basse tension', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electriclowvoltagepole-poteau-bt' },
+		{ label: 'Nœud HTA', value: 0, color: '#a855f7', subtitle: 'Point de connexion moyenne tension', icon: 'fa fa-crosshairs' },
+		{ label: 'Point de Connection BT', value: 0, color: '#22c55e', subtitle: 'Point de connexion basse tension', icon: 'fa fa-link', apiSlug: 'electricjunction-lowvoltageconnection-point-noeud-bt' },
+		{ label: 'TUR', value: 0, color: '#a855f7', subtitle: 'Unité de commande basse tension', icon: 'fa fa-square', apiSlug: 'electricdevice-lowvoltagecontrolunit-tur' },
+		{ label: 'Connecteur', value: 0, color: '#22c55e', subtitle: 'Accessoire de mise à la terre', icon: 'fa fa-anchor', apiSlug: 'electricdevice-ground-terre' },
+		{ label: 'Disjoncteur DLBT', value: 0, color: '#f97316', subtitle: 'Protection réseau basse tension', icon: 'fa fa-shield', apiSlug: 'electricdevice-lowvoltagenetworkprotection-disjoncteur' },
+		{ label: 'Parafoudre HTA', value: 0, color: '#a855f7', subtitle: 'Parafoudre moyenne tension', icon: 'fa fa-minus', apiSlug: 'electricdevice-mediumvoltagearrester-parafoudre' },
+		{ label: 'Transformateur HTA/BT', value: 0, color: '#f97316', subtitle: 'Transformateur haute/moyenne tension', icon: 'fa fa-cog', apiSlug: 'electricdevice-highvoltagetransformer-transfo-ps' },
+		{ label: 'Borne Souterraine', value: 0, color: '#22c55e', subtitle: 'Borne souterraine', icon: 'fa fa-square-o' },
+		{ label: 'Interrupteur HTA', value: 0, color: '#38bdf8', subtitle: 'Interrupteur moyenne tension', icon: 'fa fa-square', apiSlug: 'electricdevice-mediumvoltageswitch-cellule-ocr' },
+		{ label: 'Transformateur BT/BT', value: 0, color: '#d97706', subtitle: 'Transformateur moyenne/basse tension', icon: 'fa fa-cog', apiSlug: 'electricdevice-mediumvoltagetransformer-transfo-ht-bt' }
 	];
 
 	cardsRow2: StatCard[] = [
-		{ label: 'Ligne de départ HTA', value: 0, color: '#f97316', subtitle: 'Medium Voltage Service', icon: 'fa fa-bolt' },
-		{ label: 'Ligne BT Aérienne', value: 0, color: '#ef4444', subtitle: 'Low Voltage Overhead Conductor', icon: 'fa fa-level-up', apiSlug: 'electricline-lowvoltageoverheadconductor-ligne-bt-aerien' },
-		{ label: 'Ligne BT Souterraine', value: 0, color: '#22c55e', subtitle: 'Low Voltage Underground Conductor', icon: 'fa fa-minus', apiSlug: 'electricline-lowvoltageundergroundconductor-ligne-bt-souterrain' },
-		{ label: 'Ligne HTA Souterraine', value: 0, color: '#a855f7', subtitle: 'Medium Voltage Underground Conductor', icon: 'fa fa-circle-o', apiSlug: 'electricline-mediumvoltageundergroundconductor-ligne-hta-souter' },
-		{ label: 'Ligne HTA Aérienne', value: 0, color: '#ef4444', subtitle: 'Medium Voltage Overhead Conductor', icon: 'fa fa-level-up', apiSlug: 'electricline-mediumvoltageoverheadconductor-ligne-hta-aerien' },
-		{ label: 'Ligne de départ BT', value: 0, color: '#eab308', subtitle: 'Low Voltage Service', icon: 'fa fa-arrows-v', apiSlug: 'electricline-lowvoltageservice-ligne-branchement-bt' },
-		{ label: 'Limite du poste HTA', value: 0, color: '#3b82f6', subtitle: 'Electric Substation Boundary', icon: 'fa fa-th-large', apiSlug: 'structureboundary-electricsubstationboundary-limite-poste-sourc' },
-		{ label: 'Limite du poste BT', value: 0, color: '#a855f7', subtitle: 'Electric Substation Boundary', icon: 'fa fa-th', apiSlug: 'structueboundary-electricdistributionstationboundary-limite-po' },
-		{ label: 'Accessoires HTA', value: 0, color: '#ef4444', subtitle: 'Medium Voltage Attachment', icon: 'fa fa-plus' },
-		{ label: 'Boîte de jonction BT', value: 0, color: '#3b82f6', subtitle: 'Electric Junction Box', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricjunctionbox-coffret' },
-		{ label: 'Fin de la ligne BT', value: 0, color: '#22c55e', subtitle: 'Low Voltage Line End', icon: 'fa fa-minus', apiSlug: 'electricjunction-lowvoltagelineend-findeligne' },
-		{ label: 'Connecteur BT', value: 0, color: '#3b82f6', subtitle: 'Low Voltage Attachment', icon: 'fa fa-anchor' }
+		{ label: 'Ligne de départ HTA', value: 0, color: '#f97316', subtitle: 'Départ moyenne tension', icon: 'fa fa-bolt' },
+		{ label: 'Ligne BT Aérienne', value: 0, color: '#ef4444', subtitle: 'Conducteur aérien basse tension', icon: 'fa fa-level-up', apiSlug: 'electricline-lowvoltageoverheadconductor-ligne-bt-aerien' },
+		{ label: 'Ligne BT Souterraine', value: 0, color: '#22c55e', subtitle: 'Conducteur souterrain basse tension', icon: 'fa fa-minus', apiSlug: 'electricline-lowvoltageundergroundconductor-ligne-bt-souterrain' },
+		{ label: 'Ligne HTA Souterraine', value: 0, color: '#a855f7', subtitle: 'Conducteur souterrain moyenne tension', icon: 'fa fa-circle-o', apiSlug: 'electricline-mediumvoltageundergroundconductor-ligne-hta-souter' },
+		{ label: 'Ligne HTA Aérienne', value: 0, color: '#ef4444', subtitle: 'Conducteur aérien moyenne tension', icon: 'fa fa-level-up', apiSlug: 'electricline-mediumvoltageoverheadconductor-ligne-hta-aerien' },
+		{ label: 'Ligne de départ BT', value: 0, color: '#eab308', subtitle: 'Départ basse tension', icon: 'fa fa-arrows-v', apiSlug: 'electricline-lowvoltageservice-ligne-branchement-bt' },
+		{ label: 'Limite du poste HTA', value: 0, color: '#3b82f6', subtitle: 'Limite du poste source', icon: 'fa fa-th-large', apiSlug: 'structureboundary-electricsubstationboundary-limite-poste-sourc' },
+		{ label: 'Limite du poste BT', value: 0, color: '#a855f7', subtitle: 'Limite du poste de distribution', icon: 'fa fa-th', apiSlug: 'structueboundary-electricdistributionstationboundary-limite-po' },
+		{ label: 'Accessoires HTA', value: 0, color: '#ef4444', subtitle: 'Accessoire moyenne tension', icon: 'fa fa-plus' },
+		{ label: 'Boîte de jonction BT', value: 0, color: '#3b82f6', subtitle: 'Boîte de jonction électrique', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricjunctionbox-coffret' },
+		{ label: 'Fin de la ligne BT', value: 0, color: '#22c55e', subtitle: 'Extrémité de ligne basse tension', icon: 'fa fa-minus', apiSlug: 'electricjunction-lowvoltagelineend-findeligne' },
+		{ label: 'Connecteur BT', value: 0, color: '#3b82f6', subtitle: 'Accessoire basse tension', icon: 'fa fa-anchor' }
 	];
 
 	cardsRow3: StatCard[] = [
-		{ label: 'Abonné', value: 0, color: '#eab308', subtitle: 'Subscriber', icon: 'fa fa-user', apiSlug: 'subscriberform-abonne' },
-		{ label: 'Compteur', value: 0, color: '#38bdf8', subtitle: 'Meter', icon: 'fa fa-tachometer', apiSlug: 'meters-compteur' },
-		{ label: 'Branchement', value: 0, color: '#eab308', subtitle: 'Distribution panel', icon: 'fa fa-home', apiSlug: 'distributionpanel-branchement' }
+		{ label: 'Abonné', value: 0, color: '#eab308', subtitle: 'Client raccordé', icon: 'fa fa-user', apiSlug: 'subscriberform-abonne' },
+		{ label: 'Compteur', value: 0, color: '#38bdf8', subtitle: 'Compteur client', icon: 'fa fa-tachometer', apiSlug: 'meters-compteur' },
+		{ label: 'Branchement', value: 0, color: '#eab308', subtitle: 'Tableau de distribution', icon: 'fa fa-home', apiSlug: 'distributionpanel-branchement' }
 	];
+	extraCards: StatCard[] = [];
 
 	// Graphique Nature Client
 	natureClientData: any;
@@ -102,6 +138,8 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	mapLegendItems: { slug: string; label: string; color: string; isLine: boolean; visible: boolean }[] = [];
 	/** Groupe Leaflet par slug (pour afficher/masquer) */
 	private slugToLayerGroups = new Map<string, unknown>();
+	/** Lignes brutes chargées par slug pour les calculs relationnels sans géométrie propre. */
+	private rowsBySlug = new Map<string, Record<string, unknown>[]>();
 	/** Légende repliée (réduite) */
 	legendCollapsed = false;
 	/** Totaux globaux par slug (API) pour les indicateurs sans couche visible sur la carte */
@@ -110,20 +148,104 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	private initialMapBounds: unknown = null;
 	/** Ignorer le prochain moveend (après un reset) pour ne pas réécraser les totaux globaux */
 	private ignoreNextMoveend = false;
+	private mapViewportListenersBound = false;
+	private kpiRefreshTimer: ReturnType<typeof setInterval> | null = null;
+	private readonly debugKpi = true;
+	private readonly onMapViewportChanged = () => this.zone.run(() => {
+		this.logDebug('event: map viewport changed');
+		this.updateVisibleIndicators();
+	});
 
-	constructor(private gisApi: GisApiService, private cdr: ChangeDetectorRef) {}
+	constructor(private gisApi: GisApiService, private cdr: ChangeDetectorRef, private zone: NgZone) {}
 
 	ngOnInit(): void {
-		const allCards = [...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3];
-		const cardsWithSlug = allCards.filter((c) => c.apiSlug);
-		// Une couleur unique par ouvrage (cartes + carte) : attribution depuis la palette
+		this.initNatureClientChart();
+		this.initializeDashboardCards();
+	}
+
+	private getAllCards(): StatCard[] {
+		return [...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3, ...this.extraCards];
+	}
+
+	private getResolvedSlug(slug: string | undefined): string | undefined {
+		if (!slug) return undefined;
+		return DASHBOARD_SLUG_ALIASES[slug] ?? slug;
+	}
+
+	private applyCardSymbology(): void {
+		this.slugToSymbology = {};
+		const cardsWithSlug = this.getAllCards().filter((c) => c.apiSlug);
 		cardsWithSlug.forEach((c, i) => {
 			const color = MAP_COLORS[i % MAP_COLORS.length];
+			const resolvedSlug = this.getResolvedSlug(c.apiSlug);
 			if (c.apiSlug) this.slugToSymbology[c.apiSlug] = { label: c.label, color };
+			if (resolvedSlug) this.slugToSymbology[resolvedSlug] = { label: c.label, color };
 			c.color = color;
 		});
-		this.initNatureClientChart();
-		this.loadGisCounts();
+	}
+
+	private isDashboardOuvrageTable(slug: string, table: string): boolean {
+		const s = (slug || '').toLowerCase();
+		const t = (table || '').toLowerCase();
+		if (!s) return false;
+		if (s.startsWith('l-')) return false;
+		if (['spatial-ref-sys', 'topology', 'network-rules'].includes(s)) return false;
+		if (s.includes('layer-lock')) return false;
+		if (t.includes('spatial_ref_sys')) return false;
+		return true;
+	}
+
+	private iconForSlug(slug: string): string {
+		const s = (slug || '').toLowerCase();
+		if (s.includes('abonne')) return 'fa fa-user';
+		if (s.includes('compteur')) return 'fa fa-tachometer';
+		if (s.includes('branchement')) return 'fa fa-home';
+		if (s.includes('poteau')) return 'fa fa-bolt';
+		if (s.includes('ligne')) return 'fa fa-share-alt';
+		if (s.includes('poste')) return 'fa fa-th-large';
+		if (s.includes('transfo') || s.includes('transformateur')) return 'fa fa-cog';
+		if (s.includes('coffret')) return 'fa fa-bolt';
+		if (s.includes('point') || s.includes('jonction')) return 'fa fa-link';
+		if (s.includes('cellule') || s.includes('ocr')) return 'fa fa-square';
+		if (s.includes('parafoudre')) return 'fa fa-minus';
+		return 'fa fa-circle';
+	}
+
+	private subtitleForSlug(slug: string): string {
+		const s = (slug || '').toLowerCase();
+		if (s.includes('ligne')) return 'Ouvrage linéaire';
+		if (s.includes('poste')) return 'Ouvrage poste';
+		if (s.includes('abonne') || s.includes('compteur') || s.includes('branchement')) return 'Ouvrage client';
+		return 'Ouvrage réseau';
+	}
+
+	private initializeDashboardCards(): void {
+		const coveredResolvedSlugs = new Set(
+			[...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3]
+				.map((card) => this.getResolvedSlug(card.apiSlug))
+				.filter((slug): slug is string => !!slug)
+		);
+		this.gisApi.getTables().subscribe({
+			next: (tables) => {
+				this.extraCards = tables
+					.filter((t) => this.isDashboardOuvrageTable(t.slug, t.table))
+					.filter((t) => !coveredResolvedSlugs.has(t.slug))
+					.map((t) => ({
+						label: this.formatOuvrageLabel(t.table || t.slug),
+						value: 0,
+						color: '#64748b',
+						subtitle: this.subtitleForSlug(t.slug),
+						icon: this.iconForSlug(t.slug),
+						apiSlug: t.slug
+					}));
+				this.applyCardSymbology();
+				this.loadGisCounts();
+			},
+			error: () => {
+				this.applyCardSymbology();
+				this.loadGisCounts();
+			}
+		});
 	}
 
 	/** Libellé affiché pour un ouvrage quand il n'est pas dans les cartes */
@@ -160,11 +282,11 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	/** Libellé lisible pour une clé (snake_case → mots, champs courants en français) */
 	private formatPopupKey(key: string): string {
 		const labels: Record<string, string> = {
-			id: 'ID', objectid: 'Object ID', globalid: 'Global ID',
+			id: 'ID', objectid: 'Identifiant objet', globalid: 'Identifiant global',
 			created_date: 'Date de création', last_edited_date: 'Dernière modification',
 			created_user: 'Créé par', last_edited_user: 'Modifié par',
 			username: 'Utilisateur', validator: 'Validateur',
-			assetgroup: 'Groupe', assetid: 'Asset ID', assettype: 'Type d’actif',
+			assetgroup: 'Groupe', assetid: 'Identifiant actif', assettype: 'Type d’actif',
 			lifecyclestatus: 'Statut', notes: 'Notes',
 			shape_length: 'Longueur (m)', nominalvoltage: 'Tension nominale',
 			installdate: 'Date d’installation', section: 'Section'
@@ -185,6 +307,18 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		const m = this.map as { off?: (ev: string, fn: () => void) => void } | null;
+		if (m?.off && this.mapViewportListenersBound) {
+			m.off('moveend', this.onMapViewportChanged);
+			m.off('zoomend', this.onMapViewportChanged);
+			m.off('move', this.onMapViewportChanged);
+			m.off('zoom', this.onMapViewportChanged);
+			m.off('dragend', this.onMapViewportChanged);
+		}
+		if (this.kpiRefreshTimer) {
+			clearInterval(this.kpiRefreshTimer);
+			this.kpiRefreshTimer = null;
+		}
 		if (this.map && typeof (this.map as { remove?: () => void }).remove === 'function') {
 			(this.map as { remove: () => void }).remove();
 			this.map = null;
@@ -223,6 +357,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 		this.gisApi.getTables().pipe(
 			switchMap((tables) => {
 				if (tables.length === 0) return of([]);
+				this.logDebug('tables loaded', { count: tables.length, slugs: tables.map((t) => t.slug) });
 				const cardCount = Object.keys(this.slugToSymbology).length;
 				const unknownSlugs = tables.filter((t) => !this.slugToSymbology[t.slug]).map((t) => t.slug).sort();
 				const slugToColor = new Map<string, string>();
@@ -230,7 +365,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 				const getColor = (slug: string) => this.slugToSymbology[slug]?.color ?? slugToColor.get(slug) ?? MAP_COLORS[0];
 				const getLabel = (t: { slug: string; table: string }) => this.slugToSymbology[t.slug]?.label ?? this.formatOuvrageLabel(t.table || t.slug);
 				const requests = tables.map((t) =>
-					this.gisApi.getList(t.slug, 500, 0).pipe(
+					this.gisApi.getList(t.slug, 1000, 0).pipe(
 						map((rows: Record<string, unknown>[]) => ({
 							slug: t.slug,
 							table: t.table,
@@ -251,6 +386,12 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 			})
 		).subscribe({
 			next: (results) => {
+					this.logDebug('geometries fetched', {
+						layers: results.length,
+						nonEmptyLayers: results.filter((r) => (r.rows?.length ?? 0) > 0).length,
+						sample: results.slice(0, 10).map((r) => ({ slug: r.slug, rows: r.rows?.length ?? 0 }))
+					});
+					this.rowsBySlug = new Map(results.map((r) => [r.slug, r.rows ?? []]));
 					Promise.all([
 						import('leaflet'),
 						import('wellknown').then((w) => w.default ?? w)
@@ -351,6 +492,11 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 								});
 							}
 						}
+						this.logDebug('leaflet groups created', {
+							groupCount: this.slugToLayerGroups.size,
+							legendCount: legendItems.length,
+							slugs: Array.from(this.slugToLayerGroups.keys())
+						});
 						const m = this.map as { fitBounds?: (b: unknown, opts: object) => void; invalidateSize?: () => void };
 						if (m?.invalidateSize) m.invalidateSize();
 						if (bounds && m?.fitBounds) {
@@ -360,14 +506,39 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 						this.mapLegendItems = legendItems;
 						this.cdr.markForCheck();
 						this.mapLoading = false;
-						// Par défaut on garde les totaux globaux ; mise à jour (visible) uniquement au zoom/pan
-						(this.map as { on?: (ev: string, fn: () => void) => void })?.on?.('moveend', () => this.updateVisibleIndicators());
+						// Mise à jour KPI selon l'emprise visible lors du zoom/déplacement.
+						this.bindMapViewportListeners();
+						this.updateVisibleIndicators();
 					});
 			},
 			error: () => {
 				this.mapLoading = false;
 			}
 		});
+	}
+
+	private bindMapViewportListeners(): void {
+		const m = this.map as { on?: (ev: string, fn: () => void) => void; off?: (ev: string, fn: () => void) => void } | null;
+		if (!m?.on) return;
+		if (m.off && this.mapViewportListenersBound) {
+			m.off('moveend', this.onMapViewportChanged);
+			m.off('zoomend', this.onMapViewportChanged);
+		}
+		m.on('moveend', this.onMapViewportChanged);
+		m.on('zoomend', this.onMapViewportChanged);
+		m.on('move', this.onMapViewportChanged);
+		m.on('zoom', this.onMapViewportChanged);
+		m.on('dragend', this.onMapViewportChanged);
+		this.mapViewportListenersBound = true;
+		this.logDebug('listeners bound', { events: ['moveend', 'zoomend', 'move', 'zoom', 'dragend'] });
+		this.startKpiRefreshLoop();
+	}
+
+	private startKpiRefreshLoop(): void {
+		if (this.kpiRefreshTimer) clearInterval(this.kpiRefreshTimer);
+		this.kpiRefreshTimer = setInterval(() => {
+			this.zone.run(() => this.updateVisibleIndicators());
+		}, 1200);
 	}
 
 	/** Affiche ou masque la couche d'un type d'ouvrage (légende) */
@@ -382,7 +553,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 		} else {
 			mainGroup.removeLayer(slugGroup);
 		}
-		this.cdr.markForCheck();
+		this.cdr.detectChanges();
 	}
 
 	/** Ramène la carte à l'état par défaut : étendue initiale + totaux globaux */
@@ -399,6 +570,26 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 		this.cdr.markForCheck();
 	}
 
+	toggleFiltersPanel(): void {
+		this.filtersCollapsed = !this.filtersCollapsed;
+		if (this.filtersCollapsed) {
+			this.dateFilterOpen = false;
+			this.userFilterOpen = false;
+		} else {
+			this.dateFilterOpen = true;
+		}
+	}
+
+	toggleDateFilter(): void {
+		this.dateFilterOpen = !this.dateFilterOpen;
+		if (this.dateFilterOpen) this.userFilterOpen = false;
+	}
+
+	toggleUserFilter(): void {
+		this.userFilterOpen = !this.userFilterOpen;
+		if (this.userFilterOpen) this.dateFilterOpen = false;
+	}
+
 	/** Récupère toutes les couches « feuille » (pas les groupes) du groupe donné */
 	private getLeafLayers(layers: unknown[]): unknown[] {
 		const out: unknown[] = [];
@@ -413,53 +604,149 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 		return out;
 	}
 
+	private getVisibleCountForCardSlug(cardSlug: string, counts: Map<string, number>): number {
+		const realSlug = DASHBOARD_SLUG_ALIASES[cardSlug];
+		if (realSlug) {
+			return counts.get(realSlug) ?? counts.get(cardSlug) ?? 0;
+		}
+		return counts.get(cardSlug) ?? 0;
+	}
+
+	private toCanonId(value: unknown): string {
+		return String(value ?? '').trim().toLowerCase();
+	}
+
 	/** Compte les ouvrages visibles dans la zone affichée et met à jour les indicateurs (cartes) */
 	private updateVisibleIndicators(): void {
 		if (this.ignoreNextMoveend) {
 			this.ignoreNextMoveend = false;
+			this.logDebug('update skipped (ignoreNextMoveend)');
 			return;
 		}
 		const map = this.map as { getBounds?: () => { contains: (l: unknown) => boolean; intersects: (b: unknown) => boolean } } | null;
-		const group = this.layerGroup as { getLayers?: () => unknown[] } | null;
-		if (!map?.getBounds || !group?.getLayers) return;
+		if (!map?.getBounds) {
+			this.logDebug('update skipped (map bounds unavailable)');
+			return;
+		}
 		const bounds = map.getBounds();
 		const counts = new Map<string, number>();
-		const allLayers = this.getLeafLayers(group.getLayers());
-		for (const layer of allLayers) {
-			const L = layer as {
-				feature?: { properties?: { _layerSlug?: string } };
-				getLatLng?: () => unknown;
-				getBounds?: () => unknown;
-			};
-			const slug = L.feature?.properties?._layerSlug;
-			if (!slug) continue;
-			let inView = false;
-			if (typeof L.getLatLng === 'function') {
-				const latlng = L.getLatLng();
-				inView = latlng != null && typeof bounds.contains === 'function' && bounds.contains(latlng);
-			} else if (typeof L.getBounds === 'function') {
-				const layerBounds = L.getBounds();
-				inView = layerBounds != null && typeof bounds.intersects === 'function' && bounds.intersects(layerBounds);
+		const visibleGidsBySlug = new Map<string, Set<string>>();
+
+		const mainGroup = this.layerGroup as { hasLayer?: (l: unknown) => boolean } | null;
+
+		// Comptage robuste: on parcourt les couches par slug (même si feature.properties est absent).
+		for (const [slug, slugGroup] of this.slugToLayerGroups.entries()) {
+			// Ne compter que les couches actuellement visibles sur la carte.
+			if (mainGroup?.hasLayer && !mainGroup.hasLayer(slugGroup)) {
+				counts.set(slug, 0);
+				continue;
 			}
-			if (inView) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+			const groupLayers = this.getLeafLayers(
+				((slugGroup as { getLayers?: () => unknown[] }).getLayers?.() ?? []) as unknown[]
+			);
+			let visibleCount = 0;
+			const visibleGids = new Set<string>();
+			for (const layer of groupLayers) {
+				const L = layer as {
+					feature?: { properties?: Record<string, unknown> };
+					getLatLng?: () => unknown;
+					getBounds?: () => unknown;
+				};
+				const gid = this.toCanonId(L.feature?.properties?.['gid']);
+				if (typeof L.getLatLng === 'function') {
+					const latlng = L.getLatLng();
+					if (latlng != null && typeof bounds.contains === 'function' && bounds.contains(latlng)) {
+						visibleCount += 1;
+						if (gid) visibleGids.add(gid);
+					}
+				} else if (typeof L.getBounds === 'function') {
+					const layerBounds = L.getBounds();
+					const layerCenter = (layerBounds as { getCenter?: () => unknown })?.getCenter?.();
+					if (layerCenter != null && typeof bounds.contains === 'function' && bounds.contains(layerCenter)) {
+						visibleCount += 1;
+						if (gid) visibleGids.add(gid);
+					}
+				}
+			}
+			counts.set(slug, visibleCount);
+			visibleGidsBySlug.set(slug, visibleGids);
 		}
+
+		// KPI sans géométrie propre: remonter via les relations métier visibles à l'écran.
+		const visiblePointRaccordementIds = new Set<string>([
+			...(visibleGidsBySlug.get('point-raccordement') ?? new Set<string>()),
+			...(visibleGidsBySlug.get('point-connecte') ?? new Set<string>())
+		]);
+		const branchementRows = this.rowsBySlug.get('branchement') ?? [];
+		const visibleBranchementIds = new Set<string>();
+		for (const row of branchementRows) {
+			const gid = this.toCanonId(row['gid']);
+			const pointId = this.toCanonId(row['id_point_raccordement']);
+			if (!gid) continue;
+			if (visiblePointRaccordementIds.has(pointId)) {
+				visibleBranchementIds.add(gid);
+			}
+		}
+		counts.set('branchement', visibleBranchementIds.size);
+
+		const compteurRows = this.rowsBySlug.get('compteur') ?? [];
+		const visibleCompteurIds = new Set<string>();
+		for (const row of compteurRows) {
+			const gid = this.toCanonId(row['gid']);
+			const branchementId = this.toCanonId(row['id_branchement']);
+			if (!gid) continue;
+			if (visibleBranchementIds.has(branchementId)) {
+				visibleCompteurIds.add(gid);
+			}
+		}
+		counts.set('compteur', visibleCompteurIds.size);
+
+		const abonneRows = this.rowsBySlug.get('abonne') ?? [];
+		const visibleAbonneIds = new Set<string>();
+		for (const row of abonneRows) {
+			const gid = this.toCanonId(row['gid']);
+			const compteurId = this.toCanonId(row['id_compteur']);
+			if (!gid) continue;
+			if (visibleCompteurIds.has(compteurId)) {
+				visibleAbonneIds.add(gid);
+			}
+		}
+		counts.set('abonne', visibleAbonneIds.size);
+
 		const allCards = [...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3];
 		allCards.forEach((card) => {
 			if (card.apiSlug == null) return;
-			// Mettre à jour avec le nombre visible si on a des couches de ce type sur la carte
-			if (counts.has(card.apiSlug)) {
-				card.value = counts.get(card.apiSlug) ?? 0;
-			} else {
-				// Indicateur sans couche visible (ex. Abonnés, Compteurs) : garder le total global
-				card.value = this.globalCountsBySlug.get(card.apiSlug) ?? card.value;
+			if (NON_SPATIAL_KPI_SLUGS.has(card.apiSlug)) {
+				card.value = this.globalCountsBySlug.get(card.apiSlug) ?? 0;
+				return;
 			}
+			// KPI = uniquement les ouvrages visibles dans l'emprise courante,
+			// avec résolution alias KPI -> slug réel de la couche carto.
+			card.value = this.getVisibleCountForCardSlug(card.apiSlug, counts);
+		});
+		this.logDebug('kpi visible counts updated', {
+			trackedSlugs: Array.from(this.slugToLayerGroups.keys()).length,
+			counts: Array.from(counts.entries()).slice(0, 25),
+			kpis: allCards
+				.filter((c) => !!c.apiSlug)
+				.slice(0, 25)
+				.map((c) => ({ label: c.label, slug: c.apiSlug, value: c.value }))
 		});
 		this.cdr.markForCheck();
 	}
 
+	private logDebug(message: string, payload?: unknown): void {
+		if (!this.debugKpi) return;
+		if (payload !== undefined) {
+			console.log(`[TableauDeBord] ${message}`, payload);
+			return;
+		}
+		console.log(`[TableauDeBord] ${message}`);
+	}
+
 	/** Charge les comptes depuis l'API GIS (script_bd) et met à jour les cartes */
 	loadGisCounts(): void {
-		const allCards = [...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3];
+		const allCards = this.getAllCards();
 		const slugs = allCards.map((c) => c.apiSlug).filter((s): s is string => !!s);
 		if (slugs.length === 0) return;
 
@@ -473,6 +760,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 						card.value = counts.get(card.apiSlug) ?? 0;
 					}
 				});
+				this.updateNatureClientChartFromCounts(counts);
 				this.loading = false;
 			},
 			error: (err) => {
@@ -483,22 +771,21 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	initNatureClientChart(): void {
-		const prepaye = 305;
-		const postpaye = 192;
+		const totalAbonnes = 0;
 		this.natureClientData = {
-			labels: ['Prépayé (Prepaid)', 'Postpayé (Postpaid)'],
+			labels: ['Abonnés'],
 			datasets: [
 				{
 					label: 'Nombre de clients',
-					backgroundColor: ['#22c55e', '#38bdf8'],
-					borderColor: ['#16a34a', '#0ea5e9'],
+					backgroundColor: ['#22c55e'],
+					borderColor: ['#16a34a'],
 					borderWidth: 1,
 					borderRadius: 6,
-					data: [prepaye, postpaye]
+					data: [totalAbonnes]
 				}
 			]
 		};
-		this.natureClientTotal = prepaye + postpaye;
+		this.natureClientTotal = totalAbonnes;
 
 		this.natureClientOptions = {
 			indexAxis: 'y',
@@ -525,9 +812,9 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 						font: { size: 11, weight: '500' }
 					},
 					min: 0,
-					max: Math.ceil(Math.max(prepaye, postpaye) * 1.15),
+					max: 10,
 					ticks: {
-						stepSize: 50,
+						stepSize: 1,
 						color: '#64748b',
 						font: { size: 10 }
 					},
@@ -539,6 +826,39 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 						font: { size: 11 }
 					},
 					grid: { display: false }
+				}
+			}
+		};
+	}
+
+	private updateNatureClientChartFromCounts(counts: Map<string, number>): void {
+		const totalAbonnes = counts.get('subscriberform-abonne') ?? 0;
+		this.natureClientData = {
+			labels: ['Abonnés'],
+			datasets: [
+				{
+					label: 'Nombre de clients',
+					backgroundColor: ['#22c55e'],
+					borderColor: ['#16a34a'],
+					borderWidth: 1,
+					borderRadius: 6,
+					data: [totalAbonnes]
+				}
+			]
+		};
+		this.natureClientTotal = totalAbonnes;
+		const maxAxis = Math.max(10, Math.ceil(totalAbonnes * 1.15));
+		this.natureClientOptions = {
+			...this.natureClientOptions,
+			scales: {
+				...this.natureClientOptions?.scales,
+				x: {
+					...this.natureClientOptions?.scales?.x,
+					max: maxAxis,
+					ticks: {
+						...this.natureClientOptions?.scales?.x?.ticks,
+						stepSize: Math.max(1, Math.ceil(maxAxis / 10))
+					}
 				}
 			}
 		};

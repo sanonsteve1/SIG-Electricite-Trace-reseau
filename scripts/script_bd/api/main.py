@@ -537,13 +537,22 @@ def root():
 
 
 @app.get("/gis/{table_slug}/count")
-def count_rows(table_slug: str = Path(..., description="Slug de la table")):
-    """Retourne le nombre total d'enregistrements dans la table."""
+def count_rows(
+    table_slug: str = Path(..., description="Slug de la table"),
+    collecte_par: str | None = Query(None, description="Filtre optionnel par collecteur (ex: jeu_donnees_kaya)"),
+):
+    """Retourne le nombre d'enregistrements dans la table (filtrable par collecte_par)."""
     table_name, meta = get_table_meta(table_slug)
     quoted_table = quote_ident(table_name)
     with get_connection() as conn:
         with get_cursor(conn) as cur:
-            cur.execute(f"SELECT COUNT(*) AS count FROM {quoted_table}")
+            if collecte_par and _table_has_column(meta, "collecte_par"):
+                cur.execute(
+                    f"SELECT COUNT(*) AS count FROM {quoted_table} WHERE {_canon_sql_expr('collecte_par')} = %s",
+                    (_canon_id(collecte_par),),
+                )
+            else:
+                cur.execute(f"SELECT COUNT(*) AS count FROM {quoted_table}")
             row = cur.fetchone()
     return {"count": row["count"] if row else 0}
 
@@ -3844,6 +3853,19 @@ def topology_validate(
     by_slug: dict[str, int] = {}
     by_rule_type = {"connectivite": 0, "topologie": 0}
 
+    def _auto_fix_meta(issue_slug: str, issue_rule_type: str, issue_reason: str) -> tuple[bool, str | None]:
+        if issue_rule_type == "connectivite":
+            if not _is_line_table(issue_slug):
+                return False, "La correction automatique de connectivité s'applique uniquement aux couches de lignes."
+            if not _edge_node_specs_for_line_slug(issue_slug):
+                return False, "Aucune règle de correction automatique n'est définie pour cette couche."
+            return True, None
+        if issue_rule_type == "topologie":
+            if issue_reason == "Ligne avec moins de 2 sommets.":
+                return False, "Cette anomalie nécessite une édition manuelle de la géométrie."
+            return True, None
+        return False, "Type d'anomalie non pris en charge automatiquement."
+
     edge_node_cols = {
         "id_depart_hta",
         "id_poteau_hta",
@@ -3889,6 +3911,9 @@ def topology_validate(
                                 (limit_per_table,),
                             )
                             for row in cur.fetchall() or []:
+                                auto_correctable, auto_correction_reason = _auto_fix_meta(
+                                    slug, "connectivite", "Référence de connectivité manquante sur la ligne."
+                                )
                                 issue = {
                                     "rule_type": "connectivite",
                                     "slug": slug,
@@ -3896,6 +3921,8 @@ def topology_validate(
                                     "reason": "Référence de connectivité manquante sur la ligne.",
                                     "severity": "warning",
                                     "suggestion": "Renseigner les identifiants attendus sur la ligne (départ, arrivée, postes, poteaux, branchements, etc.) selon le modèle de données.",
+                                    "auto_correctable": auto_correctable,
+                                    "auto_correction_reason": auto_correction_reason,
                                 }
                                 issues.append(issue)
                                 by_slug[slug] = by_slug.get(slug, 0) + 1
@@ -3917,6 +3944,9 @@ def topology_validate(
                             (limit_per_table,),
                         )
                         for row in cur.fetchall() or []:
+                            auto_correctable, auto_correction_reason = _auto_fix_meta(
+                                slug, "topologie", "Géométrie invalide ou vide."
+                            )
                             issue = {
                                 "rule_type": "topologie",
                                 "slug": slug,
@@ -3924,6 +3954,8 @@ def topology_validate(
                                 "reason": "Géométrie invalide ou vide.",
                                 "severity": "error",
                                 "suggestion": "Corriger la géométrie dans l'outil SIG (validité, topologie) ou utiliser la correction topologique par tolérance si les extrémités doivent être raccrochées aux nœuds.",
+                                "auto_correctable": auto_correctable,
+                                "auto_correction_reason": auto_correction_reason,
                             }
                             issues.append(issue)
                             by_slug[slug] = by_slug.get(slug, 0) + 1
@@ -3944,6 +3976,9 @@ def topology_validate(
                                 (limit_per_table,),
                             )
                             for row in cur.fetchall() or []:
+                                auto_correctable, auto_correction_reason = _auto_fix_meta(
+                                    slug, "topologie", "Ligne avec moins de 2 sommets."
+                                )
                                 issue = {
                                     "rule_type": "topologie",
                                     "slug": slug,
@@ -3951,6 +3986,8 @@ def topology_validate(
                                     "reason": "Ligne avec moins de 2 sommets.",
                                     "severity": "error",
                                     "suggestion": "Compléter la ligne avec au moins deux sommets ou fusionner/supprimer le segment incohérent.",
+                                    "auto_correctable": auto_correctable,
+                                    "auto_correction_reason": auto_correction_reason,
                                 }
                                 issues.append(issue)
                                 by_slug[slug] = by_slug.get(slug, 0) + 1
@@ -4488,6 +4525,7 @@ def list_rows(
     table_slug: str = Path(..., description="Slug de la table (ex: distributionpanel-branchement)"),
     limit: int = 100,
     offset: int = 0,
+    collecte_par: str | None = Query(None, description="Filtre optionnel par collecteur"),
 ):
     """Liste les enregistrements de la table (pagination). Toutes les colonnes, geom en WKT."""
     table_name, meta = get_table_meta(table_slug)
@@ -4501,10 +4539,18 @@ def list_rows(
         with get_cursor(conn) as cur:
             # Tri stable: éviter qu'un ouvrage "disparaisse" de la première page après update
             # quand une colonne non-PK est modifiée (ex: image/base64).
-            cur.execute(
-                f'SELECT {select_list} FROM {quoted_table} ORDER BY {quoted_pk} NULLS LAST LIMIT %s OFFSET %s',
-                (limit, offset),
-            )
+            if collecte_par and _table_has_column(meta, "collecte_par"):
+                cur.execute(
+                    f'SELECT {select_list} FROM {quoted_table} '
+                    f'WHERE {_canon_sql_expr("collecte_par")} = %s '
+                    f'ORDER BY {quoted_pk} NULLS LAST LIMIT %s OFFSET %s',
+                    (_canon_id(collecte_par), limit, offset),
+                )
+            else:
+                cur.execute(
+                    f'SELECT {select_list} FROM {quoted_table} ORDER BY {quoted_pk} NULLS LAST LIMIT %s OFFSET %s',
+                    (limit, offset),
+                )
             rows = cur.fetchall()
             _attach_code_equipement(cur, table_name, rows)
     return [row_to_json(r) for r in rows]

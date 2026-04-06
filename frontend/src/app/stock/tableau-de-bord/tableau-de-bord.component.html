@@ -1,33 +1,4 @@
 <div class="dashboard-sonabel grid grid-cols-12 gap-4">
-	<!-- En-tête du tableau de bord -->
-	<header class="col-span-12 dashboard-header flex flex-wrap items-center justify-between gap-4">
-		<div class="flex items-center gap-3">
-			<div class="flex items-center gap-2">
-				<span class="logo-sonabel">SONABEL</span>
-				<i class="fa fa-bolt text-yellow-400"></i>
-			</div>
-			<span class="dashboard-title">Sonabel - Données du réseau électrique</span>
-		</div>
-		<div class="flex items-center gap-6">
-			<div class="flex flex-col">
-				<div class="flex items-center gap-2">
-					<i class="fa fa-calendar text-slate-400"></i>
-					<span class="text-sm">Sélectionnez une date</span>
-				</div>
-				<p-datepicker [(ngModel)]="selectedDate" [showIcon]="true" dateFormat="dd/mm/yy" placeholder="jj/mm/aaaa" />
-				<span class="selector-label">{{ selectedDate ? (selectedDate | date:'dd/MM/yyyy') : 'Aucune date sélectionnée' }}</span>
-			</div>
-			<div class="flex flex-col">
-				<div class="flex items-center gap-2">
-					<i class="fa fa-user text-slate-400"></i>
-					<span class="text-sm">Choisissez un utilisateur</span>
-				</div>
-				<p-select [(ngModel)]="selectedUser" [options]="users" optionLabel="name" placeholder="Nom d'utilisateur..." styleClass="w-full min-w-[200px]" />
-				<span class="selector-label">{{ selectedUser?.name ?? 'None' }}</span>
-			</div>
-		</div>
-	</header>
-
 	@if (errorApi) {
 		<div class="col-span-12 p-3 rounded bg-red-500/20 text-red-200 text-sm">
 			{{ errorApi }} — Vérifiez que l'API GIS (script_bd) tourne sur {{ gisApiUrl }}.
@@ -45,7 +16,7 @@
 					<i [class]="card.icon" [style.color]="card.color"></i>
 					<span>{{ card.label }}</span>
 				</div>
-				<div class="stat-value" [style.color]="card.color">{{ card.value }}</div>
+				<div class="stat-value">{{ card.value }}</div>
 				<div class="stat-subtitle">{{ card.subtitle }}</div>
 			</div>
 		</div>
@@ -59,7 +30,20 @@
 					<i [class]="card.icon" [style.color]="card.color"></i>
 					<span>{{ card.label }}</span>
 				</div>
-				<div class="stat-value" [style.color]="card.color">{{ card.value }}</div>
+				<div class="stat-value">{{ card.value }}</div>
+				<div class="stat-subtitle">{{ card.subtitle }}</div>
+			</div>
+		</div>
+	}
+
+	@for (card of extraCards; track card.apiSlug ?? card.label) {
+		<div class="col-span-6 sm:col-span-4 lg:col-span-2">
+			<div class="stat-card h-full flex flex-col">
+				<div class="stat-label flex items-center gap-2">
+					<i [class]="card.icon" [style.color]="card.color"></i>
+					<span>{{ card.label }}</span>
+				</div>
+				<div class="stat-value">{{ card.value }}</div>
 				<div class="stat-subtitle">{{ card.subtitle }}</div>
 			</div>
 		</div>
@@ -75,18 +59,18 @@
 						<i [class]="card.icon" [style.color]="card.color"></i>
 						<span>{{ card.label }}</span>
 					</div>
-					<div class="stat-value" [style.color]="card.color">{{ card.value }}</div>
+				<div class="stat-value">{{ card.value }}</div>
 					<div class="stat-subtitle">{{ card.subtitle }}</div>
 				</div>
 			}
-			<div class="chart-card chart-card--nature flex-1 min-h-[300px]">
+			<div class="chart-card chart-card--nature flex-1">
 				<div class="chart-card-header">
 					<div class="chart-card-header-icon">
 						<i class="fa fa-users"></i>
 					</div>
 					<div class="chart-card-header-text">
 						<h3 class="chart-card-title">Nature client</h3>
-						<p class="chart-card-subtitle">Customer nature — Répartition par type</p>
+						<p class="chart-card-subtitle">Répartition des clients</p>
 					</div>
 				</div>
 				@if (natureClientTotal !== null) {
@@ -103,6 +87,40 @@
 		<!-- Carte Leaflet : données géométriques de l'API GIS -->
 		<div class="map-container map-fill-space flex-1 min-w-0">
 			<div #mapLeaflet class="map-leaflet"></div>
+			<div class="map-filters-floating" aria-label="Filtres de la carte">
+				<button type="button" class="map-filter-toggle" (click)="toggleFiltersPanel()" [attr.aria-expanded]="!filtersCollapsed">
+					<i class="fa fa-sliders"></i>
+					<span>Filtres</span>
+					<i class="fa" [class.fa-chevron-down]="filtersCollapsed" [class.fa-chevron-up]="!filtersCollapsed"></i>
+				</button>
+				@if (!filtersCollapsed) {
+					<div class="map-filters-panel">
+						<button type="button" class="map-filter-section-btn" (click)="toggleDateFilter()" [attr.aria-expanded]="dateFilterOpen">
+							<i class="fa fa-calendar"></i>
+							<span>Date</span>
+							<i class="fa" [class.fa-chevron-down]="!dateFilterOpen" [class.fa-chevron-up]="dateFilterOpen"></i>
+						</button>
+						@if (dateFilterOpen) {
+							<div class="map-filter-card">
+								<p-datepicker [(ngModel)]="selectedDate" [showIcon]="true" dateFormat="dd/mm/yy" placeholder="jj/mm/aaaa" />
+								<span class="selector-label">{{ selectedDate ? (selectedDate | date:'dd/MM/yyyy') : 'Aucune date sélectionnée' }}</span>
+							</div>
+						}
+
+						<button type="button" class="map-filter-section-btn" (click)="toggleUserFilter()" [attr.aria-expanded]="userFilterOpen">
+							<i class="fa fa-user"></i>
+							<span>Utilisateur</span>
+							<i class="fa" [class.fa-chevron-down]="!userFilterOpen" [class.fa-chevron-up]="userFilterOpen"></i>
+						</button>
+						@if (userFilterOpen) {
+							<div class="map-filter-card">
+								<p-select [(ngModel)]="selectedUser" [options]="users" optionLabel="name" placeholder="Nom d'utilisateur..." styleClass="w-full min-w-[180px]" />
+								<span class="selector-label">{{ selectedUser?.name ?? 'Aucun' }}</span>
+							</div>
+						}
+					</div>
+				}
+			</div>
 			<button type="button" class="map-reset-btn" (click)="resetMapToDefault()" title="Ramener la carte à l'état par défaut">
 				<i class="fa fa-crosshairs"></i>
 				<span>Vue par défaut</span>

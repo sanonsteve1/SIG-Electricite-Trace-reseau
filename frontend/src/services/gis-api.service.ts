@@ -18,6 +18,10 @@ export interface GisCountResponse {
 	count: number;
 }
 
+export interface GisFilterOptions {
+	collectePar?: string;
+}
+
 export interface SuggestPlacementItem {
 	type: 'line_connection' | 'near_point';
 	lat: number;
@@ -82,8 +86,10 @@ export class GisApiService {
 	}
 
 	/** Nombre d'enregistrements pour une table (slug) */
-	getCount(tableSlug: string): Observable<number> {
-		const url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}/count`;
+	getCount(tableSlug: string, filters?: GisFilterOptions): Observable<number> {
+		let url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}/count`;
+		const collectePar = filters?.collectePar?.trim();
+		if (collectePar) url += `?collecte_par=${encodeURIComponent(collectePar)}`;
 		return this.http.get<GisCountResponse>(url).pipe(
 			map((res) => res?.count ?? 0)
 		);
@@ -105,13 +111,13 @@ export class GisApiService {
 	}
 
 	/** Comptes pour plusieurs tables en parallèle. Retourne un Map slug -> count. */
-	getCounts(tableSlugs: string[]): Observable<Map<string, number>> {
+	getCounts(tableSlugs: string[], filters?: GisFilterOptions): Observable<Map<string, number>> {
 		if (tableSlugs.length === 0) {
 			return of(new Map());
 		}
 		return forkJoin(
 			tableSlugs.map((slug) =>
-				this.getCount(slug).pipe(map((count) => ({ slug, count })))
+				this.getCount(slug, filters).pipe(map((count) => ({ slug, count })))
 			)
 		).pipe(
 			map((pairs) => {
@@ -126,9 +132,12 @@ export class GisApiService {
 	getList(
 		tableSlug: string,
 		limit = 100,
-		offset = 0
+		offset = 0,
+		filters?: GisFilterOptions
 	): Observable<Record<string, unknown>[]> {
-		const url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}?limit=${limit}&offset=${offset}`;
+		let url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}?limit=${limit}&offset=${offset}`;
+		const collectePar = filters?.collectePar?.trim();
+		if (collectePar) url += `&collecte_par=${encodeURIComponent(collectePar)}`;
 		return this.http.get<Record<string, unknown>[]>(url);
 	}
 
@@ -330,6 +339,8 @@ export interface TopologyValidationIssue {
 	severity: 'warning' | 'error';
 	/** Piste de correction métier (renseignée par l’API). */
 	suggestion?: string;
+	auto_correctable?: boolean;
+	auto_correction_reason?: string | null;
 }
 
 export interface TopologyValidationResponse {

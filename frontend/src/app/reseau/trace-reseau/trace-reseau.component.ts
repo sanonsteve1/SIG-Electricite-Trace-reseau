@@ -12,7 +12,7 @@ import {
 	TopologyValidationIssue,
 	TopologyValidationResponse
 } from '../../../services/gis-api.service';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, from } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 
 export interface CoupureCauseOption {
@@ -728,7 +728,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.topologyCorrecting = false;
 			this.topologyResult = res;
 			this.cdr.markForCheck();
-			if (res.corrected > 0) this.loadGeometries();
+			if (res.corrected > 0) {
+				void this.loadGeometries();
+			}
 		});
 	}
 
@@ -777,7 +779,13 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	canAutoCorrectIssue(issue: TopologyValidationIssue): boolean {
+		if (typeof issue.auto_correctable === 'boolean') return issue.auto_correctable;
 		return issue.rule_type === 'topologie' || issue.rule_type === 'connectivite';
+	}
+
+	getAutoCorrectionLabel(issue: TopologyValidationIssue): string {
+		if (this.canAutoCorrectIssue(issue)) return 'Correction disponible';
+		return issue.auto_correction_reason || 'Cas non corrigeable automatiquement';
 	}
 
 	isAutoCorrectingIssue(issue: TopologyValidationIssue): boolean {
@@ -897,7 +905,9 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 							message: res.message || 'Correction effectuée.'
 						};
 						if (snap > 0 || mv > 0 || connOk > 0) {
-							this.loadGeometries();
+							return from(this.loadGeometries()).pipe(
+								switchMap(() => this.gisApi.validateTopology(this.topologyValidationType, 600))
+							);
 						}
 					}
 					return this.gisApi.validateTopology(this.topologyValidationType, 600);
@@ -2473,13 +2483,16 @@ stop
 				}
 			};
 			this.mapContainer.nativeElement.addEventListener('click', this.popupButtonsClickListener);
-			setTimeout(() => this.loadGeometries(), 150);
+			setTimeout(() => {
+				void this.loadGeometries();
+			}, 150);
 		});
 	}
 
-	private loadGeometries(): void {
-		if (!this.map || !this.layerGroup || !this.gisApi) return;
+	private loadGeometries(): Promise<void> {
+		if (!this.map || !this.layerGroup || !this.gisApi) return Promise.resolve();
 		this.mapLoading = true;
+		return new Promise((resolve) => {
 		this.gisApi.getTables().pipe(
 			switchMap((tables) => {
 				if (tables.length === 0) return of([]);
@@ -2657,12 +2670,19 @@ stop
 					this.cdr.markForCheck();
 					this.updateLigneSecoursOptionsBySelection();
 					setTimeout(() => self.highlightSelectionOnMap(), 0);
+					resolve();
+				}).catch(() => {
+					this.mapLoading = false;
+					this.cdr.markForCheck();
+					resolve();
 				});
 			},
 			error: () => {
 				this.mapLoading = false;
 				this.cdr.markForCheck();
+				resolve();
 			}
+		});
 		});
 	}
 }
