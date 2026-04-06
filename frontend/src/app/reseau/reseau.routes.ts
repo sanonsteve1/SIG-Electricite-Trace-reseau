@@ -3,6 +3,7 @@ import { TraceReseau } from '@/reseau/trace-reseau/trace-reseau.component';
 import { SchemaReseau } from '@/reseau/schema-reseau/schema-reseau.component';
 import { Modelisation } from '@/reseau/modelisation/modelisation.component';
 import { ReglesComponent } from '@/reseau/regles/regles.component';
+import { ExploitationUnComponent } from '@/reseau/exploitation-un/exploitation-un.component';
 
 export default [
 	{
@@ -19,6 +20,11 @@ export default [
 		path: 'modelisation',
 		data: { breadcrumb: 'Modélisation' },
 		component: Modelisation
+	},
+	{
+		path: 'exploitation-un',
+		data: { breadcrumb: 'Exploitation UN' },
+		component: ExploitationUnComponent
 	},
 	{
 		path: 'regles/connectivite',

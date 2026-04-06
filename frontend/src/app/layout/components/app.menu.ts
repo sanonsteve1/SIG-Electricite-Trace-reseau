@@ -60,6 +60,11 @@ export class AppMenu {
 					routerLink: ['/reseau/modelisation']
 				},
 				{
+					label: 'Exploitation UN',
+					icon: 'fa fa-sliders',
+					routerLink: ['/reseau/exploitation-un']
+				},
+				{
 					label: 'Règles',
 					icon: 'fa fa-list-alt',
 					items: [

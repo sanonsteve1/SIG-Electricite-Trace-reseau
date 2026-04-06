@@ -29,36 +29,10 @@ const MAP_COLORS = [
 	'#a78bfa', '#f87171', '#52b788', '#e63946', '#457b9d', '#1d3557', '#9d4edd', '#7b2cbf'
 ];
 
-// Alias frontend dashboard (slug KPI) -> slug réel des couches chargées sur la carte.
-const DASHBOARD_SLUG_ALIASES: Record<string, string> = {
-	'structurejunction-electricmediumvoltagepole-poteau-hta': 'poteau-hta',
-	'structurejunction-electriclowvoltagepole-poteau-bt': 'poteau-bt',
-	'electricdevice-lowvoltagecontrolunit-tur': 'tur',
-	'electricdevice-lowvoltagenetworkprotection-disjoncteur': 'tur',
-	'electricjunction-lowvoltageconnection-point-noeud-bt': 'point-connecte',
-	'electricdevice-ground-terre': 'point-raccordement',
-	'electricdevice-mediumvoltageswitch-cellule-ocr': 'ocr',
-	'electricdevice-mediumvoltagetransformer-transfo-ht-bt': 'transfo-ht-bt',
-	'electricdevice-highvoltagetransformer-transfo-ps': 'transformateur-ps',
-	'electricdevice-mediumvoltagearrester-parafoudre': 'parafoudre',
-	'electricline-lowvoltageundergroundconductor-ligne-bt-souterrain': 'ligne-bt',
-	'electricline-lowvoltageoverheadconductor-ligne-bt-aerien': 'ligne-bt',
-	'electricjunction-lowvoltagelineend-findeligne': 'point-non-connecte',
-	'electricline-mediumvoltageundergroundconductor-ligne-hta-souter': 'ligne-hta',
-	'electricline-mediumvoltageoverheadconductor-ligne-hta-aerien': 'ligne-hta',
-	'structureboundary-electricsubstationboundary-limite-poste-sourc': 'poste-source',
-	'structueboundary-electricdistributionstationboundary-limite-po': 'poste-cabine',
-	'structurejunction-electricjunctionbox-coffret': 'coffret',
-	'subscriberform-abonne': 'abonne',
-	'meters-compteur': 'compteur',
-	'distributionpanel-branchement': 'branchement',
-	'electricline-lowvoltageservice-ligne-branchement-bt': 'ligne-brcht'
-};
-
 const NON_SPATIAL_KPI_SLUGS = new Set([
-	'subscriberform-abonne',
-	'meters-compteur',
-	'distributionpanel-branchement'
+	'abonne',
+	'compteur',
+	'releve-compteur'
 ]);
 
 @Component({
@@ -81,39 +55,39 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 
 	// Données des cartes (réseau électrique) – apiSlug = table GIS (script_bd)
 	cardsRow1: StatCard[] = [
-		{ label: 'Poteau HTA', value: 0, color: '#ec4899', subtitle: 'Poteau moyenne tension', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricmediumvoltagepole-poteau-hta' },
-		{ label: 'Poteau BT', value: 0, color: '#38bdf8', subtitle: 'Poteau basse tension', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electriclowvoltagepole-poteau-bt' },
-		{ label: 'Nœud HTA', value: 0, color: '#a855f7', subtitle: 'Point de connexion moyenne tension', icon: 'fa fa-crosshairs' },
-		{ label: 'Point de Connection BT', value: 0, color: '#22c55e', subtitle: 'Point de connexion basse tension', icon: 'fa fa-link', apiSlug: 'electricjunction-lowvoltageconnection-point-noeud-bt' },
-		{ label: 'TUR', value: 0, color: '#a855f7', subtitle: 'Unité de commande basse tension', icon: 'fa fa-square', apiSlug: 'electricdevice-lowvoltagecontrolunit-tur' },
-		{ label: 'Connecteur', value: 0, color: '#22c55e', subtitle: 'Accessoire de mise à la terre', icon: 'fa fa-anchor', apiSlug: 'electricdevice-ground-terre' },
-		{ label: 'Disjoncteur DLBT', value: 0, color: '#f97316', subtitle: 'Protection réseau basse tension', icon: 'fa fa-shield', apiSlug: 'electricdevice-lowvoltagenetworkprotection-disjoncteur' },
-		{ label: 'Parafoudre HTA', value: 0, color: '#a855f7', subtitle: 'Parafoudre moyenne tension', icon: 'fa fa-minus', apiSlug: 'electricdevice-mediumvoltagearrester-parafoudre' },
-		{ label: 'Transformateur HTA/BT', value: 0, color: '#f97316', subtitle: 'Transformateur haute/moyenne tension', icon: 'fa fa-cog', apiSlug: 'electricdevice-highvoltagetransformer-transfo-ps' },
-		{ label: 'Borne Souterraine', value: 0, color: '#22c55e', subtitle: 'Borne souterraine', icon: 'fa fa-square-o' },
-		{ label: 'Interrupteur HTA', value: 0, color: '#38bdf8', subtitle: 'Interrupteur moyenne tension', icon: 'fa fa-square', apiSlug: 'electricdevice-mediumvoltageswitch-cellule-ocr' },
-		{ label: 'Transformateur BT/BT', value: 0, color: '#d97706', subtitle: 'Transformateur moyenne/basse tension', icon: 'fa fa-cog', apiSlug: 'electricdevice-mediumvoltagetransformer-transfo-ht-bt' }
+		{ label: 'Support MT', value: 0, color: '#ec4899', subtitle: 'Support moyenne tension', icon: 'fa fa-bolt', apiSlug: 'support-mt' },
+		{ label: 'Support BT', value: 0, color: '#38bdf8', subtitle: 'Support basse tension', icon: 'fa fa-bolt', apiSlug: 'support-bt' },
+		{ label: 'Nœud réseau', value: 0, color: '#a855f7', subtitle: 'Noeuds du graphe reseau', icon: 'fa fa-crosshairs', apiSlug: 'noeud' },
+		{ label: 'Coffret BT', value: 0, color: '#22c55e', subtitle: 'Coffret de distribution BT', icon: 'fa fa-link', apiSlug: 'coffret-bt' },
+		{ label: 'Cellule cabine', value: 0, color: '#a855f7', subtitle: 'Cellule MT cabine', icon: 'fa fa-square', apiSlug: 'cellule-cabine' },
+		{ label: 'Appareillage MT', value: 0, color: '#22c55e', subtitle: 'Equipement MT', icon: 'fa fa-anchor', apiSlug: 'appareillage-mt' },
+		{ label: 'Appareillage HT', value: 0, color: '#f97316', subtitle: 'Equipement HT', icon: 'fa fa-shield', apiSlug: 'appareillage-ht' },
+		{ label: 'Jeu de barres', value: 0, color: '#a855f7', subtitle: 'Jeu de barres HT/MT', icon: 'fa fa-minus', apiSlug: 'jeu-de-barres' },
+		{ label: 'Transformateur HT', value: 0, color: '#f97316', subtitle: 'Transformateur de puissance HT', icon: 'fa fa-cog', apiSlug: 'transformateur-ht' },
+		{ label: 'Terminal UN', value: 0, color: '#22c55e', subtitle: 'Terminal de connectivite', icon: 'fa fa-square-o', apiSlug: 'terminal' },
+		{ label: 'Cellule poste source', value: 0, color: '#38bdf8', subtitle: 'Cellule HT/MT du poste source', icon: 'fa fa-square', apiSlug: 'cellule-poste-source' },
+		{ label: 'Transformateur MT/BT', value: 0, color: '#d97706', subtitle: 'Transformateur distribution', icon: 'fa fa-cog', apiSlug: 'transformateur-mt-bt' }
 	];
 
 	cardsRow2: StatCard[] = [
-		{ label: 'Ligne de départ HTA', value: 0, color: '#f97316', subtitle: 'Départ moyenne tension', icon: 'fa fa-bolt' },
-		{ label: 'Ligne BT Aérienne', value: 0, color: '#ef4444', subtitle: 'Conducteur aérien basse tension', icon: 'fa fa-level-up', apiSlug: 'electricline-lowvoltageoverheadconductor-ligne-bt-aerien' },
-		{ label: 'Ligne BT Souterraine', value: 0, color: '#22c55e', subtitle: 'Conducteur souterrain basse tension', icon: 'fa fa-minus', apiSlug: 'electricline-lowvoltageundergroundconductor-ligne-bt-souterrain' },
-		{ label: 'Ligne HTA Souterraine', value: 0, color: '#a855f7', subtitle: 'Conducteur souterrain moyenne tension', icon: 'fa fa-circle-o', apiSlug: 'electricline-mediumvoltageundergroundconductor-ligne-hta-souter' },
-		{ label: 'Ligne HTA Aérienne', value: 0, color: '#ef4444', subtitle: 'Conducteur aérien moyenne tension', icon: 'fa fa-level-up', apiSlug: 'electricline-mediumvoltageoverheadconductor-ligne-hta-aerien' },
-		{ label: 'Ligne de départ BT', value: 0, color: '#eab308', subtitle: 'Départ basse tension', icon: 'fa fa-arrows-v', apiSlug: 'electricline-lowvoltageservice-ligne-branchement-bt' },
-		{ label: 'Limite du poste HTA', value: 0, color: '#3b82f6', subtitle: 'Limite du poste source', icon: 'fa fa-th-large', apiSlug: 'structureboundary-electricsubstationboundary-limite-poste-sourc' },
-		{ label: 'Limite du poste BT', value: 0, color: '#a855f7', subtitle: 'Limite du poste de distribution', icon: 'fa fa-th', apiSlug: 'structueboundary-electricdistributionstationboundary-limite-po' },
-		{ label: 'Accessoires HTA', value: 0, color: '#ef4444', subtitle: 'Accessoire moyenne tension', icon: 'fa fa-plus' },
-		{ label: 'Boîte de jonction BT', value: 0, color: '#3b82f6', subtitle: 'Boîte de jonction électrique', icon: 'fa fa-bolt', apiSlug: 'structurejunction-electricjunctionbox-coffret' },
-		{ label: 'Fin de la ligne BT', value: 0, color: '#22c55e', subtitle: 'Extrémité de ligne basse tension', icon: 'fa fa-minus', apiSlug: 'electricjunction-lowvoltagelineend-findeligne' },
-		{ label: 'Connecteur BT', value: 0, color: '#3b82f6', subtitle: 'Accessoire basse tension', icon: 'fa fa-anchor' }
+		{ label: 'Départ MT', value: 0, color: '#f97316', subtitle: 'Départ moyenne tension', icon: 'fa fa-bolt', apiSlug: 'depart-mt' },
+		{ label: 'Ligne BT', value: 0, color: '#ef4444', subtitle: 'Conducteur basse tension', icon: 'fa fa-level-up', apiSlug: 'ligne-bt' },
+		{ label: 'Réseau BT', value: 0, color: '#22c55e', subtitle: 'Réseau basse tension', icon: 'fa fa-minus', apiSlug: 'reseau-bt' },
+		{ label: 'Ligne MT', value: 0, color: '#a855f7', subtitle: 'Conducteur moyenne tension', icon: 'fa fa-circle-o', apiSlug: 'ligne-mt' },
+		{ label: 'Ligne HT', value: 0, color: '#ef4444', subtitle: 'Conducteur haute tension', icon: 'fa fa-level-up', apiSlug: 'ligne-ht' },
+		{ label: 'Arête réseau', value: 0, color: '#eab308', subtitle: 'Arêtes du graphe', icon: 'fa fa-arrows-v', apiSlug: 'arete' },
+		{ label: 'Poste source', value: 0, color: '#3b82f6', subtitle: 'Poste source HT/MT', icon: 'fa fa-th-large', apiSlug: 'poste-source' },
+		{ label: 'Poste cabine', value: 0, color: '#a855f7', subtitle: 'Poste de distribution', icon: 'fa fa-th', apiSlug: 'poste-cabine' },
+		{ label: 'Pylône', value: 0, color: '#ef4444', subtitle: 'Structure de ligne HT', icon: 'fa fa-plus', apiSlug: 'pylone' },
+		{ label: 'TGBT', value: 0, color: '#3b82f6', subtitle: 'Tableau général basse tension', icon: 'fa fa-bolt', apiSlug: 'tgbt' },
+		{ label: 'Association réseau', value: 0, color: '#22c55e', subtitle: 'Associations de connectivité', icon: 'fa fa-minus', apiSlug: 'association' },
+		{ label: 'Tronçon HT', value: 0, color: '#3b82f6', subtitle: 'Segment de ligne HT', icon: 'fa fa-anchor', apiSlug: 'troncon-ht' }
 	];
 
 	cardsRow3: StatCard[] = [
-		{ label: 'Abonné', value: 0, color: '#eab308', subtitle: 'Client raccordé', icon: 'fa fa-user', apiSlug: 'subscriberform-abonne' },
-		{ label: 'Compteur', value: 0, color: '#38bdf8', subtitle: 'Compteur client', icon: 'fa fa-tachometer', apiSlug: 'meters-compteur' },
-		{ label: 'Branchement', value: 0, color: '#eab308', subtitle: 'Tableau de distribution', icon: 'fa fa-home', apiSlug: 'distributionpanel-branchement' }
+		{ label: 'Abonné', value: 0, color: '#eab308', subtitle: 'Client raccordé', icon: 'fa fa-user', apiSlug: 'abonne' },
+		{ label: 'Compteur', value: 0, color: '#38bdf8', subtitle: 'Compteur client', icon: 'fa fa-tachometer', apiSlug: 'compteur' },
+		{ label: 'Relevé compteur', value: 0, color: '#eab308', subtitle: 'Historique de relève', icon: 'fa fa-home', apiSlug: 'releve-compteur' }
 	];
 	extraCards: StatCard[] = [];
 
@@ -168,8 +142,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	private getResolvedSlug(slug: string | undefined): string | undefined {
-		if (!slug) return undefined;
-		return DASHBOARD_SLUG_ALIASES[slug] ?? slug;
+		return slug;
 	}
 
 	private applyCardSymbology(): void {
@@ -605,10 +578,6 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	private getVisibleCountForCardSlug(cardSlug: string, counts: Map<string, number>): number {
-		const realSlug = DASHBOARD_SLUG_ALIASES[cardSlug];
-		if (realSlug) {
-			return counts.get(realSlug) ?? counts.get(cardSlug) ?? 0;
-		}
 		return counts.get(cardSlug) ?? 0;
 	}
 
@@ -832,7 +801,7 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	private updateNatureClientChartFromCounts(counts: Map<string, number>): void {
-		const totalAbonnes = counts.get('subscriberform-abonne') ?? 0;
+		const totalAbonnes = counts.get('abonne') ?? 0;
 		this.natureClientData = {
 			labels: ['Abonnés'],
 			datasets: [

@@ -61,7 +61,21 @@ def table_slug(table_name: str) -> str:
 
 def quote_ident(name: str) -> str:
     """Quote un identifiant PostgreSQL (casse préservée)."""
+    if "." in name:
+        parts = [p for p in name.split(".") if p]
+        return ".".join(f'"{p}"' for p in parts)
     return f'"{name}"'
+
+
+def _split_qualified_table_name(table_name: str) -> tuple[str, str]:
+    """
+    Accepte "schema.table" ou "table".
+    Retourne (schema, table) avec schema par défaut "public".
+    """
+    if "." in table_name:
+        schema, table = table_name.split(".", 1)
+        return schema, table
+    return "public", table_name
 
 
 def row_to_json(row: dict) -> dict:
@@ -112,6 +126,7 @@ def get_table_columns_from_db(table_name: str) -> list[dict] | None:
     Retourne les colonnes réelles d'une table (information_schema) pour rester
     aligné avec les évolutions de schéma faites directement en base.
     """
+    schema_name, pure_table_name = _split_qualified_table_name(table_name)
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
@@ -124,10 +139,10 @@ def get_table_columns_from_db(table_name: str) -> list[dict] | None:
                         is_nullable,
                         column_default
                     FROM information_schema.columns
-                    WHERE table_schema = 'public' AND table_name = %s
+                    WHERE table_schema = %s AND table_name = %s
                     ORDER BY ordinal_position
                     """,
-                    (table_name,),
+                    (schema_name, pure_table_name),
                 )
                 rows = cur.fetchall() or []
         if not rows:
@@ -151,6 +166,55 @@ def get_table_columns_from_db(table_name: str) -> list[dict] | None:
         return out
     except Exception:
         return None
+
+
+_RUNTIME_SLUG_INDEX: dict[str, str] | None = None
+
+
+def get_runtime_slug_index() -> dict[str, str]:
+    """
+    Index dynamique slug -> table_qualifiee pour toutes les tables non système.
+    - slug principal: schema-table (avec _ -> -)
+    - slug court: table (si unique)
+    """
+    global _RUNTIME_SLUG_INDEX
+    if _RUNTIME_SLUG_INDEX is not None:
+        return _RUNTIME_SLUG_INDEX
+
+    index: dict[str, str] = {}
+    short_candidates: dict[str, list[str]] = {}
+    try:
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute(
+                    """
+                    SELECT table_schema, table_name
+                    FROM information_schema.tables
+                    WHERE table_schema <> 'information_schema'
+                      AND table_schema NOT LIKE 'pg_%'
+                      AND table_type = 'BASE TABLE'
+                    ORDER BY table_schema, table_name
+                    """
+                )
+                rows = cur.fetchall() or []
+        for r in rows:
+            schema = str(r["table_schema"])
+            table = str(r["table_name"])
+            full_table = f"{schema}.{table}"
+            long_slug = f"{schema}-{table}".lower().replace("_", "-")
+            short_slug = table.lower().replace("_", "-")
+            index[long_slug] = full_table
+            short_candidates.setdefault(short_slug, []).append(full_table)
+
+        for short_slug, full_tables in short_candidates.items():
+            if len(full_tables) == 1:
+                index[short_slug] = full_tables[0]
+    except Exception:
+        # En cas d'échec DB, on retourne simplement un index vide.
+        index = {}
+
+    _RUNTIME_SLUG_INDEX = index
+    return _RUNTIME_SLUG_INDEX
 
 
 # Chargement du schéma au démarrage
@@ -257,7 +321,6 @@ SLUG_ALIASES: dict[str, str] = {
     "electricline-lowvoltageservice-ligne-branchement-bt": "ligne-brcht",
 }
 
-
 def _resolve_slug(slug: str) -> str:
     """Retourne le slug réel (table API) pour un slug éventuellement alias (dashboard)."""
     if slug in TABLE_BY_SLUG:
@@ -269,6 +332,12 @@ def get_table_meta(slug: str) -> tuple[str, dict]:
     """Retourne (table_name, meta) pour un slug (ou alias dashboard). Sinon 404."""
     resolved = _resolve_slug(slug)
     if resolved not in TABLE_BY_SLUG:
+        runtime_index = get_runtime_slug_index()
+        fallback_table = runtime_index.get(resolved) or runtime_index.get(slug)
+        if fallback_table:
+            columns = get_table_columns_from_db(fallback_table)
+            if columns:
+                return fallback_table, {"columns": columns}
         raise HTTPException(status_code=404, detail=f"Table inconnue: {slug}")
     return TABLE_BY_SLUG[resolved]
 
@@ -525,14 +594,22 @@ def root():
     - GET /gis/{slug}/{id}
     - POST /gis/{slug}
     - DELETE /gis/{slug}/{id}
-    Uniquement les tables définies dans script_bd/database_structure.json sont exposées.
+    Les tables définies dans database_structure.json sont exposées,
+    complétées par les tables réelles détectées dans UN_BD_DEV.
     """
+    runtime_index = get_runtime_slug_index()
+    static_tables = {
+        slug: {"slug": slug, "table": TABLE_BY_SLUG[slug][0], "api_base": f"/gis/{slug}"}
+        for slug in sorted(TABLE_BY_SLUG.keys())
+    }
+    runtime_tables = {
+        slug: {"slug": slug, "table": runtime_index[slug], "api_base": f"/gis/{slug}"}
+        for slug in sorted(runtime_index.keys())
+    }
+    merged = {**runtime_tables, **static_tables}
     return {
-        "tables": [
-            {"slug": slug, "table": TABLE_BY_SLUG[slug][0], "api_base": f"/gis/{slug}"}
-            for slug in sorted(TABLE_BY_SLUG.keys())
-        ],
-        "source": "script_bd/database_structure.json",
+        "tables": [merged[k] for k in sorted(merged.keys())],
+        "source": "UN_BD_DEV",
     }
 
 
