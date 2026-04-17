@@ -1550,7 +1550,29 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.addConnectedOuvragesForTracedLines(merged);
 		this.addNearbyPointOuvragesForTracedLines(merged);
 		if (direction === 'amont') this.addLocalBtContextForAmont(merged);
-		return Array.from(merged.values());
+		const list = Array.from(merged.values());
+		// Si le départ est un client précis, l'enrichissement ci-dessus rattache *tous* les abonnés
+		// du même câble BT (id_ligne_bt) — pour un tracé / coupure depuis ce client, on ne garde que lui.
+		const origin = this.getTraceOriginIfSingleClient();
+		if (origin) {
+			const os = origin.slug.toLowerCase();
+			const oid = this.normalizeId(origin.id);
+			return list.filter((o) => {
+				const s = o.slug.toLowerCase();
+				if (!s.startsWith('clients-bt-')) return true;
+				return s === os && this.normalizeId(o.id) === oid;
+			});
+		}
+		return list;
+	}
+
+	/** Point de départ = une fiche client (carte ou équivalent) : un seul abonné ciblé. */
+	private getTraceOriginIfSingleClient(): { slug: string; id: string } | null {
+		const s = (this.selectedMapStart?.slug || '').toLowerCase();
+		if (s.startsWith('clients-bt-') && this.selectedMapStart?.id) {
+			return { slug: this.selectedMapStart.slug, id: this.selectedMapStart.id };
+		}
+		return null;
 	}
 
 	resetSimulationCoupure(): void {
@@ -1896,7 +1918,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	private isPointSlug(slug: string): boolean {
 		const s = slug.toLowerCase();
-		return /poteau|pole|transfo|poste|abonne|branchement|noeud|junction/.test(s) && !/ligne|electricline/.test(s);
+		return /poteau|pole|transfo|poste|abonne|branchement|noeud|junction|clients-bt/.test(s) && !/ligne|electricline/.test(s);
 	}
 
 	private applyTraceStyleToMap(): void {
@@ -2544,6 +2566,207 @@ stop
 	undo(): void {}
 	redo(): void {}
 
+	// ─── Dashboard du tracé ───────────────────────────────────────────────────
+
+	showDashboard = false;
+
+	closeDashboard(): void { this.showDashboard = false; }
+
+	/** Détecte un poste HTA / cabine BT côté HTA (tables rx_hta_*poste*). */
+	private isDashPosteHtaSlug(slug: string): boolean {
+		const s = (slug || '').toLowerCase().replace(/_/g, '-');
+		if (!/poste/.test(s) || /poste-h59/.test(s)) return false;
+		return /poste-hta|poste-hta-bt|rx-hta-.*poste|rx-hta-motobe-.*poste/.test(s);
+	}
+
+	/** Poste BT (H59, poste cabine côté réseau BT). */
+	private isDashPosteBtSlug(slug: string): boolean {
+		const s = (slug || '').toLowerCase().replace(/_/g, '-');
+		if (!/poste/.test(s) || this.isDashPosteHtaSlug(slug)) return false;
+		return /poste-h59|rx-bt-.*poste|poste-bt/.test(s);
+	}
+
+	/** Autre couche « poste » (poste source, emprise, etc.) — ni ligne ni client ni nœud topo. */
+	private isDashGenericPosteSlug(slug: string): boolean {
+		const s = (slug || '').toLowerCase().replace(/_/g, '-');
+		if (!/poste/.test(s)) return false;
+		if (/clients-bt|rx-topology-nodes|rx-topology-edges/.test(s)) return false;
+		if (/troncon|cable-bt|ligne|electricline/.test(s)) return false;
+		return true;
+	}
+
+	/** KPI globaux calculés depuis traceDetails. */
+	get dashStats(): {
+		htaLines: number; btCables: number; clients: number;
+		htaPostes: number; btPostes: number; subNetworks: number;
+		total: number; puissanceKw: number;
+	} {
+		const d = this.traceDetails;
+		const htaLines  = d.filter(x => /troncon/.test(x.slug)).length;
+		const btCables  = d.filter(x => /cable-bt/.test(x.slug)).length;
+		const clients   = d.filter(x => /clients-bt/.test(x.slug)).length;
+		let htaPostes = d.filter(x => this.isDashPosteHtaSlug(x.slug)).length;
+		let btPostes  = d.filter(x => this.isDashPosteBtSlug(x.slug)).length;
+		for (const x of d) {
+			if (this.isDashPosteHtaSlug(x.slug) || this.isDashPosteBtSlug(x.slug)) continue;
+			if (!this.isDashGenericPosteSlug(x.slug)) continue;
+			const s = x.slug.toLowerCase();
+			if (s.includes('rx-bt') || s.includes('poste-h59') || s.includes('poste-bt')) btPostes += 1;
+			else htaPostes += 1;
+		}
+		const tokens    = new Set<string>();
+		for (const item of d) {
+			const m = item.slug.match(/\b(r\d+)\b/i);
+			if (m) tokens.add(m[1].toUpperCase());
+		}
+		return {
+			htaLines, btCables, clients, htaPostes, btPostes,
+			subNetworks: tokens.size, total: d.length,
+			puissanceKw: Math.round(clients * 1.5),
+		};
+	}
+
+	/** Données pour le donut chart de répartition. */
+	get dashDonutData(): { label: string; count: number; color: string; percent: number }[] {
+		const s     = this.dashStats;
+		const total = this.traceDetails.length || 1;
+		const items: { label: string; count: number; color: string }[] = [
+			{ label: 'Lignes HTA',  count: s.htaLines,  color: '#0891b2' },
+			{ label: 'Câbles BT',   count: s.btCables,  color: '#16a34a' },
+			{ label: 'Abonnés',     count: s.clients,   color: '#c2410c' },
+			{ label: 'Postes HTA',  count: s.htaPostes, color: '#7c3aed' },
+			{ label: 'Postes BT',   count: s.btPostes,  color: '#0ea5e9' },
+		];
+		const known = items.reduce((acc, i) => acc + i.count, 0);
+		const other = Math.max(0, this.traceDetails.length - known);
+		if (other > 0) items.push({ label: 'Autres', count: other, color: '#94a3b8' });
+		return items
+			.filter(x => x.count > 0)
+			.map(x => ({ ...x, percent: Math.round(x.count / total * 100) }));
+	}
+
+	/** Données par sous-réseau (r227, r333, r380…). */
+	get dashSubNetworks(): { name: string; clients: number; cables: number; postes: number; total: number }[] {
+		const nets = new Map<string, { clients: number; cables: number; postes: number }>();
+		for (const item of this.traceDetails) {
+			const m = item.slug.match(/\b(r\d+)\b/i);
+			if (!m) continue;
+			const tok = m[1].toUpperCase();
+			const net = nets.get(tok) ?? { clients: 0, cables: 0, postes: 0 };
+			if (/clients-bt/.test(item.slug)) net.clients++;
+			else if (/cable-bt/.test(item.slug)) net.cables++;
+			else if (
+				this.isDashPosteHtaSlug(item.slug) ||
+				this.isDashPosteBtSlug(item.slug) ||
+				this.isDashGenericPosteSlug(item.slug)
+			) net.postes++;
+			nets.set(tok, net);
+		}
+		return Array.from(nets.entries())
+			.map(([name, v]) => ({ name, ...v, total: v.clients + v.cables + v.postes }))
+			.filter(x => x.total > 0)
+			.sort((a, b) => b.clients - a.clients);
+	}
+
+	/** Segments SVG pour le donut chart (anneau). */
+	getDonutSegments(data: { count: number; color: string }[]): {
+		path: string; color: string; midX: number; midY: number;
+	}[] {
+		const total = data.reduce((s, d) => s + d.count, 0);
+		if (!total) return [];
+		const R = 58, ri = 32, cx = 80, cy = 80;
+		let angle = -Math.PI / 2;
+		return data.map(d => {
+			const sweep = (d.count / total) * 2 * Math.PI;
+			const mid   = angle + sweep / 2;
+			const x1    = cx + R * Math.cos(angle),  y1  = cy + R * Math.sin(angle);
+			const xi1   = cx + ri * Math.cos(angle), yi1 = cy + ri * Math.sin(angle);
+			angle += sweep;
+			const x2    = cx + R * Math.cos(angle),  y2  = cy + R * Math.sin(angle);
+			const xi2   = cx + ri * Math.cos(angle), yi2 = cy + ri * Math.sin(angle);
+			const large = sweep > Math.PI ? 1 : 0;
+			const path  = `M ${xi1} ${yi1} L ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${ri} ${ri} 0 ${large} 0 ${xi1} ${yi1} Z`;
+			return { path, color: d.color, midX: cx + (R + 12) * Math.cos(mid), midY: cy + (R + 12) * Math.sin(mid) };
+		});
+	}
+
+	/** Valeur max des clients par sous-réseau (pour la barre bar-chart). */
+	get dashBarMax(): number {
+		return Math.max(...this.dashSubNetworks.map(n => n.clients), 1);
+	}
+
+	// — Liste paginée des ouvrages —
+	dashPage     = 1;
+	dashPageSize = 5;
+	dashSearch   = '';
+	dashKindFilter: 'tous' | 'ligne' | 'point' | 'autre' = 'tous';
+
+	readonly dashKindOptions: { v: 'tous' | 'ligne' | 'point' | 'autre'; label: string }[] = [
+		{ v: 'tous', label: 'Tous' },
+		{ v: 'ligne', label: 'Lignes' },
+		{ v: 'point', label: 'Points' },
+	];
+
+	/** Ouvre le dashboard et réinitialise la pagination. */
+	openDashboard(): void {
+		this.showDashboard  = true;
+		this.dashPage       = 1;
+		this.dashSearch     = '';
+		this.dashKindFilter = 'tous';
+	}
+
+	/** Liste filtrée + recherche textuelle. */
+	get dashFilteredItems(): { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] {
+		const q = this.dashSearch.trim().toLowerCase();
+		return this.traceDetails.filter(d => {
+			if (this.dashKindFilter !== 'tous' && d.kind !== this.dashKindFilter) return false;
+			if (q && !d.slug.toLowerCase().includes(q) && !d.id.toLowerCase().includes(q)) return false;
+			return true;
+		});
+	}
+
+	get dashTotalPages(): number {
+		return Math.max(1, Math.ceil(this.dashFilteredItems.length / this.dashPageSize));
+	}
+
+	/** Page courante de la liste des ouvrages. */
+	get dashPagedItems(): { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] {
+		const start = (this.dashPage - 1) * this.dashPageSize;
+		return this.dashFilteredItems.slice(start, start + this.dashPageSize);
+	}
+
+	get dashPageNumbers(): number[] {
+		const total  = this.dashTotalPages;
+		const cur    = this.dashPage;
+		const delta  = 2;
+		const pages: number[] = [];
+		for (let i = Math.max(1, cur - delta); i <= Math.min(total, cur + delta); i++) pages.push(i);
+		return pages;
+	}
+
+	dashSetPage(p: number): void {
+		this.dashPage = Math.min(Math.max(1, p), this.dashTotalPages);
+	}
+
+	dashOnSearch(): void { this.dashPage = 1; }
+
+	setDashKindFilter(v: 'tous' | 'ligne' | 'point' | 'autre'): void {
+		this.dashKindFilter = v;
+		this.dashPage = 1;
+	}
+
+	/** Libellé lisible du slug (retire le préfixe rx-/clients- et formate). */
+	dashSlugLabel(slug: string): string {
+		return slug.replace(/^rx-|^clients-bt-/, '').replace(/-/g, ' ');
+	}
+
+	/** Icône Font-Awesome selon le kind. */
+	dashKindIcon(kind: string): string {
+		if (kind === 'ligne') return 'fa-minus';
+		if (kind === 'point') return 'fa-circle';
+		return 'fa-question-circle';
+	}
+
 	/** Anomalies du dernier contrôle des règles pour cet ouvrage (popup carte). */
 	getValidationIssuesForPopup(slug: string, id: string): TopologyValidationIssue[] {
 		const issues = this.topologyValidationResult?.issues;
@@ -2958,9 +3181,8 @@ stop
 				this.mapLoading = false;
 				this.cdr.markForCheck();
 				this.updateLigneSecoursOptionsBySelection();
-				// Charger les couches invisibles de topologie RX synthétique (nœuds + arcs bridge)
-				void this.loadRxTopologyNodesLayer();
-				void this.loadRxTopologyEdgesLayer();
+				// Pas de couches cartographiques pour les nœuds / ponts RX synthétiques (rx-topology-nodes / -edges) :
+				// le tracé reste calculé côté API ; seuls les ouvrages SHP restent affichés.
 				setTimeout(() => self.highlightSelectionOnMap(), 0);
 				resolve();
 			}).catch(() => {
@@ -2975,198 +3197,6 @@ stop
 			resolve();
 		}
 	});
-	});
-}
-
-/**
- * Charge les nœuds synthétiques de la topologie RX (poteau-hta, poteau-bt, depart-bt)
- * et les enregistre dans slugIdToLayer avec le slug "rx-topology-nodes".
- * Ces nœuds sont normalement invisibles (couche transparente) mais deviennent
- * visibles (colorés, animés) lorsqu'ils font partie d'un tracé actif.
- */
-private loadRxTopologyNodesLayer(): Promise<void> {
-	if (!this.map || !this.layerGroup || !this.gisApi) return Promise.resolve();
-	return new Promise((resolve) => {
-		this.gisApi.getRxTopologyNodes('rx_raz4').pipe(
-			catchError(() => of({ slug: 'rx-topology-nodes', rows: [], count: 0 }))
-		).subscribe({
-			next: (result) => {
-				if (!result?.rows?.length) { resolve(); return; }
-				Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
-					const leaflet = (LModule as { default: unknown }).default as {
-						geoJSON: (f: object, opts: object) => { eachLayer: (fn: (layer: unknown) => void) => void };
-						circleMarker: (latlng: unknown, opts: object) => unknown;
-						layerGroup: () => { addLayer: (l: unknown) => void };
-					};
-					const group = this.layerGroup as { addLayer: (l: unknown) => void };
-					const wk = (wellknown as { parse?: (wkt: string) => unknown }).parse ?? (wellknown as { default?: { parse: (wkt: string) => unknown } }).default?.parse;
-					const parseWkt = typeof wk === 'function' ? wk : ((): null => null);
-					const self = this;
-					const SLUG = 'rx-topology-nodes';
-					const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
-					if (!slugGroup) { resolve(); return; }
-
-					for (const row of result.rows) {
-						if (!row.geom) continue;
-						const geom = parseWkt(row.geom);
-						if (!geom || typeof geom !== 'object') continue;
-						try {
-							const feature = { type: 'Feature' as const, geometry: geom, properties: {
-								_layerSlug: SLUG,
-								_layerLabel: 'Nœud topologie RX',
-								gid: row.gid,
-								node_type: row.node_type,
-								network_level: row.network_level,
-								label: row.label,
-								source_slug: row.source_slug,
-								source_gid: row.source_gid,
-								depart_code: row.depart_code,
-							}};
-							const fc = { type: 'FeatureCollection' as const, features: [feature] };
-							const geoJsonLayer = leaflet.geoJSON(fc, {
-								pane: 'trace-points',
-								style: () => ({ color: '#ff8c00', weight: 2, opacity: 0, fillColor: '#ff8c00', fillOpacity: 0, pane: 'trace-points' }),
-								pointToLayer: (_: unknown, latlng: unknown) =>
-									leaflet.circleMarker(latlng, {
-										radius: 10,
-										weight: 2,
-										color: '#ff8c00',
-										fillColor: '#ff8c00',
-										fillOpacity: 0,
-										opacity: 0,
-										pane: 'trace-points',
-									}),
-								onEachFeature: (
-									feat: { properties?: Record<string, unknown> },
-									layer: { bindPopup: (c: string) => void; feature?: unknown }
-								) => {
-									(layer as { feature?: unknown }).feature = feat;
-									const p = feat.properties ?? {};
-									layer.bindPopup(`<b>Nœud RX</b><br>Type : ${p['node_type']}<br>ID : ${p['gid']}`);
-								},
-							});
-							geoJsonLayer.eachLayer((l: unknown) => {
-								(slugGroup as { addLayer: (l: unknown) => void }).addLayer(l);
-								const withBounds = l as {
-									getBounds?: () => unknown;
-									getLatLng?: () => { lat: number; lng: number };
-									setStyle?: (s: object) => void;
-									bringToFront?: () => void;
-								};
-								const withFeature = l as { feature?: { properties?: Record<string, unknown> } };
-								const nodeId = String(withFeature.feature?.properties?.['gid'] ?? '').trim();
-								if (nodeId && (typeof withBounds.getLatLng === 'function')) {
-									const nodeIdNorm = nodeId.replace(/^\{|\}$/g, '');
-									self.slugIdToLayer.set(`${SLUG}:${nodeId}`, withBounds);
-									if (nodeIdNorm !== nodeId) self.slugIdToLayer.set(`${SLUG}:${nodeIdNorm}`, withBounds);
-									self.slugIdToLayer.set(`${SLUG}:${nodeIdNorm.toLowerCase()}`, withBounds);
-								}
-							});
-						} catch {
-							// ignore
-						}
-					}
-					group.addLayer(slugGroup);
-					this.slugToLayerGroups.set(SLUG, slugGroup);
-					resolve();
-			}).catch(() => resolve());
-		},
-		error: () => resolve(),
-	});
-	});
-}
-
-/**
- * Charge les arcs synthétiques de la topologie RX (bridges HTA-BT) avec leur géométrie
- * et les enregistre dans slugIdToLayer avec le slug "rx-topology-edges".
- * Ces arcs sont invisibles par défaut (opacity=0) et deviennent visibles (ligne pointillée orange)
- * uniquement quand ils font partie du tracé actif.
- */
-private loadRxTopologyEdgesLayer(): Promise<void> {
-	if (!this.map || !this.layerGroup || !this.gisApi) return Promise.resolve();
-	return new Promise((resolve) => {
-		this.gisApi.getRxTopologyEdges('rx_raz4').pipe(
-			catchError(() => of({ slug: 'rx-topology-edges', rows: [], count: 0 }))
-		).subscribe({
-			next: (result) => {
-				if (!result?.rows?.length) { resolve(); return; }
-				Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
-					const leaflet = (LModule as { default: unknown }).default as {
-						geoJSON: (f: object, opts: object) => { eachLayer: (fn: (layer: unknown) => void) => void };
-						layerGroup: () => { addLayer: (l: unknown) => void };
-					};
-					const group = this.layerGroup as { addLayer: (l: unknown) => void };
-					const wk = (wellknown as { parse?: (wkt: string) => unknown }).parse ?? (wellknown as { default?: { parse: (wkt: string) => unknown } }).default?.parse;
-					const parseWkt = typeof wk === 'function' ? wk : ((): null => null);
-					const normalizeWkt = (wkt: string): string => String(wkt).replace(/^SRID=\d+;/i, '').trim();
-					const self = this;
-					const SLUG = 'rx-topology-edges';
-					const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
-					if (!slugGroup) { resolve(); return; }
-
-					for (const row of result.rows) {
-						if (!row.geom) continue;
-						const geom = parseWkt(normalizeWkt(row.geom));
-						if (!geom || typeof geom !== 'object') continue;
-						try {
-							const feature = { type: 'Feature' as const, geometry: geom, properties: {
-								_layerSlug: SLUG,
-								_layerLabel: 'Pont topologie RX',
-								gid: row.gid,
-								edge_type: row.edge_type,
-								network_level: row.network_level,
-								label: row.label,
-								source_node_id: row.source_node_id,
-								target_node_id: row.target_node_id,
-								depart_code: row.depart_code,
-							}};
-							const fc = { type: 'FeatureCollection' as const, features: [feature] };
-							const geoJsonLayer = leaflet.geoJSON(fc, {
-								pane: 'trace-lines',
-								style: () => ({
-									color: '#f97316',
-									weight: 3,
-									opacity: 0,
-									dashArray: '8 6',
-									pane: 'trace-lines',
-								}),
-								onEachFeature: (
-									feat: { properties?: Record<string, unknown> },
-									layer: { bindPopup: (c: string) => void; feature?: unknown }
-								) => {
-									(layer as { feature?: unknown }).feature = feat;
-									const p = feat.properties ?? {};
-									layer.bindPopup(`<b>Pont RX HTA/BT</b><br>${p['label'] ?? ''}`);
-								},
-							});
-							geoJsonLayer.eachLayer((l: unknown) => {
-								(slugGroup as { addLayer: (l: unknown) => void }).addLayer(l);
-								const withBounds = l as {
-									getBounds?: () => unknown;
-									getLatLng?: () => { lat: number; lng: number };
-									setStyle?: (s: object) => void;
-									bringToFront?: () => void;
-								};
-								const withFeature = l as { feature?: { properties?: Record<string, unknown> } };
-								const edgeId = String(withFeature.feature?.properties?.['gid'] ?? '').trim();
-								if (edgeId && typeof withBounds.getBounds === 'function') {
-									const edgeIdNorm = edgeId.replace(/^\{|\}$/g, '');
-									self.slugIdToLayer.set(`${SLUG}:${edgeId}`, withBounds);
-									if (edgeIdNorm !== edgeId) self.slugIdToLayer.set(`${SLUG}:${edgeIdNorm}`, withBounds);
-									self.slugIdToLayer.set(`${SLUG}:${edgeIdNorm.toLowerCase()}`, withBounds);
-								}
-							});
-						} catch {
-							// ignore
-						}
-					}
-					group.addLayer(slugGroup);
-					this.slugToLayerGroups.set(SLUG, slugGroup);
-					resolve();
-				}).catch(() => resolve());
-			},
-			error: () => resolve(),
-		});
 	});
 }
 }

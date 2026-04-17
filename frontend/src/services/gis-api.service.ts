@@ -471,6 +471,10 @@ export interface SchemaUnifilaireEdge {
 	target: string;
 	line_type: string;
 	line_gid: string;
+	/** Libellé métier du tronçon / câble (ex. "043-50853", "DEPART 1 TUR 1") */
+	label?: string;
+	/** Slug de la table source du tronçon / câble */
+	source_slug?: string;
 }
 
 export interface SchemaUnifilaireResponse {

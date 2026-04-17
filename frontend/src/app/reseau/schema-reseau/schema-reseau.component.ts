@@ -35,6 +35,9 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	/** Afficher les flèches de flux électrique (source → consommateurs) */
 	showFlux = false;
 
+	/** Afficher les labels des tronçons / câbles sur les arêtes */
+	showEdgeLabels = true;
+
 	/** Mode de rendu : hiérarchique (arbre sans chevauchement) ou géographique (coordonnées SIG brutes) */
 	layoutMode: 'hierarchical' | 'geographic' = 'hierarchical';
 	/** Positions calculées par l'algorithme de disposition en arbre (Reingold-Tilford simplifié) */
@@ -333,7 +336,11 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	/** Transform SVG complet d'un nœud : translation + scale en mode hiérarchique */
 	getNodeTransform(node: SchemaUnifilaireNode): string {
 		const t = `translate(${this.nodeX(node)},${this.nodeY(node)})`;
-		return this.layoutMode === 'hierarchical' ? `${t} scale(3)` : t;
+		if (this.layoutMode !== 'hierarchical') return t;
+		// Les nœuds résumé abonné ont une géométrie plus grande (rect 44×44)
+		// → scale réduit pour rester proportionnel aux autres symboles (scale 3)
+		const s = (node.symbol === 'sym-abonne' && !!this.getNodeClientCount(node)) ? 2 : 3;
+		return `${t} scale(${s})`;
 	}
 
 	/** ViewBox réel affiché : hierVB (zoom/pan) en mode hiérarchique, base en mode géo */
@@ -664,9 +671,38 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		if (idx <= 0) return { refId: value };
 		const maybeSlug = value.slice(0, idx).trim().toLowerCase();
 		const maybeId = value.slice(idx + 1).trim();
-		if (!maybeSlug || !maybeId || !maybeSlug.startsWith('rx-')) {
+		if (!maybeSlug || !maybeId) return { refId: value };
+		// Accepter les slugs RX et les slugs de tables clients
+		if (!maybeSlug.startsWith('rx-') && !maybeSlug.startsWith('clients-bt-')) {
 			return { refId: value };
 		}
 		return { refId: maybeId, refSlug: maybeSlug };
+	}
+
+	/**
+	 * Extrait le nombre de clients depuis le label d'un nœud résumé (ex. "220 clients R380" → "220").
+	 * Retourne une chaîne vide si le nœud n'est pas un résumé.
+	 */
+	getNodeClientCount(node: SchemaUnifilaireNode): string {
+		if (!node.id.endsWith('-summary:0')) return '';
+		const m = /^(\d+)\s+clients/i.exec(node.label || '');
+		if (!m) return '';
+		const n = parseInt(m[1], 10);
+		return n >= 1000 ? `${(Math.round(n / 100) / 10)}k` : String(n);
+	}
+
+	/** Position du label d'une arête au milieu du tracé orthogonal */
+	getEdgeLabelPos(src: SchemaUnifilaireNode, tgt: SchemaUnifilaireNode): { x: number; y: number } {
+		const x1 = this.nodeX(src), y1 = this.nodeY(src);
+		const x2 = this.nodeX(tgt), y2 = this.nodeY(tgt);
+		if (Math.abs(y2 - y1) < 1e-3) {
+			return { x: (x1 + x2) / 2, y: y1 };
+		}
+		if (Math.abs(x2 - x1) < 1e-3) {
+			return { x: x1, y: (y1 + y2) / 2 };
+		}
+		// L-shaped : segment horizontal au milieu
+		const yMid = (y1 + y2) / 2;
+		return { x: (x1 + x2) / 2, y: yMid };
 	}
 }

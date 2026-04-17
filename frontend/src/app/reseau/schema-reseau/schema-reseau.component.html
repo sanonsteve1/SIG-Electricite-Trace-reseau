@@ -235,18 +235,31 @@
 					<div class="schema-scada-toolbar-right">
 						<span class="schema-scada-toolbar-chip">{{ nodes.length }} objets</span>
 						<span class="schema-scada-toolbar-chip">{{ edges.length }} liaisons</span>
-						<button
-							type="button"
-							class="schema-scada-flux-btn"
-							[class.schema-scada-flux-btn--active]="showFlux"
-							(click)="showFlux = !showFlux"
-							[attr.title]="showFlux ? 'Masquer le flux électrique' : 'Afficher le flux électrique (source → consommateurs)'"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<path d="M1 7 H10 M7 4 L10 7 L7 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
-							Flux
-						</button>
+					<button
+						type="button"
+						class="schema-scada-flux-btn"
+						[class.schema-scada-flux-btn--active]="showFlux"
+						(click)="showFlux = !showFlux"
+						[attr.title]="showFlux ? 'Masquer le flux électrique' : 'Afficher le flux électrique (source → consommateurs)'"
+					>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M1 7 H10 M7 4 L10 7 L7 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						Flux
+					</button>
+					<button
+						type="button"
+						class="schema-scada-flux-btn"
+						[class.schema-scada-flux-btn--active]="showEdgeLabels"
+						(click)="showEdgeLabels = !showEdgeLabels"
+						[attr.title]="showEdgeLabels ? 'Masquer les labels des tronçons / câbles' : 'Afficher les labels des tronçons / câbles'"
+					>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<rect x="1" y="4" width="12" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+							<line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+						</svg>
+						{{ showEdgeLabels ? 'Masquer labels' : 'Afficher labels' }}
+					</button>
 						<button
 							type="button"
 							class="schema-scada-flux-btn"
@@ -297,29 +310,42 @@
 				preserveAspectRatio="xMidYMid meet"
 				(mousedown)="onSvgMouseDown($event)"
 			>
-					<!-- Liaisons (câbles / bus) — traits épais type synoptique -->
-					<g class="schema-reseau-edges schema-scada-edges">
-						@for (edge of edges; track edge.source + '-' + edge.target + '-' + edge.line_gid) {
-							@let src = nodeById(edge.source);
-							@let tgt = nodeById(edge.target);
-							@if (src && tgt) {
-							<path
-								fill="none"
-								[attr.d]="getOrthogonalEdgePath(src, tgt)"
-								class="schema-reseau-edge schema-reseau-edge--scada schema-reseau-edge--orthogonal"
-								[class.schema-reseau-edge--active]="selectedNodeId && isEdgeLinked(edge)"
-								[class.schema-reseau-edge--dimmed]="selectedNodeId && !isEdgeLinked(edge)"
-								[class.schema-reseau-edge--flux]="showFlux"
-								[attr.stroke-dasharray]="showFlux ? fluxDashArrayValue : null"
-								[attr.stroke]="getEdgeColor(edge)"
-								[attr.stroke-width]="getEdgeStrokeWidth(edge)"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								[attr.data-line-type]="edge.line_type"
-							/>
-							}
+				<!-- Liaisons (câbles / bus) — traits épais type synoptique -->
+				<g class="schema-reseau-edges schema-scada-edges">
+					@for (edge of edges; track edge.source + '-' + edge.target + '-' + edge.line_gid) {
+						@let src = nodeById(edge.source);
+						@let tgt = nodeById(edge.target);
+						@if (src && tgt) {
+						<path
+							fill="none"
+							[attr.d]="getOrthogonalEdgePath(src, tgt)"
+							class="schema-reseau-edge schema-reseau-edge--scada schema-reseau-edge--orthogonal"
+							[class.schema-reseau-edge--active]="selectedNodeId && isEdgeLinked(edge)"
+							[class.schema-reseau-edge--dimmed]="selectedNodeId && !isEdgeLinked(edge)"
+							[class.schema-reseau-edge--flux]="showFlux"
+							[attr.stroke-dasharray]="showFlux ? fluxDashArrayValue : null"
+							[attr.stroke]="getEdgeColor(edge)"
+							[attr.stroke-width]="getEdgeStrokeWidth(edge)"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							[attr.data-line-type]="edge.line_type"
+						/>
+						@if (showEdgeLabels && edge.label && edge.source_slug) {
+							@let lpos = getEdgeLabelPos(src, tgt);
+							<text
+								class="schema-edge-label"
+								[class.schema-edge-label--hta]="edge.line_type === 'ligne-hta'"
+								[class.schema-edge-label--bt]="edge.line_type === 'ligne-bt'"
+								[attr.x]="lpos.x"
+								[attr.y]="lpos.y - 5"
+								text-anchor="middle"
+								dominant-baseline="auto"
+								pointer-events="none"
+							>{{ edge.label }}</text>
 						}
-					</g>
+						}
+					}
+				</g>
 					<!-- Flèches de flux électrique (source → consommateurs) -->
 				@if (showFlux && flowArrows.length) {
 					<g class="schema-flux-arrows" pointer-events="none">
@@ -420,10 +446,33 @@
 										<circle r="9" fill="#fff" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
 										<circle r="2.5" [attr.fill]="getSymbolColor(node.symbol)"/>
 									}
-									@case ('sym-abonne') {
+								@case ('sym-abonne') {
+									@let clientCount = getNodeClientCount(node);
+									@if (clientCount) {
+										<!-- Nœud résumé : fond de carte + icône groupe -->
+										<rect x="-22" y="-26" width="44" height="44" rx="8"
+											fill="#fff7ed"
+											[attr.stroke]="getSymbolColor(node.symbol)"
+											stroke-width="1.5"
+											stroke-dasharray="3 2"
+										/>
+										<!-- Icône personnes (groupe) -->
+										<circle cx="-6" cy="-8" r="5" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<path d="M-13,-2 Q-11,-8 -6,-8 Q-1,-8 1,-2" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
+										<circle cx="6" cy="-8" r="5" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.2" opacity="0.6"/>
+										<path d="M-1,-2 Q1,-8 6,-8 Q11,-8 13,-2" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.2" opacity="0.6"/>
+										<!-- Pastille compteur -->
+										<circle cx="13" cy="-18" r="8" [attr.fill]="getSymbolColor(node.symbol)"/>
+										<text x="13" y="-15" text-anchor="middle"
+											font-size="6" font-weight="800" fill="#fff"
+											font-family="'Inter','Segoe UI',sans-serif"
+										>{{ clientCount }}</text>
+									} @else {
+										<!-- Abonné individuel standard -->
 										<circle r="10" fill="#fff" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
 										<path d="M-5,2 L0,-3 L5,2 V6 H-5 Z" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1.5"/>
 									}
+								}
 									@case ('sym-compteur') {
 										<circle r="10" fill="#fff" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
 										<text x="0" y="3" text-anchor="middle" font-size="7" font-weight="700" [attr.fill]="getSymbolColor(node.symbol)">kWh</text>

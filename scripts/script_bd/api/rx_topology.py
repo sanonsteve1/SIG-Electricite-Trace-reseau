@@ -25,24 +25,35 @@ RX_TOPOLOGY_FAMILIES = {
         "hta_postes": ["rx_hta_raz_4_poste_hta_bt", "rx_hta_raz_4_poste_hta"],
         "bt_cables": ["rx_bt_raz_4_r333_cable_bt", "rx_bt_raz_4_r227_cable_bt"],
         "bt_postes": ["rx_bt_raz_4_r333_poste_h59", "rx_bt_raz_4_r227_poste_h59"],
+        "bt_clients": [
+            "clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023_v2",
+            "clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023_v2",
+        ],
     },
     "express": {
         "hta_troncons": ["rx_hta_express_troncons"],
         "hta_postes": ["rx_hta_express_poste_hta_bt"],
         "bt_cables": ["rx_bt_express_r380_cable_bt"],
         "bt_postes": ["rx_bt_express_r380_poste_h59"],
+        "bt_clients": [
+            "clients_bt_express_r380_xyextraction_gps_postpaied_15_02_2023_v",
+        ],
     },
     "raz3": {
         "hta_troncons": ["rx_hta_raz_3_troncons"],
         "hta_postes": ["rx_hta_raz_3_poste_hta_bt"],
         "bt_cables": ["rx_bt_raz_3_r226_cable_bt"],
         "bt_postes": ["rx_bt_raz_3_r226_poste_h59"],
+        "bt_clients": [
+            "clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023_v2",
+        ],
     },
     "motobe": {
         "hta_troncons": ["rx_hta_motobe_troncons"],
         "hta_postes": [],
         "bt_cables": [],
         "bt_postes": [],
+        "bt_clients": [],
     },
 }
 
@@ -1052,6 +1063,7 @@ def is_rx_topology_slug(ref_slug: str) -> bool:
         or s.startswith("rx-hta-raz-3-")
         or s.startswith("rx-bt-raz-3-")
         or s.startswith("rx-hta-motobe-")
+        or s.startswith("clients-bt-")
     )
 
 
@@ -1228,6 +1240,34 @@ def _traverse_rx_topology(
     return visited_nodes, visited_edges, selected_entities
 
 
+def _resolve_client_to_bt_slug(ref_slug: str) -> tuple[str, str] | None:
+    """
+    Quand ref_slug est un slug de table clients, retourne le premier
+    (bt_cable_slug, family) du même sous-réseau (token r227, r333...).
+    Retourne None si aucune correspondance.
+    """
+    import re as _re2
+
+    def _tok(s: str) -> str:
+        m = _re2.search(r"\b(r\d+)\b", (s or "").lower())
+        return m.group(1) if m else ""
+
+    c_tok = _tok(ref_slug)
+    for family, cfg in RX_TOPOLOGY_FAMILIES.items():
+        # Vérifier que le slug client appartient à cette famille
+        family_client_slugs = {_slug(t) for t in cfg.get("bt_clients", [])}
+        if ref_slug not in family_client_slugs:
+            continue
+        # Trouver le câble BT de la même famille avec le même token
+        for bt_cable_table in cfg.get("bt_cables", []):
+            bt_cable_slug = _slug(bt_cable_table)
+            bt_tok = _tok(bt_cable_slug)
+            if c_tok and bt_tok and c_tok != bt_tok:
+                continue
+            return bt_cable_slug, family
+    return None
+
+
 def get_rx_trace_result(
     cur,
     ref_id: str,
@@ -1237,6 +1277,34 @@ def get_rx_trace_result(
 ) -> dict:
     if not has_rx_topology(cur, topology_code=topology_code):
         return {"ouvrage_ids": [], "message": "Topologie RX indisponible. Construisez d'abord rx_topology_*."}
+
+    # Chemin dédié pour les clients : résoudre vers le réseau BT de la même famille.
+    # Les clients ne sont pas dans la topologie, donc on ne peut pas les tracer directement.
+    # On cherche un câble BT représentatif du même sous-réseau pour lancer le tracé.
+    # Résultat : infrastructure d'alimentation + le client cliqué uniquement (pas tous les clients).
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    if ref_slug_norm.startswith("clients-bt-"):
+        bt_info = _resolve_client_to_bt_slug(ref_slug_norm)
+        if bt_info:
+            bt_cable_slug, _family = bt_info
+            nodes_tmp, _e, mapping_tmp = _load_rx_graph(cur, topology_code=topology_code)
+            # Trouver le premier GID disponible pour ce câble BT dans la topologie
+            representative_gid = None
+            for (slug, gid), _items in mapping_tmp.items():
+                if slug == bt_cable_slug:
+                    representative_gid = gid
+                    break
+            if representative_gid:
+                network_result = get_rx_trace_result(
+                    cur, representative_gid, ref_slug=bt_cable_slug,
+                    direction="tous", topology_code=topology_code
+                )
+                # Garder uniquement l'infrastructure (pas les autres clients).
+                # Le client cliqué lui-même est ajouté pour qu'il reste mis en évidence.
+                infra = [o for o in network_result.get("ouvrage_ids", []) if not o["slug"].startswith("clients-bt-")]
+                infra.append({"slug": ref_slug_norm, "id": _canon(ref_id)})
+                return {"ouvrage_ids": infra, "message": network_result.get("message")}
+        return {"ouvrage_ids": [], "message": "Client sans réseau BT identifiable dans la topologie."}
 
     nodes, edges, mapping_by_source = _load_rx_graph(cur, topology_code=topology_code)
     visited_nodes, visited_edges, _selected = _traverse_rx_topology(nodes, edges, mapping_by_source, ref_id, ref_slug, direction)
@@ -1260,6 +1328,7 @@ def get_rx_trace_result(
                 seen.add((SYNTHETIC_SLUG, synthetic_gid))
                 ordered_pairs.append((SYNTHETIC_SLUG, synthetic_gid))
     SYNTHETIC_EDGE_SLUG = "rx-topology-edges"
+    bt_cable_slugs_in_trace: set[str] = set()
     for edge_id in sorted(visited_edges):
         edge = edges.get(edge_id) or {}
         slug = str(edge.get("source_slug") or "").strip()
@@ -1267,12 +1336,50 @@ def get_rx_trace_result(
         if slug and gid and (slug, gid) not in seen:
             seen.add((slug, gid))
             ordered_pairs.append((slug, gid))
+            if "cable-bt" in slug:
+                bt_cable_slugs_in_trace.add(slug)
         elif not slug:
             # Arc synthétique (bridge HTA-BT) : exposé via couche rx-topology-edges
             synthetic_gid = _canon(edge_id)
             if (SYNTHETIC_EDGE_SLUG, synthetic_gid) not in seen:
                 seen.add((SYNTHETIC_EDGE_SLUG, synthetic_gid))
                 ordered_pairs.append((SYNTHETIC_EDGE_SLUG, synthetic_gid))
+
+    # Ajouter les clients liés aux câbles BT présents dans le tracé.
+    # Règle fine : associer chaque câble BT aux clients partageant le même token de sous-réseau
+    # (ex. "r227" pour rx-bt-raz-4-r227-cable-bt et clients_bt_raz_4_r227_*).
+    import re as _re
+
+    def _net_token(s: str) -> str:
+        m = _re.search(r'\b(r\d+)\b', (s or "").lower())
+        return m.group(1) if m else ""
+
+    clients_to_add: set[str] = set()
+    for cable_slug in bt_cable_slugs_in_trace:
+        cable_token = _net_token(cable_slug)
+        for family, cfg in RX_TOPOLOGY_FAMILIES.items():
+            if cable_slug not in {_slug(t) for t in cfg.get("bt_cables", [])}:
+                continue
+            for client_table in cfg.get("bt_clients", []):
+                # Comparer les tokens sur le SLUG (tirets) pour que \b fonctionne.
+                client_token = _net_token(_slug(client_table))
+                # Si les deux ont un token, ils doivent correspondre.
+                if cable_token and client_token and cable_token != client_token:
+                    continue
+                clients_to_add.add(client_table)
+
+    for client_table in sorted(clients_to_add):
+        client_slug = _slug(client_table)
+        try:
+            cur.execute(f"SELECT CAST(gid AS TEXT) AS gid FROM {_quote_ident(client_table)} ORDER BY gid")
+            for row in cur.fetchall() or []:
+                cid = _canon(row["gid"])
+                if (client_slug, cid) not in seen:
+                    seen.add((client_slug, cid))
+                    ordered_pairs.append((client_slug, cid))
+        except Exception:
+            pass
+
     return {"ouvrage_ids": [{"slug": slug, "id": gid} for slug, gid in ordered_pairs], "message": None}
 
 
@@ -1286,6 +1393,53 @@ def get_rx_schema_result(
 ) -> dict:
     if not has_rx_topology(cur, topology_code=topology_code):
         return {"nodes": [], "edges": [], "message": "Topologie RX indisponible. Construisez d'abord rx_topology_*."}
+
+    # Redirection : si le point de départ est un client, résoudre vers le câble BT associé
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    if ref_slug_norm.startswith("clients-bt-"):
+        bt_info = _resolve_client_to_bt_slug(ref_slug_norm)
+        if bt_info:
+            bt_cable_slug, _family = bt_info
+            _nodes_tmp, _e_tmp, mapping_tmp = _load_rx_graph(cur, topology_code=topology_code)
+            representative_gid = None
+            for (slug, gid), _items in mapping_tmp.items():
+                if slug == bt_cable_slug:
+                    representative_gid = gid
+                    break
+            if representative_gid:
+                schema = get_rx_schema_result(
+                    cur, representative_gid, ref_slug=bt_cable_slug,
+                    direction="tous", mode=mode, topology_code=topology_code
+                )
+                # Ajouter le client cliqué comme nœud feuille (abonné) dans le schéma
+                client_node_id = f"{ref_slug_norm}:{_canon(ref_id)}"
+                # Chercher un nœud BT comme point d'ancrage (poteau-bt en priorité)
+                bt_anchor = next(
+                    (n for n in schema.get("nodes", []) if "poteau-bt" in (n.get("type") or "").lower()),
+                    (schema.get("nodes") or [None])[-1],
+                )
+                anchor_x = float(bt_anchor["x"]) if bt_anchor else 200.0
+                anchor_y = float(bt_anchor["y"]) if bt_anchor else 300.0
+                client_node = {
+                    "id": client_node_id,
+                    "type": "abonne",
+                    "symbol": "sym-abonne",
+                    "label": f"Client #{_canon(ref_id)}",
+                    "x": round(anchor_x + 60, 2),
+                    "y": round(anchor_y + 120, 2),
+                }
+                schema["nodes"].append(client_node)
+                if bt_anchor:
+                    schema["edges"].append({
+                        "source": bt_anchor["id"],
+                        "target": client_node_id,
+                        "line_type": "ligne-brcht",
+                        "line_gid": _canon(ref_id),
+                        "label": "",
+                        "source_slug": ref_slug_norm,
+                    })
+                return schema
+        return {"nodes": [], "edges": [], "message": "Client sans réseau BT identifiable dans la topologie."}
 
     nodes, edges, mapping_by_source = _load_rx_graph(cur, topology_code=topology_code)
     visited_nodes, visited_edges, selected_entities = _traverse_rx_topology(nodes, edges, mapping_by_source, ref_id, ref_slug, direction)
@@ -1364,6 +1518,7 @@ def get_rx_schema_result(
         )
 
     edges_out = []
+    bt_cable_slugs_in_schema: set[str] = set()
     for edge_id in sorted(visited_edges):
         edge = edges.get(edge_id)
         if not edge:
@@ -1376,6 +1531,77 @@ def get_rx_schema_result(
                 "target": edge["target_node_id"],
                 "line_type": edge.get("edge_type") or "ligne-hta",
                 "line_gid": edge.get("source_gid") or edge_id,
+                "label": edge.get("business_label") or "",
+                "source_slug": edge.get("source_slug") or "",
             }
         )
+        esrc = edge.get("source_slug") or ""
+        if esrc and "cable-bt" in esrc:
+            bt_cable_slugs_in_schema.add(esrc)
+
+    # Ajouter un nœud résumé des clients par sous-réseau BT présent dans le schéma
+    import re as _re_schema
+
+    def _schema_token(s: str) -> str:
+        m = _re_schema.search(r"\b(r\d+)\b", (s or "").lower())
+        return m.group(1) if m else ""
+
+    clients_summary_added: set[str] = set()
+    max_y = max((n["y"] for n in nodes_out), default=760.0)
+    sum_x_base = sum(n["x"] for n in nodes_out) / max(len(nodes_out), 1) if nodes_out else 200.0
+    sum_x_offset = -((len(bt_cable_slugs_in_schema) - 1) * 180) / 2
+    for cable_slug in sorted(bt_cable_slugs_in_schema):
+        cable_token = _schema_token(cable_slug)
+        for family, cfg in RX_TOPOLOGY_FAMILIES.items():
+            if cable_slug not in {_slug(t) for t in cfg.get("bt_cables", [])}:
+                continue
+            for client_table in cfg.get("bt_clients", []):
+                client_token = _schema_token(_slug(client_table))
+                if cable_token and client_token and cable_token != client_token:
+                    continue
+                summary_key = f"{family}:{client_token or cable_token}"
+                if summary_key in clients_summary_added:
+                    continue
+                clients_summary_added.add(summary_key)
+                # Compter les clients dans la table
+                client_count = 0
+                try:
+                    cur.execute(f"SELECT COUNT(*) AS cnt FROM {_quote_ident(client_table)}")
+                    row = cur.fetchone()
+                    client_count = int(row["cnt"]) if row else 0
+                except Exception:
+                    pass
+                if client_count == 0:
+                    continue
+                token_label = (client_token or cable_token or "").upper()
+                # Chercher un poteau-bt du bon sous-réseau comme ancrage
+                bt_anchor_id = next(
+                    (n["id"] for n in nodes_out
+                     if "poteau-bt" in (n.get("type") or "").lower()
+                     and (not cable_token or cable_token in n["id"].lower())),
+                    next(
+                        (n["id"] for n in nodes_out if "poteau-bt" in (n.get("type") or "").lower()),
+                        None,
+                    ),
+                )
+                summary_node_id = f"clients-bt-{family}-{client_token or cable_token}-summary:0"
+                nodes_out.append({
+                    "id": summary_node_id,
+                    "type": "abonne",
+                    "symbol": "sym-abonne",
+                    "label": f"{client_count} clients {token_label}",
+                    "x": round(sum_x_base + sum_x_offset, 2),
+                    "y": round(max_y + 130.0, 2),
+                })
+                sum_x_offset += 180
+                if bt_anchor_id:
+                    edges_out.append({
+                        "source": bt_anchor_id,
+                        "target": summary_node_id,
+                        "line_type": "ligne-brcht",
+                        "line_gid": summary_node_id,
+                        "label": "",
+                        "source_slug": f"clients-bt-{family}-{client_token or cable_token}",
+                    })
+
     return {"nodes": nodes_out, "edges": edges_out, "message": None}

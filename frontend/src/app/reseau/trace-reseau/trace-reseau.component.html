@@ -81,15 +81,8 @@
 						<i class="fa fa-eraser"></i>
 						Effacer le tracé
 					</button>
-					<button type="button" class="trace-reseau-btn trace-reseau-btn--schema trace-reseau-btn--block"
-						(click)="ouvrirSchemaUnifilaire()"
-						[disabled]="!hasSelection() || !lastTraceDirection"
-						title="Ouvre le schéma unifilaire correspondant au tracé actif">
-						<i class="fa fa-project-diagram"></i>
-						Voir le schéma unifilaire
-					</button>
-				</div>
-			</section>
+			</div>
+		</section>
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-shield"></i> Contrôle des règles</h2>
 					<p class="trace-reseau-topology-desc">Vérifie les règles de connectivité/topologie et met en évidence en rouge les ouvrages non conformes sur la carte.</p>
@@ -459,6 +452,29 @@
 				}
 				</div>
 			</div>
+			<!-- Schéma unifilaire + Dashboard : boutons flottants sur la carte -->
+			<div class="trace-reseau-trace-actions-float" role="toolbar" aria-label="Schéma unifilaire et dashboard du tracé">
+				<button
+					type="button"
+					class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--schema"
+					(click)="ouvrirSchemaUnifilaire()"
+					[disabled]="!hasSelection() || !lastTraceDirection"
+					title="Ouvre le schéma unifilaire correspondant au tracé actif"
+				>
+					<i class="fa fa-project-diagram"></i>
+					<span>Schéma unifilaire</span>
+				</button>
+				<button
+					type="button"
+					class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--dashboard"
+					(click)="openDashboard()"
+					[disabled]="resumeOuvrages === 0"
+					title="Tableau de bord du tracé (puissance, lignes, abonnés, sous-réseaux)"
+				>
+					<i class="fa fa-chart-bar"></i>
+					<span>Dashboard</span>
+				</button>
+			</div>
 		</div>
 	</div>
 
@@ -524,4 +540,291 @@
 			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="closeUnifilaireModal()"></button>
 		</ng-template>
 	</p-dialog>
+
+<!-- ═══ Dashboard du tracé ══════════════════════════════════════════════════ -->
+@if (showDashboard) {
+<div class="dash-overlay" (click)="closeDashboard()">
+	<div class="dash-modal" (click)="$event.stopPropagation()">
+
+		<!-- Entête -->
+		<div class="dash-header">
+			<div class="dash-header-left">
+				<i class="fa fa-chart-bar dash-header-icon"></i>
+				<div>
+					<div class="dash-header-title">Dashboard du tracé</div>
+					<div class="dash-header-sub">
+						{{ selectedMapStart?.label || 'Ouvrage sélectionné' }}
+						&nbsp;·&nbsp;
+						Direction : {{ lastTraceDirection === 'amont' ? 'Amont' : lastTraceDirection === 'aval' ? 'Aval' : 'Tous connectés' }}
+					</div>
+				</div>
+			</div>
+			<button class="dash-close" (click)="closeDashboard()" title="Fermer">
+				<i class="fa fa-times"></i>
+			</button>
+		</div>
+
+		<!-- KPI cards -->
+		<div class="dash-kpis">
+			<div class="dash-kpi dash-kpi--hta">
+				<div class="dash-kpi-icon"><i class="fa fa-minus"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.htaLines }}</div>
+				<div class="dash-kpi-label">Tronçons HTA</div>
+			</div>
+			<div class="dash-kpi dash-kpi--bt">
+				<div class="dash-kpi-icon"><i class="fa fa-minus"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.btCables }}</div>
+				<div class="dash-kpi-label">Câbles BT</div>
+			</div>
+			<div class="dash-kpi dash-kpi--abonne">
+				<div class="dash-kpi-icon"><i class="fa fa-users"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.clients | number }}</div>
+				<div class="dash-kpi-label">Abonnés</div>
+			</div>
+			<div class="dash-kpi dash-kpi--poste-hta">
+				<div class="dash-kpi-icon"><i class="fa fa-building"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.htaPostes }}</div>
+				<div class="dash-kpi-label">Postes HTA</div>
+			</div>
+			<div class="dash-kpi dash-kpi--poste-bt">
+				<div class="dash-kpi-icon"><i class="fa fa-home"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.btPostes }}</div>
+				<div class="dash-kpi-label">Postes BT</div>
+			</div>
+			<div class="dash-kpi dash-kpi--network">
+				<div class="dash-kpi-icon"><i class="fa fa-sitemap"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.subNetworks }}</div>
+				<div class="dash-kpi-label">Sous-réseaux</div>
+			</div>
+			<div class="dash-kpi dash-kpi--power">
+				<div class="dash-kpi-icon"><i class="fa fa-bolt"></i></div>
+				<div class="dash-kpi-value">{{ dashStats.puissanceKw | number }} <span class="dash-kpi-unit">kW</span></div>
+				<div class="dash-kpi-label">Puissance de charge est.</div>
+			</div>
+		</div>
+
+		<!-- Charts -->
+		<div class="dash-charts">
+
+			<!-- Donut chart -->
+			<div class="dash-chart-card">
+				<div class="dash-chart-title">Répartition des ouvrages</div>
+				<div class="dash-chart-body">
+					@let segs = getDonutSegments(dashDonutData);
+					<svg viewBox="0 0 160 160" class="dash-donut-svg">
+						@for (seg of segs; track seg.color) {
+							<path [attr.d]="seg.path" [attr.fill]="seg.color" stroke="#fff" stroke-width="1.5"/>
+						}
+						<!-- Total au centre -->
+						<text x="80" y="76" text-anchor="middle" font-size="18" font-weight="700" fill="#1e293b">{{ dashStats.total }}</text>
+						<text x="80" y="91" text-anchor="middle" font-size="8" fill="#64748b">ouvrages</text>
+					</svg>
+					<!-- Légende -->
+					<ul class="dash-donut-legend">
+						@for (item of dashDonutData; track item.label) {
+							<li class="dash-donut-legend-item">
+								<span class="dash-donut-legend-swatch" [style.background]="item.color"></span>
+								<span class="dash-donut-legend-label">{{ item.label }}</span>
+								<span class="dash-donut-legend-count">{{ item.count }}</span>
+								<span class="dash-donut-legend-pct">{{ item.percent }}%</span>
+							</li>
+						}
+					</ul>
+				</div>
+			</div>
+
+			<!-- Bar chart sous-réseaux -->
+			@if (dashSubNetworks.length > 0) {
+			<div class="dash-chart-card dash-chart-card--bar">
+				<div class="dash-chart-title">Répartition par sous-réseau</div>
+				<div class="dash-chart-body dash-chart-body--bar">
+					@for (net of dashSubNetworks; track net.name) {
+						<div class="dash-bar-row">
+							<div class="dash-bar-name">{{ net.name }}</div>
+							<div class="dash-bar-tracks">
+								@if (net.clients > 0) {
+									<div class="dash-bar-track">
+										<div class="dash-bar-track-label">Abonnés</div>
+										<div class="dash-bar-outer">
+											<div class="dash-bar-fill dash-bar-fill--abonne"
+												[style.width.%]="net.clients / dashBarMax * 100">
+											</div>
+										</div>
+										<div class="dash-bar-track-val">{{ net.clients }}</div>
+									</div>
+								}
+								@if (net.cables > 0) {
+									<div class="dash-bar-track">
+										<div class="dash-bar-track-label">Câbles BT</div>
+										<div class="dash-bar-outer">
+											<div class="dash-bar-fill dash-bar-fill--bt"
+												[style.width.%]="net.cables / dashBarMax * 100">
+											</div>
+										</div>
+										<div class="dash-bar-track-val">{{ net.cables }}</div>
+									</div>
+								}
+								@if (net.postes > 0) {
+									<div class="dash-bar-track">
+										<div class="dash-bar-track-label">Postes BT</div>
+										<div class="dash-bar-outer">
+											<div class="dash-bar-fill dash-bar-fill--poste"
+												[style.width.%]="net.postes / dashBarMax * 100">
+											</div>
+										</div>
+										<div class="dash-bar-track-val">{{ net.postes }}</div>
+									</div>
+								}
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+			}
+
+		</div><!-- /dash-charts -->
+
+		<!-- Tableau récapitulatif -->
+		@if (dashSubNetworks.length > 0) {
+		<div class="dash-table-section">
+			<div class="dash-chart-title">Détail par sous-réseau</div>
+			<table class="dash-table">
+				<thead>
+					<tr>
+						<th>Sous-réseau</th>
+						<th>Abonnés</th>
+						<th>Câbles BT</th>
+						<th>Postes BT</th>
+						<th>Total</th>
+						<th>Puissance est. (kW)</th>
+					</tr>
+				</thead>
+				<tbody>
+					@for (net of dashSubNetworks; track net.name) {
+						<tr>
+							<td><span class="dash-table-badge">{{ net.name }}</span></td>
+							<td class="dash-table-num">{{ net.clients | number }}</td>
+							<td class="dash-table-num">{{ net.cables }}</td>
+							<td class="dash-table-num">{{ net.postes }}</td>
+							<td class="dash-table-num dash-table-num--bold">{{ net.total | number }}</td>
+							<td class="dash-table-num">{{ net.clients * 1.5 | number:'1.0-0' }}</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+		}
+
+		<!-- Liste paginée des ouvrages -->
+		<div class="dash-list-section">
+			<div class="dash-list-header">
+				<div class="dash-chart-title" style="margin-bottom:0">
+					Liste des ouvrages
+					<span class="dash-list-total">({{ dashFilteredItems.length | number }} / {{ resumeOuvrages | number }})</span>
+				</div>
+				<div class="dash-list-controls">
+					<!-- Filtre type -->
+					<div class="dash-filter-group">
+						@for (f of dashKindOptions; track f.v) {
+							<button
+								type="button"
+								class="dash-filter-btn"
+								[class.dash-filter-btn--active]="dashKindFilter === f.v"
+								(click)="setDashKindFilter(f.v)"
+							>{{ f.label }}</button>
+						}
+					</div>
+					<!-- Recherche -->
+					<div class="dash-search-wrap">
+						<i class="fa fa-search dash-search-icon"></i>
+						<input
+							class="dash-search-input"
+							type="text"
+							placeholder="Rechercher slug, ID…"
+							[(ngModel)]="dashSearch"
+							(ngModelChange)="dashOnSearch()"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tableau -->
+			<div class="dash-list-table-wrap">
+				<table class="dash-list-table">
+					<thead>
+						<tr>
+							<th class="dash-list-th--num">#</th>
+							<th>Type</th>
+							<th>Couche (slug)</th>
+							<th class="dash-list-th--id">ID</th>
+							<th>Catégorie</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (dashPagedItems.length === 0) {
+							<tr>
+								<td colspan="5" class="dash-list-empty">Aucun ouvrage trouvé.</td>
+							</tr>
+						}
+						@for (item of dashPagedItems; track item.slug + ':' + item.id; let i = $index) {
+							<tr class="dash-list-row">
+								<td class="dash-list-td--num">{{ (dashPage - 1) * dashPageSize + i + 1 }}</td>
+								<td>
+									<span class="dash-list-swatch" [style.background]="item.color"></span>
+								</td>
+								<td class="dash-list-td--slug" [title]="item.slug">{{ dashSlugLabel(item.slug) }}</td>
+								<td class="dash-list-td--id">{{ item.id }}</td>
+								<td>
+									<span class="dash-list-badge dash-list-badge--{{ item.kind }}">
+										<i [class]="'fa ' + dashKindIcon(item.kind)"></i>
+										{{ item.kind }}
+									</span>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Pagination -->
+			@if (dashTotalPages > 1) {
+			<div class="dash-pagination">
+				<button class="dash-page-btn" (click)="dashSetPage(1)" [disabled]="dashPage === 1" title="Première page">
+					<i class="fa fa-angle-double-left"></i>
+				</button>
+				<button class="dash-page-btn" (click)="dashSetPage(dashPage - 1)" [disabled]="dashPage === 1" title="Page précédente">
+					<i class="fa fa-angle-left"></i>
+				</button>
+				@if (dashPageNumbers[0] > 1) {
+					<span class="dash-page-ellipsis">…</span>
+				}
+				@for (p of dashPageNumbers; track p) {
+					<button
+						class="dash-page-btn"
+						[class.dash-page-btn--active]="p === dashPage"
+						(click)="dashSetPage(p)"
+					>{{ p }}</button>
+				}
+				@if (dashPageNumbers[dashPageNumbers.length - 1] < dashTotalPages) {
+					<span class="dash-page-ellipsis">…</span>
+				}
+				<button class="dash-page-btn" (click)="dashSetPage(dashPage + 1)" [disabled]="dashPage === dashTotalPages" title="Page suivante">
+					<i class="fa fa-angle-right"></i>
+				</button>
+				<button class="dash-page-btn" (click)="dashSetPage(dashTotalPages)" [disabled]="dashPage === dashTotalPages" title="Dernière page">
+					<i class="fa fa-angle-double-right"></i>
+				</button>
+				<span class="dash-page-info">
+					Page {{ dashPage }} / {{ dashTotalPages }}
+					&nbsp;·&nbsp; {{ dashPageSize }} par page
+				</span>
+			</div>
+			}
+
+		</div><!-- /dash-list-section -->
+
+	</div><!-- /dash-modal -->
+</div><!-- /dash-overlay -->
+}
+
 </div>

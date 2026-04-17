@@ -3484,7 +3484,7 @@ def _slug_to_symbol(slug: str) -> str:
         return "sym-cellule"
     if "point-raccordement" in s or "raccordement" in s:
         return "sym-point-raccordement"
-    if "abonne" in s:
+    if "abonne" in s or s.startswith("clients-bt-"):
         return "sym-abonne"
     if "compteur" in s:
         return "sym-compteur"
