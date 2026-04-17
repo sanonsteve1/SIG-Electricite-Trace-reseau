@@ -1,6 +1,7 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, ElementRef, NgZone, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { GisApiService, SchemaUnifilaireResponse, SchemaUnifilaireNode, SchemaUnifilaireEdge } from '../../../services/gis-api.service';
 
 @Component({
@@ -10,7 +11,7 @@ import { GisApiService, SchemaUnifilaireResponse, SchemaUnifilaireNode, SchemaUn
 	templateUrl: './schema-reseau.component.html',
 	styleUrls: ['./schema-reseau.component.scss']
 })
-export class SchemaReseau implements OnInit, AfterViewInit {
+export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	data: SchemaUnifilaireResponse | null = null;
 	loading = false;
 	error: string | null = null;
@@ -31,7 +32,51 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 	/** Direction du tracé connecté */
 	direction: 'amont' | 'aval' | 'tous' = 'tous';
 
+	/** Afficher les flèches de flux électrique (source → consommateurs) */
+	showFlux = false;
+
+	/** Mode de rendu : hiérarchique (arbre sans chevauchement) ou géographique (coordonnées SIG brutes) */
+	layoutMode: 'hierarchical' | 'geographic' = 'hierarchical';
+	/** Positions calculées par l'algorithme de disposition en arbre (Reingold-Tilford simplifié) */
+	private layoutPositions = new Map<string, { x: number; y: number }>();
+	/** Facteur d'échelle pixel/unité SVG (non utilisé en pan+zoom — gardé pour compatibilité) */
+	readonly layoutScale = 1;
+
+	/** ViewBox courant en mode hiérarchique (modifié par zoom/pan) */
+	private hierVB = { x: 0, y: 0, w: 0, h: 0 };
+	/** État du glisser-déposer */
+	protected isPanning = false;
+	private panStartNorm = { x: 0, y: 0 };
+	private panStartOrigin = { x: 0, y: 0 };
+	/** Listener wheel non-passif (doit être enregistré hors Angular) */
+	private wheelListenerAdded = false;
+
 	readonly margin = 60;
+
+	/**
+	 * Points du triangle directionnel.
+	 * Strictement proportionnel à hierVB.w → taille visuelle constante (~8 px)
+	 * quel que soit le niveau de zoom. Aucun plafond/plancher.
+	 */
+	get fluxArrowPointsScaled(): string {
+		const s = this.hierVB.w > 0 ? this.hierVB.w / 100 : 8;
+		return `${s},0 ${-s * 0.45},${-s * 0.45} ${-s * 0.45},${s * 0.45}`;
+	}
+
+	/**
+	 * stroke-dasharray proportionnel au viewBox → tirets toujours ~20 px visuels.
+	 * Aucun plafond/plancher.
+	 */
+	get fluxDashArrayValue(): string {
+		const d = this.hierVB.w > 0 ? this.hierVB.w / 40 : 12;
+		return `${d} ${d * 0.5}`;
+	}
+
+	/** Longueur d'un cycle tiret+espace (pour l'animation CSS). */
+	get fluxDashCycle(): number {
+		const d = this.hierVB.w > 0 ? this.hierVB.w / 40 : 12;
+		return d * 1.5;
+	}
 
 	/**
 	 * Couleurs symboles — palette type synoptique SCADA (contraste sur fond clair).
@@ -155,15 +200,42 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		{ lineType: 'ligne-brcht', label: 'Ligne branchement', color: '#f97316' }
 	];
 
-	constructor(private gisApi: GisApiService) {}
+	constructor(private gisApi: GisApiService, private ngZone: NgZone, private route: ActivatedRoute) {}
 
 	ngAfterViewInit(): void {
-		// recalcul de la popup quand la vue devient disponible
 		this.repositionPopup();
 	}
 
+	/** Enregistre le listener wheel non-passif dès que le SVG est dans le DOM */
+	ngAfterViewChecked(): void {
+		const svgEl = this.schemaSvgRef?.nativeElement;
+		if (svgEl && !this.wheelListenerAdded) {
+			this.ngZone.runOutsideAngular(() => {
+				svgEl.addEventListener('wheel', (e: Event) => {
+					this.ngZone.run(() => this.onSvgWheel(e as WheelEvent));
+				}, { passive: false });
+			});
+			this.wheelListenerAdded = true;
+		}
+		if (!svgEl) this.wheelListenerAdded = false;
+	}
+
 	ngOnInit(): void {
-		// Ne pas charger sans ouvrage
+		// Pré-remplir depuis les query params (?ref=slug:id&direction=aval)
+		const p = this.route.snapshot.queryParams;
+		if (p['ref']) {
+			this.refId = String(p['ref']);
+		}
+		if (p['direction'] && ['amont', 'aval', 'tous'].includes(String(p['direction']))) {
+			this.direction = String(p['direction']) as 'amont' | 'aval' | 'tous';
+		}
+		if (p['type'] && ['poste_source', 'poste_transformation', 'abonne', 'ouvrage'].includes(String(p['type']))) {
+			this.typeOuvrage = String(p['type']) as 'poste_source' | 'poste_transformation' | 'abonne' | 'ouvrage';
+		}
+		if (this.refId?.trim()) {
+			// Auto-charger si la ref est déjà renseignée
+			setTimeout(() => this.loadSchema(), 0);
+		}
 	}
 
 	loadSchema(): void {
@@ -171,14 +243,17 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 			this.error = 'Indiquez la codification (numéro de l\'ouvrage).';
 			return;
 		}
+		const parsedRef = this.parseSchemaRefInput(this.refId.trim());
 		this.loading = true;
 		this.error = null;
-		this.gisApi.getSchemaUnifilaire(this.refId.trim(), {
+		this.gisApi.getSchemaUnifilaire(parsedRef.refId, {
 			type: this.typeOuvrage,
-			direction: this.direction
+			direction: this.direction,
+			refSlug: parsedRef.refSlug
 		}).subscribe({
 			next: (res) => {
 				this.data = res;
+				this.computeLayout();
 				this.selectedNodeId = res.nodes?.[0]?.id ?? null;
 				this.popupNode = null;
 				this.popupDetailsEntries = [];
@@ -213,12 +288,12 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		});
 	}
 
-	/** ViewBox calculé à partir des nœuds (avec marge) */
+	/** ViewBox calculé à partir des positions d'affichage (avec marge) */
 	get viewBox(): string {
 		const n = this.nodes;
 		if (n.length === 0) return `0 0 ${400 + this.margin * 2} ${300 + this.margin * 2}`;
-		const xs = n.map((node) => node.x);
-		const ys = n.map((node) => node.y);
+		const xs = n.map((node) => this.nodeX(node));
+		const ys = n.map((node) => this.nodeY(node));
 		const minX = Math.min(...xs) - this.margin;
 		const minY = Math.min(...ys) - this.margin;
 		const maxX = Math.max(...xs) + this.margin;
@@ -233,13 +308,185 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		return this.data?.nodes.find((n) => n.id === id);
 	}
 
-	/** Coordonnées d'un nœud (pour les lignes) */
+	/** Coordonnées d'affichage d'un nœud — layout hiérarchique ou SIG selon le mode */
 	nodeX(node: SchemaUnifilaireNode): number {
+		if (this.layoutMode === 'hierarchical') {
+			return this.layoutPositions.get(node.id)?.x ?? node.x;
+		}
 		return node.x;
 	}
 
 	nodeY(node: SchemaUnifilaireNode): number {
+		if (this.layoutMode === 'hierarchical') {
+			return this.layoutPositions.get(node.id)?.y ?? node.y;
+		}
 		return node.y;
+	}
+
+	toggleLayout(): void {
+		this.layoutMode = this.layoutMode === 'hierarchical' ? 'geographic' : 'hierarchical';
+		if (this.layoutMode === 'hierarchical' && this.hierVB.w === 0) {
+			this.initHierVB();
+		}
+	}
+
+	/** Transform SVG complet d'un nœud : translation + scale en mode hiérarchique */
+	getNodeTransform(node: SchemaUnifilaireNode): string {
+		const t = `translate(${this.nodeX(node)},${this.nodeY(node)})`;
+		return this.layoutMode === 'hierarchical' ? `${t} scale(3)` : t;
+	}
+
+	/** ViewBox réel affiché : hierVB (zoom/pan) en mode hiérarchique, base en mode géo */
+	get activeViewBox(): string {
+		if (this.layoutMode === 'hierarchical' && this.hierVB.w > 0) {
+			return `${this.hierVB.x} ${this.hierVB.y} ${this.hierVB.w} ${this.hierVB.h}`;
+		}
+		return this.viewBox;
+	}
+
+	/** Dimensions CSS explicites du SVG (plus nécessaires avec le pan+zoom, retournent null) */
+	get svgNaturalWidth(): null { return null; }
+	get svgNaturalHeight(): null { return null; }
+
+	// ── Zoom / Pan ────────────────────────────────────────────────────────────
+
+	zoomIn(): void  { this.applyZoom(1 / 1.3); }
+	zoomOut(): void { this.applyZoom(1.3); }
+	resetZoom(): void { this.initHierVB(); }
+
+	private applyZoom(factor: number): void {
+		const cx = this.hierVB.x + this.hierVB.w / 2;
+		const cy = this.hierVB.y + this.hierVB.h / 2;
+		const nw = this.hierVB.w * factor;
+		const nh = this.hierVB.h * factor;
+		this.hierVB = { x: cx - nw / 2, y: cy - nh / 2, w: nw, h: nh };
+	}
+
+	private initHierVB(): void {
+		const p = this.viewBox.split(' ').map(Number);
+		if (p.length === 4 && !p.some(isNaN)) {
+			this.hierVB = { x: p[0], y: p[1], w: p[2], h: p[3] };
+		}
+	}
+
+	onSvgWheel(e: WheelEvent): void {
+		if (this.layoutMode !== 'hierarchical') return;
+		e.preventDefault();
+		const svg = this.schemaSvgRef?.nativeElement;
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const nx = (e.clientX - rect.left) / rect.width;
+		const ny = (e.clientY - rect.top) / rect.height;
+		const factor = e.deltaY < 0 ? 1 / 1.12 : 1.12;
+		const mx = this.hierVB.x + nx * this.hierVB.w;
+		const my = this.hierVB.y + ny * this.hierVB.h;
+		const nw = this.hierVB.w * factor;
+		const nh = this.hierVB.h * factor;
+		this.hierVB = { x: mx - nx * nw, y: my - ny * nh, w: nw, h: nh };
+	}
+
+	onSvgMouseDown(e: MouseEvent): void {
+		if (this.layoutMode !== 'hierarchical' || e.button !== 0) return;
+		e.preventDefault();
+		const svg = this.schemaSvgRef?.nativeElement;
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		this.isPanning = true;
+		this.panStartNorm = { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+		this.panStartOrigin = { x: this.hierVB.x, y: this.hierVB.y };
+	}
+
+	onPanMove(e: MouseEvent): void {
+		if (!this.isPanning || this.layoutMode !== 'hierarchical') return;
+		const svg = this.schemaSvgRef?.nativeElement;
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const nx = (e.clientX - rect.left) / rect.width;
+		const ny = (e.clientY - rect.top) / rect.height;
+		this.hierVB = {
+			...this.hierVB,
+			x: this.panStartOrigin.x - (nx - this.panStartNorm.x) * this.hierVB.w,
+			y: this.panStartOrigin.y - (ny - this.panStartNorm.y) * this.hierVB.h
+		};
+	}
+
+	onPanEnd(): void { this.isPanning = false; }
+
+	/**
+	 * Algorithme de disposition hiérarchique (Reingold-Tilford simplifié).
+	 * Construit un arbre couvrant par BFS depuis le nœud source, puis :
+	 *  1. Passe descendante  : calcule la largeur de chaque sous-arbre.
+	 *  2. Passe ascendante   : assigne les positions x (centré sur les enfants) et y (par niveau).
+	 * Garantit zéro chevauchement entre sous-arbres.
+	 */
+	computeLayout(): void {
+		const nodes = this.data?.nodes ?? [];
+		const edges = this.data?.edges ?? [];
+		this.layoutPositions = new Map();
+		if (nodes.length === 0) return;
+
+		const LEAF_W = 180;
+		const LEVEL_H = 200;
+
+		// Adjacence non-orientée
+		const adj = new Map<string, string[]>();
+		for (const n of nodes) adj.set(n.id, []);
+		for (const e of edges) {
+			adj.get(e.source)?.push(e.target);
+			adj.get(e.target)?.push(e.source);
+		}
+
+		// Racine : poste source en priorité, sinon nœud de plus fort degré
+		const rootNode = nodes.find(n => n.symbol === 'sym-poste-source')
+			?? nodes.reduce((best, n) =>
+				(adj.get(n.id)?.length ?? 0) > (adj.get(best.id)?.length ?? 0) ? n : best,
+				nodes[0]
+			);
+
+		// BFS pour construire l'arbre couvrant
+		const visited = new Set<string>([rootNode.id]);
+		const treeChildren = new Map<string, string[]>();
+		for (const n of nodes) treeChildren.set(n.id, []);
+		const queue: string[] = [rootNode.id];
+		while (queue.length > 0) {
+			const curr = queue.shift()!;
+			for (const nbr of (adj.get(curr) ?? [])) {
+				if (!visited.has(nbr)) {
+					visited.add(nbr);
+					treeChildren.get(curr)!.push(nbr);
+					queue.push(nbr);
+				}
+			}
+		}
+		// Nœuds orphelins (composantes déconnectées) → rattachés à la racine
+		for (const n of nodes) {
+			if (!visited.has(n.id)) treeChildren.get(rootNode.id)!.push(n.id);
+		}
+
+		// Passe 1 : largeur de chaque sous-arbre (post-order)
+		const subtreeW = new Map<string, number>();
+		const computeW = (id: string): number => {
+			const ch = treeChildren.get(id) ?? [];
+			if (ch.length === 0) { subtreeW.set(id, LEAF_W); return LEAF_W; }
+			const total = ch.reduce((s, c) => s + computeW(c), 0);
+			subtreeW.set(id, total);
+			return total;
+		};
+		computeW(rootNode.id);
+
+		// Passe 2 : affectation des positions (pre-order)
+		const assign = (id: string, left: number, y: number): void => {
+			const ch = treeChildren.get(id) ?? [];
+			const w = subtreeW.get(id) ?? LEAF_W;
+			this.layoutPositions.set(id, { x: left + w / 2, y });
+			let childLeft = left;
+			for (const c of ch) {
+				assign(c, childLeft, y + LEVEL_H);
+				childLeft += subtreeW.get(c) ?? LEAF_W;
+			}
+		};
+		assign(rootNode.id, 0, 0);
+		this.initHierVB();
 	}
 
 	/**
@@ -318,8 +565,8 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		const svgRect = svg.getBoundingClientRect();
 		const wrapRect = wrap.getBoundingClientRect();
 		if (svgRect.width <= 0 || svgRect.height <= 0 || vbW <= 0 || vbH <= 0) return;
-		const px = ((node.x - vbX) / vbW) * svgRect.width;
-		const py = ((node.y - vbY) / vbH) * svgRect.height;
+		const px = ((this.nodeX(node) - vbX) / vbW) * svgRect.width;
+		const py = ((this.nodeY(node) - vbY) / vbH) * svgRect.height;
 		const nodeLeftInWrap = (svgRect.left - wrapRect.left) + px + wrap.scrollLeft;
 		const nodeTopInWrap = (svgRect.top - wrapRect.top) + py + wrap.scrollTop;
 		const preferredLeft = nodeLeftInWrap + 28;
@@ -358,10 +605,46 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		const raw = (node.id || '').trim();
 		if (!raw || !raw.includes(':')) return null;
 		const [slugRaw, ...rest] = raw.split(':');
-		const slug = (node.type || slugRaw || '').trim();
+		// Priorité au slug issu du node.id (ex. "rx-hta-express-poste-hta-bt")
+		// node.type est le type topologique ("poste-cabine"), pas la table réelle.
+		const slug = (slugRaw || node.type || '').trim();
 		const id = rest.join(':').trim();
 		if (!slug || !id) return null;
 		return { slug, id };
+	}
+
+	/**
+	 * Calcule la position et l'angle d'une flèche de flux au milieu d'une liaison.
+	 * Suit la géométrie orthogonale (source → cible) : horizontal sur le segment horizontal,
+	 * vertical sinon.
+	 */
+	private computeFlowArrow(src: SchemaUnifilaireNode, tgt: SchemaUnifilaireNode): { x: number; y: number; angle: number } | null {
+		const x1 = this.nodeX(src), y1 = this.nodeY(src);
+		const x2 = this.nodeX(tgt), y2 = this.nodeY(tgt);
+		if (Math.abs(y2 - y1) < 1e-3) {
+			return { x: (x1 + x2) / 2, y: y1, angle: x2 >= x1 ? 0 : 180 };
+		}
+		if (Math.abs(x2 - x1) < 1e-3) {
+			return { x: x1, y: (y1 + y2) / 2, angle: y2 >= y1 ? 90 : 270 };
+		}
+		// L-shaped : placer la flèche au milieu du segment horizontal
+		const yMid = (y1 + y2) / 2;
+		return { x: (x1 + x2) / 2, y: yMid, angle: x2 >= x1 ? 0 : 180 };
+	}
+
+	/** Liste des flèches de flux pré-calculées (une par arête visible) */
+	get flowArrows(): Array<{ id: string; x: number; y: number; angle: number; color: string }> {
+		if (!this.showFlux) return [];
+		const result: Array<{ id: string; x: number; y: number; angle: number; color: string }> = [];
+		for (const edge of this.edges) {
+			const src = this.nodeById(edge.source);
+			const tgt = this.nodeById(edge.target);
+			if (!src || !tgt) continue;
+			const arrow = this.computeFlowArrow(src, tgt);
+			if (!arrow) continue;
+			result.push({ id: `${edge.source}--${edge.target}`, ...arrow, color: this.getEdgeColor(edge) });
+		}
+		return result;
 	}
 
 	private formatDbValue(value: unknown): string {
@@ -373,5 +656,17 @@ export class SchemaReseau implements OnInit, AfterViewInit {
 		} catch {
 			return String(value);
 		}
+	}
+
+	private parseSchemaRefInput(raw: string): { refId: string; refSlug?: string } {
+		const value = (raw || '').trim();
+		const idx = value.indexOf(':');
+		if (idx <= 0) return { refId: value };
+		const maybeSlug = value.slice(0, idx).trim().toLowerCase();
+		const maybeId = value.slice(idx + 1).trim();
+		if (!maybeSlug || !maybeId || !maybeSlug.startsWith('rx-')) {
+			return { refId: value };
+		}
+		return { refId: maybeId, refSlug: maybeSlug };
 	}
 }

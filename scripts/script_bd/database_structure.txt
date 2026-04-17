@@ -1,6 +1,6 @@
 ================================================================================
 EXTRACTION DE LA BASE DE DONNÉES: pre_prod_test1
-Date: 2026-03-04 10:04:01
+Date: 2026-04-16 12:18:54
 ================================================================================
 
 
@@ -10,9 +10,9 @@ TABLE: abonne
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
-   - Taille des index: 16 kB
+   - Taille totale: 19 MB
+   - Taille des données: 904 kB
+   - Taille des index: 18 MB
 
 📋 Colonnes (22):
 --------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ TABLE: arrivee
    - Taille des données: 8192 bytes
    - Taille des index: 16 kB
 
-📋 Colonnes (8):
+📋 Colonnes (9):
 --------------------------------------------------------------------------------
    • numero                         character varying    NULL
    • tension                        integer(32)          NULL
@@ -94,6 +94,7 @@ TABLE: arrivee
    • validation                     integer(32)          NULL
    • date_de_collecte               timestamp with time zone NULL
    • id_poste_source                character varying    NULL
+   • geom                           USER-DEFINED         NULL
 
 🔑 Clé primaire: gid
 
@@ -107,9 +108,9 @@ TABLE: branchement
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
-   - Taille des index: 16 kB
+   - Taille totale: 19 MB
+   - Taille des données: 1080 kB
+   - Taille des index: 18 MB
 
 📋 Colonnes (18):
 --------------------------------------------------------------------------------
@@ -144,11 +145,11 @@ TABLE: cellule
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 64 kB
-   - Taille des données: 16 kB
+   - Taille totale: 80 kB
+   - Taille des données: 24 kB
    - Taille des index: 16 kB
 
-📋 Colonnes (11):
+📋 Colonnes (12):
 --------------------------------------------------------------------------------
    • tension                        integer(32)          NULL
    • marque                         integer(32)          NULL
@@ -161,11 +162,120 @@ TABLE: cellule
    • id_depart                      character varying    NULL
    • image                          character varying    NULL
    • id_poste_cabine                character varying    NULL
+   • geom                           USER-DEFINED         NULL
 
 🔑 Clé primaire: gid
 
 📇 Index:
 • cellule_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: clients_bt_express_r380_xyextraction_gps_postpaied_15_02_2023_v
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 220
+   - Taille totale: 88 kB
+   - Taille des données: 32 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (7):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('clients_bt_express_r380_xyextraction_gps_postpaied_15_0_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • adresse_te                     double precision(53) NULL
+   • numero_com                     double precision(53) NULL
+   • identifant                     double precision(53) NULL
+   • latitude                       double precision(53) NULL
+   • longitude                      double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• clients_bt_express_r380_xyextraction_gps_postpaie_geom_geom_idx (geom)
+• clients_bt_express_r380_xyextraction_gps_postpaied_15_02_202_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023_v2
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 77
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (7):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • adresse_te                     double precision(53) NULL
+   • numero_com                     double precision(53) NULL
+   • identifant                     double precision(53) NULL
+   • latitude                       double precision(53) NULL
+   • longitude                      double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023__pk (gid) UNIQUE PRIMARY
+• clients_bt_raz_3_r226_xyextraction_gps_postpaied__geom_geom_idx (geom)
+
+
+================================================================================
+TABLE: clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023_v2
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 532
+   - Taille totale: 160 kB
+   - Taille des données: 64 kB
+   - Taille des index: 64 kB
+
+📋 Colonnes (7):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • adresse_te                     double precision(53) NULL
+   • numero_com                     double precision(53) NULL
+   • identifant                     double precision(53) NULL
+   • latitude                       double precision(53) NULL
+   • longitude                      double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023__pk (gid) UNIQUE PRIMARY
+• clients_bt_raz_4_r227_xyextraction_gps_postpaied__geom_geom_idx (geom)
+
+
+================================================================================
+TABLE: clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023_v2
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 501
+   - Taille totale: 152 kB
+   - Taille des données: 64 kB
+   - Taille des index: 56 kB
+
+📋 Colonnes (7):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • adresse_te                     double precision(53) NULL
+   • numero_com                     double precision(53) NULL
+   • identifant                     double precision(53) NULL
+   • latitude                       double precision(53) NULL
+   • longitude                      double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023__pk (gid) UNIQUE PRIMARY
+• clients_bt_raz_4_r333_xyextraction_gps_postpaied__geom_geom_idx (geom)
 
 
 ================================================================================
@@ -211,7 +321,7 @@ TABLE: coffret_repiquage
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
+   - Taille totale: 3384 kB
    - Taille des données: 8192 bytes
    - Taille des index: 16 kB
 
@@ -273,11 +383,11 @@ TABLE: depart
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
    - Taille des index: 16 kB
 
-📋 Colonnes (9):
+📋 Colonnes (10):
 --------------------------------------------------------------------------------
    • numero                         character varying    NULL
    • id_poste_source                character varying    NULL
@@ -288,6 +398,7 @@ TABLE: depart
    • gid                            character varying    [PK] NOT NULL
    • date_de_collecte               timestamp with time zone NULL
    • tension                        integer(32)          NULL
+   • geom                           USER-DEFINED         NULL
 
 🔑 Clé primaire: gid
 
@@ -301,9 +412,9 @@ TABLE: depart_bt
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
-   - Taille des index: 16 kB
+   - Taille totale: 592 kB
+   - Taille des données: 32 kB
+   - Taille des index: 520 kB
 
 📋 Colonnes (9):
 --------------------------------------------------------------------------------
@@ -321,6 +432,34 @@ TABLE: depart_bt
 
 📇 Index:
 • depart_bt_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: equipement_codification
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 5256 kB
+   - Taille des données: 1568 kB
+   - Taille des index: 3648 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           [PK] NOT NULL DEFAULT nextval('equipement_codification_id_seq'::regclass)
+   • table_name                     text                 NOT NULL
+   • equipement_id                  text                 NOT NULL
+   • type_code                      character varying(8) NOT NULL
+   • code_equipement                character varying(64) NOT NULL
+   • created_at                     timestamp with time zone NOT NULL DEFAULT now()
+
+🔑 Clé primaire: id
+
+📇 Index:
+• equipement_codification_code_equipement_key (code_equipement) UNIQUE
+• equipement_codification_pkey (id) UNIQUE PRIMARY
+• equipement_codification_table_name_equipement_id_key (table_name, equipement_id) UNIQUE
+• idx_equipement_codification_table_gid (table_name, equipement_id)
 
 
 ================================================================================
@@ -372,6 +511,56 @@ TABLE: jonction_hta
 
 📇 Index:
 • jonction_hta_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: kaya_equipement_connexion
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • gid                            text                 [PK] NOT NULL
+   • poste_gid                      text                 NOT NULL
+   • equip_gid                      text                 NOT NULL
+   • relation_type                  text                 NOT NULL
+   • collecte_par                   text                 NULL
+   • geom                           USER-DEFINED         NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• kaya_equipement_connexion_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: kaya_poste_emprise
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 32 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 16 kB
+
+📋 Colonnes (6):
+--------------------------------------------------------------------------------
+   • gid                            text                 [PK] NOT NULL
+   • poste_type                     text                 NOT NULL
+   • poste_gid                      text                 NOT NULL
+   • poste_numero                   text                 NULL
+   • collecte_par                   text                 NULL
+   • geom                           USER-DEFINED         NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• kaya_poste_emprise_pkey (gid) UNIQUE PRIMARY
 
 
 ================================================================================
@@ -2002,9 +2191,9 @@ TABLE: ligne_brcht
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
-   - Taille des index: 16 kB
+   - Taille totale: 18 MB
+   - Taille des données: 64 kB
+   - Taille des index: 18 MB
 
 📋 Colonnes (16):
 --------------------------------------------------------------------------------
@@ -2037,9 +2226,9 @@ TABLE: ligne_bt
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 96 kB
-   - Taille des données: 32 kB
-   - Taille des index: 32 kB
+   - Taille totale: 9472 kB
+   - Taille des données: 240 kB
+   - Taille des index: 9192 kB
 
 📋 Colonnes (18):
 --------------------------------------------------------------------------------
@@ -2092,9 +2281,9 @@ TABLE: ligne_hta
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 80 kB
-   - Taille des données: 32 kB
-   - Taille des index: 16 kB
+   - Taille totale: 496 kB
+   - Taille des données: 80 kB
+   - Taille des index: 376 kB
 
 📋 Colonnes (17):
 --------------------------------------------------------------------------------
@@ -2333,6 +2522,41 @@ TABLE: lignes_sections_vertices_pgr
 
 
 ================================================================================
+TABLE: network_rules
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: N/A
+   - Taille totale: 136 kB
+   - Taille des données: 48 kB
+   - Taille des index: 48 kB
+
+📋 Colonnes (14):
+--------------------------------------------------------------------------------
+   • id                             bigint(64)           [PK] NOT NULL DEFAULT nextval('network_rules_id_seq'::regclass)
+   • rule_type                      character varying(32) NOT NULL
+   • category                       text                 NULL
+   • rule_name                      text                 NOT NULL
+   • concerned_objects              text                 NULL
+   • description                    text                 NULL
+   • technical_constraints          text                 NULL
+   • examples                       text                 NULL
+   • detected_errors                text                 NULL
+   • best_practices                 text                 NULL
+   • source_file                    text                 NULL
+   • sort_order                     integer(32)          NOT NULL DEFAULT 0
+   • created_at                     timestamp with time zone NOT NULL DEFAULT now()
+   • updated_at                     timestamp with time zone NOT NULL DEFAULT now()
+
+🔑 Clé primaire: id
+
+📇 Index:
+• idx_network_rules_sort (rule_type, sort_order, id)
+• idx_network_rules_type (rule_type)
+• network_rules_pkey (id) UNIQUE PRIMARY
+
+
+================================================================================
 TABLE: ocr
 ================================================================================
 
@@ -2370,11 +2594,11 @@ TABLE: parafoudre
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 64 kB
-   - Taille des données: 16 kB
+   - Taille totale: 72 kB
+   - Taille des données: 24 kB
    - Taille des index: 16 kB
 
-📋 Colonnes (12):
+📋 Colonnes (13):
 --------------------------------------------------------------------------------
    • numero                         text                 NULL
    • id_parafoudre_type             integer(32)          NULL
@@ -2388,6 +2612,7 @@ TABLE: parafoudre
    • gid                            character varying    [PK] NOT NULL
    • date_de_collecte               timestamp without time zone NULL
    • id_poteau_hta                  character varying    NULL
+   • geom                           USER-DEFINED         NULL
 
 🔑 Clé primaire: gid
 
@@ -2455,9 +2680,9 @@ TABLE: point_raccordement
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 80 kB
-   - Taille des données: 32 kB
-   - Taille des index: 16 kB
+   - Taille totale: 20 MB
+   - Taille des données: 72 kB
+   - Taille des index: 18 MB
 
 📋 Colonnes (20):
 --------------------------------------------------------------------------------
@@ -2512,11 +2737,11 @@ TABLE: poste_cabine
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 32 kB
-   - Taille des données: 8192 bytes
-   - Taille des index: 16 kB
+   - Taille totale: 216 kB
+   - Taille des données: 16 kB
+   - Taille des index: 160 kB
 
-📋 Colonnes (14):
+📋 Colonnes (15):
 --------------------------------------------------------------------------------
    • numero                         text                 NULL
    • id_poste_cabine_type           integer(32)          NULL
@@ -2532,6 +2757,7 @@ TABLE: poste_cabine
    • validation                     integer(32)          NULL
    • geom                           USER-DEFINED         NULL
    • id_ligne_hta                   character varying    NULL
+   • id_depart_hta                  uuid                 NULL
 
 🔑 Clé primaire: gid
 
@@ -2545,7 +2771,7 @@ TABLE: poste_source
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 64 kB
+   - Taille totale: 40 kB
    - Taille des données: 16 kB
    - Taille des index: 16 kB
 
@@ -2608,9 +2834,9 @@ TABLE: poteau_bt
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 232 kB
-   - Taille des données: 144 kB
-   - Taille des index: 56 kB
+   - Taille totale: 19 MB
+   - Taille des données: 176 kB
+   - Taille des index: 18 MB
 
 📋 Colonnes (20):
 --------------------------------------------------------------------------------
@@ -2647,9 +2873,9 @@ TABLE: poteau_hta
 
 📊 Informations de la table:
    - Nombre de lignes: N/A
-   - Taille totale: 288 kB
-   - Taille des données: 192 kB
-   - Taille des index: 64 kB
+   - Taille totale: 2256 kB
+   - Taille des données: 200 kB
+   - Taille des index: 400 kB
 
 📋 Colonnes (24):
 --------------------------------------------------------------------------------
@@ -2682,6 +2908,1004 @@ TABLE: poteau_hta
 
 📇 Index:
 • poteau_hta_pkey (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: ps_poste_source
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 2
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (45):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('ps_poste_source_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • type                           character varying    NULL
+   • sstype                         character varying    NULL
+   • libelle                        character varying    NULL
+   • ident                          character varying    NULL
+   • date_mes                       date                 NULL
+   • coordx                         double precision(53) NULL
+   • coordy                         double precision(53) NULL
+   • dr                             character varying    NULL
+   • commune                        character varying    NULL
+   • codeps                         character varying    NULL
+   • niv_tensio                     character varying    NULL
+   • nb_tfo                         bigint(64)           NULL
+   • nb_cell_ar                     bigint(64)           NULL
+   • nb_cell_de                     bigint(64)           NULL
+   • nb_barre                       bigint(64)           NULL
+   • nb_cell_cp                     bigint(64)           NULL
+   • nb_cell_co                     bigint(64)           NULL
+   • nb_jeu_bar                     bigint(64)           NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • quartier                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • rue                            character varying    NULL
+   • num_ps                         character varying    NULL
+   • nom_sp                         character varying    NULL
+   • code_sp                        character varying    NULL
+   • d_exploit                      character varying    NULL
+   • d_type                         character varying    NULL
+   • d_sstype                       character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_niv_tens                     character varying    NULL
+   • d_nb_tfo                       character varying    NULL
+   • d_nb_cell_                     character varying    NULL
+   • d_nb_cell1                     character varying    NULL
+   • d_nb_barre                     character varying    NULL
+   • d_nb_cel_1                     character varying    NULL
+   • d_nb_cel_2                     character varying    NULL
+   • d_nb_jeu_b                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• ps_poste_source_geom_geom_idx (geom)
+• ps_poste_source_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_express_r380_cable_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 17
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_express_r380_cable_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • num_ordre                      character varying    NULL
+   • num_ordre1                     character varying    NULL
+   • type_cable                     bigint(64)           NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • zone_desse                     character varying    NULL
+   • shape_leng                     double precision(53) NULL
+   • num_poste                      character varying    NULL
+   • nom_du_dep                     character varying    NULL
+   • exploita_1                     character varying    NULL
+   • num_ordr_1                     character varying    NULL
+   • num_ordr_2                     character varying    NULL
+   • zone_des_1                     character varying    NULL
+   • shape_le_1                     double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_express_r380_cable_bt_geom_geom_idx (geom)
+• rx_bt_express_r380_cable_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_express_r380_poste_h59
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 1
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (31):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_express_r380_poste_h59_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • s_quartier                     character varying    NULL
+   • voie                           character varying    NULL
+   • libelle_vo                     character varying    NULL
+   • proximite                      character varying    NULL
+   • num_poste                      character varying    NULL
+   • nom_poste                      character varying    NULL
+   • nb_tfo                         character varying    NULL
+   • nb_tab_bt                      character varying    NULL
+   • eclairage                      character varying    NULL
+   • aeration                       character varying    NULL
+   • grillage                       character varying    NULL
+   • genie_civi                     character varying    NULL
+   • etancheite                     character varying    NULL
+   • porte                          character varying    NULL
+   • sol                            character varying    NULL
+   • interieur                      character varying    NULL
+   • exterieur                      character varying    NULL
+   • acces                          character varying    NULL
+   • type_h59                       bigint(64)           NULL
+   • exploita_1                     character varying    NULL
+   • libelle__1                     character varying    NULL
+   • genie_ci_1                     character varying    NULL
+   • etat                           character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_express_r380_poste_h59_geom_geom_idx (geom)
+• rx_bt_express_r380_poste_h59_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_3_r226_cable_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 16
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_3_r226_cable_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • num_ordre                      character varying    NULL
+   • num_ordre1                     character varying    NULL
+   • type_cable                     bigint(64)           NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • zone_desse                     character varying    NULL
+   • shape_leng                     double precision(53) NULL
+   • num_poste                      character varying    NULL
+   • nom_du_dep                     character varying    NULL
+   • exploita_1                     character varying    NULL
+   • num_ordr_1                     character varying    NULL
+   • num_ordr_2                     character varying    NULL
+   • zone_des_1                     character varying    NULL
+   • shape_le_1                     double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_3_r226_cable_bt_geom_geom_idx (geom)
+• rx_bt_raz_3_r226_cable_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_3_r226_poste_h59
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 1
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (31):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_3_r226_poste_h59_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • s_quartier                     character varying    NULL
+   • voie                           character varying    NULL
+   • libelle_vo                     character varying    NULL
+   • proximite                      character varying    NULL
+   • num_poste                      character varying    NULL
+   • nom_poste                      character varying    NULL
+   • nb_tfo                         character varying    NULL
+   • nb_tab_bt                      character varying    NULL
+   • eclairage                      character varying    NULL
+   • aeration                       character varying    NULL
+   • grillage                       character varying    NULL
+   • genie_civi                     character varying    NULL
+   • etancheite                     character varying    NULL
+   • porte                          character varying    NULL
+   • sol                            character varying    NULL
+   • interieur                      character varying    NULL
+   • exterieur                      character varying    NULL
+   • acces                          character varying    NULL
+   • type_h59                       bigint(64)           NULL
+   • exploita_1                     character varying    NULL
+   • libelle__1                     character varying    NULL
+   • genie_ci_1                     character varying    NULL
+   • etat                           character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_3_r226_poste_h59_geom_geom_idx (geom)
+• rx_bt_raz_3_r226_poste_h59_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_4_r227_cable_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 14
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_4_r227_cable_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • num_ordre                      character varying    NULL
+   • num_ordre1                     character varying    NULL
+   • type_cable                     bigint(64)           NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • zone_desse                     character varying    NULL
+   • shape_leng                     double precision(53) NULL
+   • num_poste                      character varying    NULL
+   • nom_du_dep                     character varying    NULL
+   • exploita_1                     character varying    NULL
+   • num_ordr_1                     character varying    NULL
+   • num_ordr_2                     character varying    NULL
+   • zone_des_1                     character varying    NULL
+   • shape_le_1                     double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_4_r227_cable_bt_geom_geom_idx (geom)
+• rx_bt_raz_4_r227_cable_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_4_r227_poste_h59
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 1
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (31):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_4_r227_poste_h59_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • s_quartier                     character varying    NULL
+   • voie                           character varying    NULL
+   • libelle_vo                     character varying    NULL
+   • proximite                      character varying    NULL
+   • num_poste                      character varying    NULL
+   • nom_poste                      character varying    NULL
+   • nb_tfo                         character varying    NULL
+   • nb_tab_bt                      character varying    NULL
+   • eclairage                      character varying    NULL
+   • aeration                       character varying    NULL
+   • grillage                       character varying    NULL
+   • genie_civi                     character varying    NULL
+   • etancheite                     character varying    NULL
+   • porte                          character varying    NULL
+   • sol                            character varying    NULL
+   • interieur                      character varying    NULL
+   • exterieur                      character varying    NULL
+   • acces                          character varying    NULL
+   • type_h59                       bigint(64)           NULL
+   • exploita_1                     character varying    NULL
+   • libelle__1                     character varying    NULL
+   • genie_ci_1                     character varying    NULL
+   • etat                           character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_4_r227_poste_h59_geom_geom_idx (geom)
+• rx_bt_raz_4_r227_poste_h59_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_4_r333_cable_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 27
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (20):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_4_r333_cable_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • num_ordre                      character varying    NULL
+   • num_ordre1                     character varying    NULL
+   • type_cable                     bigint(64)           NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • zone_desse                     character varying    NULL
+   • shape_leng                     double precision(53) NULL
+   • num_poste                      character varying    NULL
+   • nom_du_dep                     character varying    NULL
+   • exploita_1                     character varying    NULL
+   • num_ordr_1                     character varying    NULL
+   • num_ordr_2                     character varying    NULL
+   • zone_des_1                     character varying    NULL
+   • shape_le_1                     double precision(53) NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_4_r333_cable_bt_geom_geom_idx (geom)
+• rx_bt_raz_4_r333_cable_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_bt_raz_4_r333_poste_h59
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 1
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (31):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_bt_raz_4_r333_poste_h59_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • objectid_1                     bigint(64)           NULL
+   • objectid                       bigint(64)           NULL
+   • dr                             character varying    NULL
+   • exploitati                     character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • s_quartier                     character varying    NULL
+   • voie                           character varying    NULL
+   • libelle_vo                     character varying    NULL
+   • proximite                      character varying    NULL
+   • num_poste                      character varying    NULL
+   • nom_poste                      character varying    NULL
+   • nb_tfo                         character varying    NULL
+   • nb_tab_bt                      character varying    NULL
+   • eclairage                      character varying    NULL
+   • aeration                       character varying    NULL
+   • grillage                       character varying    NULL
+   • genie_civi                     character varying    NULL
+   • etancheite                     character varying    NULL
+   • porte                          character varying    NULL
+   • sol                            character varying    NULL
+   • interieur                      character varying    NULL
+   • exterieur                      character varying    NULL
+   • acces                          character varying    NULL
+   • type_h59                       bigint(64)           NULL
+   • exploita_1                     character varying    NULL
+   • libelle__1                     character varying    NULL
+   • genie_ci_1                     character varying    NULL
+   • etat                           character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_bt_raz_4_r333_poste_h59_geom_geom_idx (geom)
+• rx_bt_raz_4_r333_poste_h59_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_express_poste_hta_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 30
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (69):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_express_poste_hta_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • type                           character varying    NULL
+   • depart                         character varying    NULL
+   • libelle                        character varying    NULL
+   • ident                          character varying    NULL
+   • date_mes                       date                 NULL
+   • coordx                         double precision(53) NULL
+   • coordy                         double precision(53) NULL
+   • dr                             character varying    NULL
+   • commune                        character varying    NULL
+   • genie                          character varying    NULL
+   • nb_cell                        character varying    NULL
+   • type_cell                      character varying    NULL
+   • puiss_tfo1                     character varying    NULL
+   • puiss_tfo2                     character varying    NULL
+   • puiss_tfo3                     character varying    NULL
+   • propr_tfo1                     character varying    NULL
+   • propr_tfo2                     character varying    NULL
+   • propr_tfo3                     character varying    NULL
+   • appartenan                     character varying    NULL
+   • marque_tfo                     character varying    NULL
+   • marque_t_1                     character varying    NULL
+   • marque_t_2                     character varying    NULL
+   • nb_transfo                     bigint(64)           NULL
+   • telecomman                     character varying    NULL
+   • sstypes                        integer(32)          NULL
+   • nom_poste                      character varying    NULL
+   • date_creat                     date                 NULL
+   • date_modif                     date                 NULL
+   • nb_tur                         integer(32)          NULL
+   • nb_depart                      integer(32)          NULL
+   • nbre_dds                       integer(32)          NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • nbre_dds_c                     integer(32)          NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • num_poste                      character varying    NULL
+   • code_sp                        character varying    NULL
+   • d_exploit                      character varying    NULL
+   • d_type                         character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_genie                        character varying    NULL
+   • d_nb_cell                      character varying    NULL
+   • d_type_cel                     character varying    NULL
+   • d_puiss_tf                     character varying    NULL
+   • d_puiss__1                     character varying    NULL
+   • d_puiss__2                     character varying    NULL
+   • d_propr_tf                     character varying    NULL
+   • d_propr__1                     character varying    NULL
+   • d_propr__2                     character varying    NULL
+   • d_apparten                     character varying    NULL
+   • d_marque_t                     character varying    NULL
+   • d_marque_1                     character varying    NULL
+   • d_marque_2                     character varying    NULL
+   • d_nb_trans                     character varying    NULL
+   • d_telecomm                     character varying    NULL
+   • d_sstypes                      character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_express_poste_hta_bt_geom_geom_idx (geom)
+• rx_hta_express_poste_hta_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_express_troncons
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 38
+   - Taille totale: 112 kB
+   - Taille des données: 40 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (40):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_express_troncons_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • ident                          character varying    NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • depart                         character varying    NULL
+   • tension                        integer(32)          NULL
+   • struct                         character varying    NULL
+   • codetype                       integer(32)          NULL
+   • dr                             character varying    NULL
+   • id                             bigint(64)           NULL
+   • n_amont                        bigint(64)           NULL
+   • n_aval                         bigint(64)           NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • ident_ps                       character varying    NULL
+   • date_mes                       date                 NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • longeur                        double precision(53) NULL
+   • code_sp                        character varying    NULL
+   • st_length                      double precision(53) NULL
+   • d_exploit                      character varying    NULL
+   • d_nature                       character varying    NULL
+   • d_section                      character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_struct                       character varying    NULL
+   • d_codetype                     character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_ident_ps                     character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_express_troncons_geom_geom_idx (geom)
+• rx_hta_express_troncons_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_motobe_troncons
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 41
+   - Taille totale: 80 kB
+   - Taille des données: 24 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (40):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_motobe_troncons_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • ident                          character varying    NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • depart                         character varying    NULL
+   • tension                        integer(32)          NULL
+   • struct                         character varying    NULL
+   • codetype                       integer(32)          NULL
+   • dr                             character varying    NULL
+   • id                             bigint(64)           NULL
+   • n_amont                        bigint(64)           NULL
+   • n_aval                         bigint(64)           NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • ident_ps                       character varying    NULL
+   • date_mes                       date                 NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • longeur                        double precision(53) NULL
+   • code_sp                        character varying    NULL
+   • st_length                      double precision(53) NULL
+   • d_exploit                      character varying    NULL
+   • d_nature                       character varying    NULL
+   • d_section                      character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_struct                       character varying    NULL
+   • d_codetype                     character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_ident_ps                     character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_motobe_troncons_geom_geom_idx (geom)
+• rx_hta_motobe_troncons_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_raz_3_poste_hta_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 10
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (69):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_raz_3_poste_hta_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • type                           character varying    NULL
+   • depart                         character varying    NULL
+   • libelle                        character varying    NULL
+   • ident                          character varying    NULL
+   • date_mes                       date                 NULL
+   • coordx                         double precision(53) NULL
+   • coordy                         double precision(53) NULL
+   • dr                             character varying    NULL
+   • commune                        character varying    NULL
+   • genie                          character varying    NULL
+   • nb_cell                        character varying    NULL
+   • type_cell                      character varying    NULL
+   • puiss_tfo1                     character varying    NULL
+   • puiss_tfo2                     character varying    NULL
+   • puiss_tfo3                     character varying    NULL
+   • propr_tfo1                     character varying    NULL
+   • propr_tfo2                     character varying    NULL
+   • propr_tfo3                     character varying    NULL
+   • appartenan                     character varying    NULL
+   • marque_tfo                     character varying    NULL
+   • marque_t_1                     character varying    NULL
+   • marque_t_2                     character varying    NULL
+   • nb_transfo                     bigint(64)           NULL
+   • telecomman                     character varying    NULL
+   • sstypes                        integer(32)          NULL
+   • nom_poste                      character varying    NULL
+   • date_creat                     date                 NULL
+   • date_modif                     date                 NULL
+   • nb_tur                         integer(32)          NULL
+   • nb_depart                      integer(32)          NULL
+   • nbre_dds                       integer(32)          NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • nbre_dds_c                     integer(32)          NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • num_poste                      character varying    NULL
+   • code_sp                        character varying    NULL
+   • d_exploit                      character varying    NULL
+   • d_type                         character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_genie                        character varying    NULL
+   • d_nb_cell                      character varying    NULL
+   • d_type_cel                     character varying    NULL
+   • d_puiss_tf                     character varying    NULL
+   • d_puiss__1                     character varying    NULL
+   • d_puiss__2                     character varying    NULL
+   • d_propr_tf                     character varying    NULL
+   • d_propr__1                     character varying    NULL
+   • d_propr__2                     character varying    NULL
+   • d_apparten                     character varying    NULL
+   • d_marque_t                     character varying    NULL
+   • d_marque_1                     character varying    NULL
+   • d_marque_2                     character varying    NULL
+   • d_nb_trans                     character varying    NULL
+   • d_telecomm                     character varying    NULL
+   • d_sstypes                      character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_raz_3_poste_hta_bt_geom_geom_idx (geom)
+• rx_hta_raz_3_poste_hta_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_raz_3_troncons
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 12
+   - Taille totale: 88 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (40):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_raz_3_troncons_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • ident                          character varying    NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • depart                         character varying    NULL
+   • tension                        integer(32)          NULL
+   • struct                         character varying    NULL
+   • codetype                       integer(32)          NULL
+   • dr                             character varying    NULL
+   • id                             bigint(64)           NULL
+   • n_amont                        bigint(64)           NULL
+   • n_aval                         bigint(64)           NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • ident_ps                       character varying    NULL
+   • date_mes                       date                 NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • longeur                        double precision(53) NULL
+   • code_sp                        character varying    NULL
+   • st_length                      double precision(53) NULL
+   • d_exploit                      character varying    NULL
+   • d_nature                       character varying    NULL
+   • d_section                      character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_struct                       character varying    NULL
+   • d_codetype                     character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_ident_ps                     character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_raz_3_troncons_geom_geom_idx (geom)
+• rx_hta_raz_3_troncons_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_raz_4_poste_hta
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 3
+   - Taille totale: 40 kB
+   - Taille des données: 8192 bytes
+   - Taille des index: 24 kB
+
+📋 Colonnes (42):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_raz_4_poste_hta_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • type                           character varying    NULL
+   • depart                         character varying    NULL
+   • libelle                        character varying    NULL
+   • ident                          character varying    NULL
+   • date_mes                       date                 NULL
+   • coordx                         double precision(53) NULL
+   • coordy                         double precision(53) NULL
+   • dr                             character varying    NULL
+   • commune                        character varying    NULL
+   • niv_tensio                     character varying    NULL
+   • nb_cell                        bigint(64)           NULL
+   • nb_jeubar                      bigint(64)           NULL
+   • nb_tfo_hta                     bigint(64)           NULL
+   • stype                          integer(32)          NULL
+   • date_creat                     date                 NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • nb_dds                         integer(32)          NULL
+   • telecomman                     character varying    NULL
+   • rue                            character varying    NULL
+   • numero_pos                     character varying    NULL
+   • code_sp                        character varying    NULL
+   • nom_qt                         character varying    NULL
+   • d_exploit                      character varying    NULL
+   • d_type                         character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_niv_tens                     character varying    NULL
+   • d_nb_cell                      character varying    NULL
+   • d_nb_jeuba                     character varying    NULL
+   • d_nb_tfo_h                     character varying    NULL
+   • d_stype                        character varying    NULL
+   • d_telecomm                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_raz_4_poste_hta_geom_geom_idx (geom)
+• rx_hta_raz_4_poste_hta_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_raz_4_poste_hta_bt
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 23
+   - Taille totale: 72 kB
+   - Taille des données: 16 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (69):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_raz_4_poste_hta_bt_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • type                           character varying    NULL
+   • depart                         character varying    NULL
+   • libelle                        character varying    NULL
+   • ident                          character varying    NULL
+   • date_mes                       date                 NULL
+   • coordx                         double precision(53) NULL
+   • coordy                         double precision(53) NULL
+   • dr                             character varying    NULL
+   • commune                        character varying    NULL
+   • genie                          character varying    NULL
+   • nb_cell                        character varying    NULL
+   • type_cell                      character varying    NULL
+   • puiss_tfo1                     character varying    NULL
+   • puiss_tfo2                     character varying    NULL
+   • puiss_tfo3                     character varying    NULL
+   • propr_tfo1                     character varying    NULL
+   • propr_tfo2                     character varying    NULL
+   • propr_tfo3                     character varying    NULL
+   • appartenan                     character varying    NULL
+   • marque_tfo                     character varying    NULL
+   • marque_t_1                     character varying    NULL
+   • marque_t_2                     character varying    NULL
+   • nb_transfo                     bigint(64)           NULL
+   • telecomman                     character varying    NULL
+   • sstypes                        integer(32)          NULL
+   • nom_poste                      character varying    NULL
+   • date_creat                     date                 NULL
+   • date_modif                     date                 NULL
+   • nb_tur                         integer(32)          NULL
+   • nb_depart                      integer(32)          NULL
+   • nbre_dds                       integer(32)          NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • nbre_dds_c                     integer(32)          NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • num_poste                      character varying    NULL
+   • code_sp                        character varying    NULL
+   • d_exploit                      character varying    NULL
+   • d_type                         character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_genie                        character varying    NULL
+   • d_nb_cell                      character varying    NULL
+   • d_type_cel                     character varying    NULL
+   • d_puiss_tf                     character varying    NULL
+   • d_puiss__1                     character varying    NULL
+   • d_puiss__2                     character varying    NULL
+   • d_propr_tf                     character varying    NULL
+   • d_propr__1                     character varying    NULL
+   • d_propr__2                     character varying    NULL
+   • d_apparten                     character varying    NULL
+   • d_marque_t                     character varying    NULL
+   • d_marque_1                     character varying    NULL
+   • d_marque_2                     character varying    NULL
+   • d_nb_trans                     character varying    NULL
+   • d_telecomm                     character varying    NULL
+   • d_sstypes                      character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_raz_4_poste_hta_bt_geom_geom_idx (geom)
+• rx_hta_raz_4_poste_hta_bt_pk (gid) UNIQUE PRIMARY
+
+
+================================================================================
+TABLE: rx_hta_raz_4_troncons
+================================================================================
+
+📊 Informations de la table:
+   - Nombre de lignes: 28
+   - Taille totale: 104 kB
+   - Taille des données: 32 kB
+   - Taille des index: 24 kB
+
+📋 Colonnes (40):
+--------------------------------------------------------------------------------
+   • gid                            integer(32)          [PK] NOT NULL DEFAULT nextval('rx_hta_raz_4_troncons_gid_seq'::regclass)
+   • geom                           USER-DEFINED         NULL
+   • exploit                        character varying    NULL
+   • ident                          character varying    NULL
+   • nature                         character varying    NULL
+   • section                        character varying    NULL
+   • depart                         character varying    NULL
+   • tension                        integer(32)          NULL
+   • struct                         character varying    NULL
+   • codetype                       integer(32)          NULL
+   • dr                             character varying    NULL
+   • id                             bigint(64)           NULL
+   • n_amont                        bigint(64)           NULL
+   • n_aval                         bigint(64)           NULL
+   • created_us                     character varying    NULL
+   • created_da                     date                 NULL
+   • last_edite                     character varying    NULL
+   • last_edi_1                     date                 NULL
+   • globalid                       character varying    NULL
+   • commune                        character varying    NULL
+   • quartier                       character varying    NULL
+   • rue                            character varying    NULL
+   • ident_ps                       character varying    NULL
+   • date_mes                       date                 NULL
+   • fonction                       character varying    NULL
+   • region                         character varying    NULL
+   • departemen                     character varying    NULL
+   • sous_prefe                     character varying    NULL
+   • longeur                        double precision(53) NULL
+   • code_sp                        character varying    NULL
+   • st_length                      double precision(53) NULL
+   • d_exploit                      character varying    NULL
+   • d_nature                       character varying    NULL
+   • d_section                      character varying    NULL
+   • d_depart                       character varying    NULL
+   • d_struct                       character varying    NULL
+   • d_codetype                     character varying    NULL
+   • d_dr                           character varying    NULL
+   • d_ident_ps                     character varying    NULL
+   • d_fonction                     character varying    NULL
+
+🔑 Clé primaire: gid
+
+📇 Index:
+• rx_hta_raz_4_troncons_geom_geom_idx (geom)
+• rx_hta_raz_4_troncons_pk (gid) UNIQUE PRIMARY
 
 
 ================================================================================
@@ -2796,7 +4020,7 @@ TABLE: transformateur_ps
    - Taille des données: 16 kB
    - Taille des index: 16 kB
 
-📋 Colonnes (19):
+📋 Colonnes (20):
 --------------------------------------------------------------------------------
    • numero_serie                   character varying    NULL
    • marque                         character varying    NULL
@@ -2817,6 +4041,7 @@ TABLE: transformateur_ps
    • collecte_par                   character varying    NULL
    • date_de_collecte               timestamp with time zone NULL
    • id_poste_source                character varying    NULL
+   • geom                           USER-DEFINED         NULL
 
 🔑 Clé primaire: gid
 

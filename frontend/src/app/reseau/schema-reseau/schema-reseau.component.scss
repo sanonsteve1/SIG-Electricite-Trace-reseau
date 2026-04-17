@@ -224,8 +224,8 @@ $header-height: 56px;
 	width: 100%;
 	min-height: 0;
 	display: flex;
-	align-items: center;
-	justify-content: center;
+	align-items: flex-start;
+	justify-content: flex-start;
 	background-color: #fff;
 	background-image:
 		linear-gradient(rgba(148, 163, 184, 0.35) 1px, transparent 1px),
@@ -247,6 +247,22 @@ $header-height: 56px;
 	min-width: 0;
 	min-height: 0;
 	background: transparent;
+}
+
+/* Mode hiérarchique : le SVG remplit le conteneur — le zoom/pan se fait via viewBox */
+.schema-reseau-svg--hierarchical {
+	position: absolute !important;
+	inset: 0;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	max-height: none !important;
+	cursor: grab;
+	user-select: none;
+}
+
+.schema-reseau-svg--panning {
+	cursor: grabbing !important;
 }
 
 @media (max-width: 900px) {
@@ -589,6 +605,53 @@ $header-height: 56px;
 	background-size: 24px 24px;
 }
 
+/* Mode géographique : recentre le SVG (ancien comportement) */
+.schema-reseau-svg-wrap:not(.schema-reseau-svg-wrap--hierarchical) {
+	align-items: center;
+	justify-content: center;
+}
+
+/* Mode hiérarchique : overflow hidden (pan/zoom gère la navigation, pas les scrollbars) */
+.schema-reseau-svg-wrap--hierarchical {
+	overflow: hidden;
+}
+
+/* Groupe de boutons zoom */
+.schema-scada-zoom-group {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid #e2e8f0;
+	border-radius: 999px;
+	overflow: hidden;
+	background: #f1f5f9;
+}
+
+.schema-scada-zoom-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	color: #475569;
+	cursor: pointer;
+	transition: background 0.12s, color 0.12s;
+
+	& + & {
+		border-left: 1px solid #e2e8f0;
+	}
+
+	&:hover {
+		background: #e0f2fe;
+		color: #0284c7;
+	}
+
+	&--fit {
+		width: 32px;
+	}
+}
+
 .schema-scada-svg {
 	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
 }
@@ -622,6 +685,14 @@ $header-height: 56px;
 	stroke-linejoin: round;
 }
 
+.schema-scada-node-label--hier {
+	font-size: 9px;
+	font-weight: 500;
+	stroke-width: 2px;
+	fill: #334155;
+	pointer-events: none;
+}
+
 .schema-scada-node-measure {
 	font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
 }
@@ -637,6 +708,63 @@ $header-height: 56px;
 .schema-reseau-edge--active {
 	opacity: 1;
 	filter: drop-shadow(0 0 3px rgba(14, 165, 233, 0.6));
+}
+
+/* Animation "courant qui circule" — tirets marchants dans le sens source → cible.
+   stroke-dasharray est défini via [attr.stroke-dasharray] (proportionnel au zoom).
+   --flux-cycle est une variable CSS mise à jour par Angular sur l'élément SVG. */
+.schema-reseau-edge--flux {
+	animation: flux-march 1.4s linear infinite;
+}
+
+@keyframes flux-march {
+	to {
+		stroke-dashoffset: calc(-1 * var(--flux-cycle, 23));
+	}
+}
+
+/* Flèches directionnelles au milieu de chaque liaison */
+.schema-flux-arrow {
+	opacity: 0.88;
+	transition: opacity 0.2s;
+}
+
+/* Bouton bascule "Flux" dans la barre d'outils */
+.schema-scada-flux-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.22rem 0.6rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: #475569;
+	background: #f1f5f9;
+	border: 1px solid #e2e8f0;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+	svg {
+		flex-shrink: 0;
+	}
+
+	&:hover {
+		background: #e0f2fe;
+		color: #0284c7;
+		border-color: #bae6fd;
+	}
+
+	&--active {
+		background: #0ea5e9;
+		color: #fff;
+		border-color: #0284c7;
+
+		&:hover {
+			background: #0284c7;
+			color: #fff;
+			border-color: #0369a1;
+		}
+	}
 }
 
 .schema-node-popup {

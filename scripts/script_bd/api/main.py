@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import DB_CONFIG, STRUCTURE_JSON_PATH
 from .db import get_connection, get_cursor
+from .rx_topology import get_rx_schema_result, get_rx_trace_result, has_rx_topology, is_rx_topology_slug
 
 import logging
 _log = logging.getLogger(__name__)
@@ -638,69 +639,112 @@ def form_defaults_export():
 
 def _trace_ref_slug_for_type(trace_type: str) -> str | None:
     """Retourne le slug de la table correspondant au type de point de départ du tracé."""
+    slugs = _trace_ref_slugs_for_type(trace_type)
+    return slugs[0] if slugs else None
+
+
+def _trace_ref_slugs_for_type(trace_type: str) -> list[str]:
+    """Retourne la liste ordonnée des slugs candidats pour un type de départ."""
     trace_type = (trace_type or "").strip().lower()
+    candidates: list[str] = []
+
+    def add_slug(slug: str):
+        if slug in TABLE_BY_SLUG and slug not in candidates:
+            candidates.append(slug)
+
     # Ordre préféré aligné au frontend:
     # - poste_source -> poste-source
     # - poste_transformation -> poste-cabine / transfo-poteau (fallback transfo-ht-bt)
     # - abonne -> point-raccordement (fallback abonne / branchement)
     if trace_type == "poste_source":
-        for slug in ("poste-source", "limite-poste", "poste-sourc"):
-            if slug in TABLE_BY_SLUG:
-                return slug
+        # Inclure aussi le slug issu de l'import SHP (ps-poste-source).
+        for slug in ("poste-source", "ps-poste-source", "limite-poste", "poste-sourc"):
+            add_slug(slug)
         for slug in TABLE_BY_SLUG:
             if "poste" in slug.lower() and "sourc" in slug.lower():
-                return slug
+                add_slug(slug)
     if trace_type == "poste_transformation":
         for slug in ("poste-cabine", "transfo-poteau", "transfo-ht-bt", "transfo-ht_bt"):
-            if slug in TABLE_BY_SLUG:
-                return slug
+            add_slug(slug)
         for slug in TABLE_BY_SLUG:
             s = slug.lower()
             if ("poste" in s and "cabine" in s) or ("transfo" in s and "poteau" in s) or ("transfo" in s and "ht" in s and "bt" in s):
-                return slug
+                add_slug(slug)
     if trace_type == "abonne":
         for slug in ("point-raccordement", "abonne", "branchement", "distributionpanel-branchement"):
-            if slug in TABLE_BY_SLUG:
-                return slug
+            add_slug(slug)
         for slug in TABLE_BY_SLUG:
             s = slug.lower()
             if ("point" in s and "raccord" in s) or "abonne" in s or "branchement" in s:
-                return slug
-    return None
+                add_slug(slug)
+    return candidates
 
 
-def _get_ref_point_wkt(trace_type: str, ref_id: str) -> str | None:
+def _get_ref_point_wkt(trace_type: str, ref_id: str, ref_slug: str = "") -> str | None:
     """Récupère la géométrie (WKT WGS84) du point de référence pour le tracé. Retourne None si non trouvé."""
     if not ref_id or not ref_id.strip():
         return None
-    slug = _trace_ref_slug_for_type(trace_type)
-    if not slug:
+    if (trace_type or "").strip().lower() == "ouvrage":
+        ref_canon = _canon_id(ref_id)
+        with get_connection() as conn:
+            with get_cursor(conn) as cur:
+                ordered_slugs = sorted(TABLE_BY_SLUG.keys())
+                ref_slug_norm = (ref_slug or "").strip().lower()
+                if ref_slug_norm in TABLE_BY_SLUG:
+                    ordered_slugs = [ref_slug_norm] + [s for s in ordered_slugs if s != ref_slug_norm]
+                for slug in ordered_slugs:
+                    table_name, meta = TABLE_BY_SLUG[slug]
+                    if not (_table_has_column(meta, "gid") and get_geometry_columns(meta)):
+                        continue
+                    qtable = quote_ident(table_name)
+                    qgeom = quote_ident(get_geometry_columns(meta)[0])
+                    # Centroid -> point WKT pour fallback spatial, même si géométrie source est une ligne.
+                    select_geom = (
+                        f"ST_AsText(ST_Centroid(CASE WHEN ST_SRID({qgeom}) = 0 "
+                        f"THEN ST_Transform(ST_SetSRID({qgeom}, {DEFAULT_INPUT_SRID}), {OUTPUT_SRID}) "
+                        f"ELSE ST_Transform({qgeom}, {OUTPUT_SRID}) END))"
+                    )
+                    try:
+                        cur.execute(
+                            f"SELECT {select_geom} AS wkt FROM {qtable} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                            (ref_canon,),
+                        )
+                        row = cur.fetchone()
+                        if row and row.get("wkt"):
+                            return str(row["wkt"])
+                    except Exception:
+                        continue
         return None
-    try:
-        table_name, meta = get_table_meta(slug)
-    except HTTPException:
+
+    slugs = _trace_ref_slugs_for_type(trace_type)
+    if not slugs:
         return None
-    geom_cols = get_geometry_columns(meta)
-    if not geom_cols:
-        return None
-    pk = get_primary_key(meta)
-    quoted_table = quote_ident(table_name)
-    qgeom = quote_ident(geom_cols[0])
-    select_geom = (
-        f"ST_AsText(CASE WHEN ST_SRID({qgeom}) = 0 THEN ST_Transform(ST_SetSRID({qgeom}, {DEFAULT_INPUT_SRID}), {OUTPUT_SRID}) "
-        f"ELSE ST_Transform({qgeom}, {OUTPUT_SRID}) END)"
-    )
     with get_connection() as conn:
         with get_cursor(conn) as cur:
-            cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(pk)} = %s", (ref_id.strip(),))
-            row = cur.fetchone()
-            if row and row.get("wkt"):
-                return str(row["wkt"])
-            for alt in get_alternate_key_columns(meta, pk):
-                cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(alt)} = %s", (ref_id.strip(),))
+            for slug in slugs:
+                try:
+                    table_name, meta = get_table_meta(slug)
+                except HTTPException:
+                    continue
+                geom_cols = get_geometry_columns(meta)
+                if not geom_cols:
+                    continue
+                pk = get_primary_key(meta)
+                quoted_table = quote_ident(table_name)
+                qgeom = quote_ident(geom_cols[0])
+                select_geom = (
+                    f"ST_AsText(CASE WHEN ST_SRID({qgeom}) = 0 THEN ST_Transform(ST_SetSRID({qgeom}, {DEFAULT_INPUT_SRID}), {OUTPUT_SRID}) "
+                    f"ELSE ST_Transform({qgeom}, {OUTPUT_SRID}) END)"
+                )
+                cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(pk)} = %s", (ref_id.strip(),))
                 row = cur.fetchone()
                 if row and row.get("wkt"):
                     return str(row["wkt"])
+                for alt in get_alternate_key_columns(meta, pk):
+                    cur.execute(f"SELECT {select_geom} AS wkt FROM {quoted_table} WHERE {quote_ident(alt)} = %s", (ref_id.strip(),))
+                    row = cur.fetchone()
+                    if row and row.get("wkt"):
+                        return str(row["wkt"])
     return None
 
 
@@ -734,44 +778,45 @@ def _trace_resolve_poste_source_gid(cur, ref_id: str) -> str | None:
     """
     if not ref_id or not str(ref_id).strip():
         return None
-    slug = _trace_ref_slug_for_type("poste_source")
-    if not slug:
+    slugs = _trace_ref_slugs_for_type("poste_source")
+    if not slugs:
         return None
-    try:
-        table_name, meta = get_table_meta(slug)
-    except HTTPException:
-        return None
-    pk = get_primary_key(meta)
-    quoted_table = quote_ident(table_name)
     ref_canon = _canon_id(ref_id)
-    all_cols = get_all_columns(meta)
-    # Essayer par clé primaire (ex. gid)
-    try:
-        cur.execute(
-            f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(pk)} = %s LIMIT 1",
-            (ref_canon,),
-        )
-        row = cur.fetchone()
-        if row and row.get("resolved") is not None:
-            return str(row["resolved"]).strip()
-    except Exception:
-        pass
-    # Essayer par colonnes alternatives : codification (numéro de l'ouvrage), numero_poste, name, etc.
-    alt_candidates = get_alternate_key_columns(meta, pk) + [
-        c for c in ("codification", "numero_ouvrage", "numero_poste", "name", "numero", "code", "assetid")
-        if c in all_cols
-    ]
-    for alt in alt_candidates:
+    for slug in slugs:
+        try:
+            table_name, meta = get_table_meta(slug)
+        except HTTPException:
+            continue
+        pk = get_primary_key(meta)
+        quoted_table = quote_ident(table_name)
+        all_cols = get_all_columns(meta)
+        # Essayer par clé primaire (ex. gid)
         try:
             cur.execute(
-                f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(alt)} = %s LIMIT 1",
+                f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(pk)} = %s LIMIT 1",
                 (ref_canon,),
             )
             row = cur.fetchone()
             if row and row.get("resolved") is not None:
                 return str(row["resolved"]).strip()
         except Exception:
-            continue
+            pass
+        # Essayer par colonnes alternatives : codification (numéro de l'ouvrage), numero_poste, name, etc.
+        alt_candidates = get_alternate_key_columns(meta, pk) + [
+            c for c in ("codification", "numero_ouvrage", "numero_poste", "name", "numero", "code", "assetid")
+            if c in all_cols
+        ]
+        for alt in alt_candidates:
+            try:
+                cur.execute(
+                    f"SELECT {quote_ident(pk)} AS resolved FROM {quoted_table} WHERE {_canon_sql_expr(alt)} = %s LIMIT 1",
+                    (ref_canon,),
+                )
+                row = cur.fetchone()
+                if row and row.get("resolved") is not None:
+                    return str(row["resolved"]).strip()
+            except Exception:
+                continue
     return None
 
 
@@ -808,7 +853,31 @@ def _resolve_ref_by_codification(cur, ref_id: str) -> tuple[str, str] | None:
     return None
 
 
-def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
+def _ref_exists_as_gid(cur, ref_id: str) -> bool:
+    """
+    True si ref_id existe déjà comme gid dans au moins une table métier.
+    Permet d'éviter de re-résoudre un gid numérique comme une codification.
+    """
+    ref_canon = _canon_id(ref_id)
+    if not ref_canon:
+        return False
+    for slug in sorted(TABLE_BY_SLUG.keys()):
+        table_name, meta = TABLE_BY_SLUG[slug]
+        if not _table_has_column(meta, "gid"):
+            continue
+        try:
+            cur.execute(
+                f"SELECT 1 FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} = %s LIMIT 1",
+                (ref_canon,),
+            )
+            if cur.fetchone():
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str, ref_slug: str = "") -> set[str]:
     """
     Résout le point de départ (poste source, transfo, abonné) en nœuds du graphe.
     ref_id peut être un gid ou une codification (numéro de l'ouvrage).
@@ -816,9 +885,13 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
     start: set[str] = set()
     ref_canon = _canon_id(ref_id)
     trace_type = (trace_type or "").strip().lower()
+    ref_slug_norm = (ref_slug or "").strip().lower()
     # Résolution par codification (numéro de l'ouvrage) : si ref_id est une codification, on obtient le gid
+    # IMPORTANT : si ref_slug est fourni, on privilégie l'objet réellement cliqué dans cette couche
+    # et on évite de réinterpréter un gid numérique ("1", "2", ...) comme une codification d'un autre ouvrage.
     try:
-        resolved = _resolve_ref_by_codification(cur, ref_id)
+        treat_as_direct_gid = _ref_exists_as_gid(cur, ref_id)
+        resolved = None if (ref_slug_norm or treat_as_direct_gid) else _resolve_ref_by_codification(cur, ref_id)
         if resolved:
             _slug, gid_resolved = resolved
             ref_canon = _canon_id(gid_resolved)
@@ -898,6 +971,52 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
                                 start.add(str(v).strip())
                 except Exception:
                     continue
+
+            # 1.5) Migration connectivité : si l'utilisateur a cliqué une couche rx_*
+            # (ref_slug), retrouver les arêtes legacy construites via le tag RXCOMPAT|<rx_table>|<rx_gid>.
+            try:
+                ref_slug_norm = (ref_slug or "").strip().lower()
+                if ref_slug_norm and ref_slug_norm in TABLE_BY_SLUG:
+                    rx_table_name, _rx_meta = TABLE_BY_SLUG[ref_slug_norm]
+                    compat_num = f"RXCOMPAT|{rx_table_name}|{ref_canon}"
+
+                    # HTA : rx_hta_*_troncons -> ligne_hta
+                    if "rx_hta_" in rx_table_name and "troncons" in rx_table_name:
+                        cur.execute(
+                            "SELECT id_depart_hta, id_poteau_hta FROM ligne_hta WHERE numero = %s LIMIT 1",
+                            (compat_num,),
+                        )
+                        row = cur.fetchone()
+                        if row:
+                            for k in ("id_depart_hta", "id_poteau_hta"):
+                                v = row.get(k)
+                                if v is not None and str(v).strip():
+                                    start.add(str(v).strip())
+
+                    # BT : rx_bt_*_cable_bt -> ligne_bt
+                    if "rx_bt_" in rx_table_name and "cable_bt" in rx_table_name:
+                        cur.execute(
+                            "SELECT id_depart_bt, id_poteau_bt FROM ligne_bt WHERE numero = %s LIMIT 1",
+                            (compat_num,),
+                        )
+                        row = cur.fetchone()
+                        if row:
+                            for k in ("id_depart_bt", "id_poteau_bt"):
+                                v = row.get(k)
+                                if v is not None and str(v).strip():
+                                    start.add(str(v).strip())
+
+                    # Nœuds : rx_*_poste_hta_* ou rx_*_poste_h59
+                    if (
+                        ("poste_hta" in rx_table_name and "rx_" in rx_table_name)
+                        or ("poste_h59" in rx_table_name and "rx_" in rx_table_name)
+                    ):
+                        if ref_canon:
+                            start.add(ref_canon)
+            except Exception:
+                # Ne pas casser le tracé si la compatibilité n'est pas trouvée
+                pass
+
             # 2) Si ref_id pointe un poste source, récupérer ses départs HTA.
             try:
                 cur.execute(
@@ -955,7 +1074,9 @@ def _trace_resolve_start_nodes(cur, trace_type: str, ref_id: str) -> set[str]:
 
 
 def _trace_has_hta_depart_nodes(cur, node_ids: set[str]) -> bool:
-    """True si au moins un des node_ids correspond à un depart HTA (gid dans la table depart)."""
+    """True si au moins un des node_ids correspond à un depart HTA (gid dans la table depart).
+    Version étendue : considère aussi les nœuds HTA issus des tables `rx_*` (poste-hta / poteau-hta).
+    """
     if not node_ids:
         return False
     canon = sorted({_canon_id(n) for n in node_ids if _canon_id(n)})
@@ -969,7 +1090,29 @@ def _trace_has_hta_depart_nodes(cur, node_ids: set[str]) -> bool:
         )
         return cur.fetchone() is not None
     except Exception:
+        pass
+
+    # Fallback : regarder dans toutes les tables de nœuds HTA (rx postes).
+    try:
+        for slug, (table_name, meta) in TABLE_BY_SLUG.items():
+            s = (slug or "").lower()
+            if "poste-hta" not in s and "poteau-hta" not in s:
+                continue
+            if not _table_has_column(meta, "gid"):
+                continue
+            try:
+                cur.execute(
+                    f"SELECT 1 FROM {quote_ident(table_name)} WHERE {_canon_sql_expr('gid')} IN ({placeholders}) LIMIT 1",
+                    tuple(canon),
+                )
+                if cur.fetchone() is not None:
+                    return True
+            except Exception:
+                continue
+    except Exception:
         return False
+
+    return False
 
 
 def _trace_ref_is_point_raccordement_or_abonne(cur, ref_id: str) -> bool:
@@ -1435,18 +1578,43 @@ def _trace_directional_links_count(cur) -> int:
     return total
 
 
-def _trace_nearby_lines_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120) -> list[tuple[str, str]]:
+def _trace_nearby_lines_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120, ref_slug: str = "") -> list[tuple[str, str]]:
     """
     Fallback non directionnel si la connectivité par identifiants n'est pas disponible:
     retourne les lignes proches du point de référence (poste/transfo/point raccordement).
     """
-    wkt = _get_ref_point_wkt(trace_type, ref_id)
+    wkt = _get_ref_point_wkt(trace_type, ref_id, ref_slug=ref_slug)
     if not wkt:
         return []
-    geog_ref = f"SRID=4326;{wkt}"
+    # ST_GeogFromText attend un WKT "POINT(lon lat)" sans préfixe SRID.
+    geog_ref = wkt
     pairs: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
-    for table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+    spatial_tables: list[tuple[str, str]] = []
+    seen_tables: set[tuple[str, str]] = set()
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    # Si une couche précise a ete choisie (ex. rx-hta-raz-4-troncons), limiter le scan a
+    # cette couche rend le fallback deterministe et evite les ambiguittes de schema.
+    if ref_slug_norm and ref_slug_norm in TABLE_BY_SLUG:
+        table_name, _meta = TABLE_BY_SLUG[ref_slug_norm]
+        spatial_tables = [(table_name, ref_slug_norm)]
+    else:
+        for table_name, slug, _node_cols in _TRACE_EDGE_TABLES:
+            k = (table_name, slug)
+            if k not in seen_tables:
+                seen_tables.add(k)
+                spatial_tables.append(k)
+        # Inclure aussi les couches importées (ex. rx-hta-*-troncons, rx-bt-*-cable-bt).
+        for slug, (table_name, _meta) in TABLE_BY_SLUG.items():
+            s = slug.lower()
+            if not (_is_line_table(s) or "troncon" in s or "cable" in s):
+                continue
+            k = (table_name, slug)
+            if k not in seen_tables:
+                seen_tables.add(k)
+                spatial_tables.append(k)
+
+    for table_name, slug in spatial_tables:
         try:
             qtable = quote_ident(table_name)
             qgeom = quote_ident("geom")
@@ -1708,15 +1876,22 @@ def _trace_postes_transfos_from_node_ids(cur, node_ids: set[str]) -> list[tuple[
     return merged
 
 
-def _trace_nearby_points_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120) -> list[tuple[str, str]]:
+def _trace_nearby_points_fallback(cur, trace_type: str, ref_id: str, radius_m: int = 120, ref_slug: str = "") -> list[tuple[str, str]]:
     """Fallback spatial pour points : ouvrages ponctuels proches du point de référence."""
-    wkt = _get_ref_point_wkt(trace_type, ref_id)
+    wkt = _get_ref_point_wkt(trace_type, ref_id, ref_slug=ref_slug)
     if not wkt:
         return []
-    geog_ref = f"SRID=4326;{wkt}"
+    # ST_GeogFromText attend un WKT "POINT(lon lat)" sans préfixe SRID.
+    geog_ref = wkt
     pairs: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
-    for slug in sorted(TABLE_BY_SLUG.keys()):
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    slugs_to_scan = (
+        [ref_slug_norm]
+        if ref_slug_norm and ref_slug_norm in TABLE_BY_SLUG
+        else sorted(TABLE_BY_SLUG.keys())
+    )
+    for slug in slugs_to_scan:
         if not _is_point_table(slug):
             continue
         table_name, meta = TABLE_BY_SLUG[slug]
@@ -1750,10 +1925,93 @@ def _trace_nearby_points_fallback(cur, trace_type: str, ref_id: str, radius_m: i
     return pairs
 
 
+@app.get("/gis/rx-topology-nodes")
+def get_rx_topology_nodes(topology_code: str = "rx_raz4"):
+    """
+    Retourne tous les nœuds de la topologie RX avec leur géométrie WKT (POINT WGS84).
+    Inclut les nœuds synthétiques (poteau-hta, poteau-bt, depart-bt) qui n'ont pas
+    de couche SHP propre mais ont des coordonnées calculées par clustering.
+    Format compatible avec l'endpoint /gis/{slug} pour être chargé comme couche de carte.
+    """
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            try:
+                cur.execute(
+                    """
+                    SELECT
+                        node_id AS gid,
+                        node_type,
+                        network_level,
+                        business_label AS label,
+                        source_slug,
+                        source_gid,
+                        depart_code,
+                        metadata,
+                        ST_AsText(geom) AS geom
+                    FROM rx_topology_node
+                    WHERE topology_code = %s
+                      AND geom IS NOT NULL
+                    ORDER BY node_type, node_id
+                    """,
+                    (topology_code,),
+                )
+                rows = [dict(r) for r in (cur.fetchall() or [])]
+                for r in rows:
+                    if r.get("metadata") and not isinstance(r["metadata"], str):
+                        import json as _json
+                        r["metadata"] = _json.dumps(r["metadata"])
+                return {"slug": "rx-topology-nodes", "rows": rows, "count": len(rows)}
+            except Exception as exc:
+                return {"slug": "rx-topology-nodes", "rows": [], "count": 0, "error": str(exc)}
+
+
+@app.get("/gis/rx-topology-edges")
+def get_rx_topology_edges(topology_code: str = "rx_raz4"):
+    """
+    Retourne les arcs SYNTHÉTIQUES de la topologie RX (bridges HTA-BT, ponts de raccordement)
+    avec leur géométrie LINESTRING WGS84. Ces arcs n'ont pas de couche SHP propre mais ont
+    des coordonnées calculées à partir des nœuds sources/cibles.
+    Seuls les arcs avec géométrie et sans source_slug (synthétiques purs) sont retournés.
+    """
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            try:
+                cur.execute(
+                    """
+                    SELECT
+                        edge_id AS gid,
+                        edge_type,
+                        network_level,
+                        business_label AS label,
+                        source_node_id,
+                        target_node_id,
+                        depart_code,
+                        metadata,
+                        ST_AsText(geom) AS geom
+                    FROM rx_topology_edge
+                    WHERE topology_code = %s
+                      AND source_slug IS NULL
+                      AND geom IS NOT NULL
+                      AND ST_Length(ST_Transform(geom, 32630)) > 1.0
+                    ORDER BY edge_type, edge_id
+                    """,
+                    (topology_code,),
+                )
+                rows = [dict(r) for r in (cur.fetchall() or [])]
+                for r in rows:
+                    if r.get("metadata") and not isinstance(r["metadata"], str):
+                        import json as _json
+                        r["metadata"] = _json.dumps(r["metadata"])
+                return {"slug": "rx-topology-edges", "rows": rows, "count": len(rows)}
+            except Exception as exc:
+                return {"slug": "rx-topology-edges", "rows": [], "count": 0, "error": str(exc)}
+
+
 @app.get("/gis/trace")
 def trace_ouvrages(
     type: str = "poste_source",
     ref_id: str = "",
+    ref_slug: str = "",
     direction: str = "amont",
 ):
     """
@@ -1771,9 +2029,22 @@ def trace_ouvrages(
     if trace_type not in {"poste_source", "poste_transformation", "abonne", "ouvrage"}:
         return {"ouvrage_ids": [], "message": "type invalide (poste_source|poste_transformation|abonne|ouvrage)."}
 
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    used_spatial_fallback = False
+
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
+                if trace_type == "ouvrage" and has_rx_topology(cur):
+                    rx_result = None
+                    if ref_slug_norm and is_rx_topology_slug(ref_slug_norm):
+                        rx_result = get_rx_trace_result(cur, ref_id, ref_slug=ref_slug_norm, direction=direction)
+                    elif not ref_slug_norm:
+                        rx_result = get_rx_trace_result(cur, ref_id, ref_slug="", direction=direction)
+                    if rx_result and rx_result.get("ouvrage_ids"):
+                        return rx_result
+
+                # ref_slug_norm / used_spatial_fallback déjà definis au-dessus
                 # Depuis un point de raccordement / abonné : en aval/tous on ne retourne que sa ligne de branchement ;
                 # en amont on remonte jusqu'au poste de transformation (BFS amont).
                 from_point_raccordement = trace_type == "abonne" or _trace_ref_is_point_raccordement_or_abonne(cur, ref_id)
@@ -1794,7 +2065,7 @@ def trace_ouvrages(
                     effective_direction = direction
                     if direction == "tous" and from_point_raccordement:
                         effective_direction = "amont"
-                    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
+                    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id, ref_slug=ref_slug_norm)
                     # Coupure BT ne doit pas remonter sur le HTA sauf en amont depuis poste cabine (remonter jusqu'au poste source).
                     # En amont depuis poste_transformation : ne pas restreindre au BT pour atteindre le poste source.
                     restrict_to_bt = (
@@ -1816,6 +2087,7 @@ def trace_ouvrages(
                         # 2) Puis remonter HTA depuis ce poste cabine.
                         needs_bt_bridge = (
                             trace_type in ("abonne", "poste_transformation")
+                            or from_point_raccordement
                             or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
                         )
                         if needs_bt_bridge:
@@ -1825,7 +2097,24 @@ def trace_ouvrages(
                             if from_point_raccordement and ligne_brcht_only_gid:
                                 seed_pairs = [("ligne-brcht", ligne_brcht_only_gid)]
                                 bt_pairs_amont.extend(seed_pairs)
-                                bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
+                                # N'injecter que id_depart_bt dans bt_bridge_start (extrémité BT amont).
+                                # Exclure id_poteau_hta : s'il était inclus, _trace_first_poste_cabine_from_nodes
+                                # trouverait le poste cabine dès la ligne 1359 (avant la boucle BFS),
+                                # ce qui empêcherait de parcourir les ligne_bt intermédiaires.
+                                try:
+                                    lg = _canon_id(ligne_brcht_only_gid)
+                                    cur.execute(
+                                        "SELECT id_depart_bt FROM ligne_brcht WHERE "
+                                        + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                                        (lg,),
+                                    )
+                                    brcht_row = cur.fetchone()
+                                    if brcht_row:
+                                        v = brcht_row.get("id_depart_bt")
+                                        if v is not None and str(v).strip():
+                                            bt_bridge_start.add(_canon_id(v))
+                                except Exception:
+                                    bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
                             bt_pairs_walk, bt_visited_walk, poste_cabine_found = _trace_bfs_bt_to_cabine(cur, bt_bridge_start)
                             bt_pairs_amont.extend(bt_pairs_walk)
                             bt_visited_amont |= bt_visited_walk
@@ -1869,12 +2158,19 @@ def trace_ouvrages(
                     point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
                     equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
                     raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
-                    links_count = _trace_directional_links_count(cur)
-                    used_spatial_fallback = False
-                    if not pairs and links_count == 0:
-                        # Données non orientées (id_depart_*/id_poteau_* vides) : fallback spatial
-                        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
-                        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+                    # used_spatial_fallback déjà initialisé en haut de fonction
+                    ref_slug_norm = (ref_slug or "").strip().lower()
+                    if not pairs:
+                        # Aucun chemin directionnel trouvé : fallback spatial
+                        # (utile aussi quand seules des couches importées rx_* existent).
+                        for radius in (120, 400, 1200):
+                            pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=radius, ref_slug=ref_slug_norm)
+                            if pairs:
+                                break
+                        for radius in (150, 500, 1500):
+                            point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=radius, ref_slug=ref_slug_norm)
+                            if point_pairs:
+                                break
                         equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
                         raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
                         used_spatial_fallback = len(pairs) > 0
@@ -2292,6 +2588,61 @@ def _schema_unifilaire_bfs_tree_edges(
     return tree_edges, seen
 
 
+def _schema_unifilaire_orient_edges_from_root(
+    edge_records: list[tuple[str, str, str, str]],
+    root: str | None,
+) -> list[tuple[str, str, str, str]]:
+    """
+    Oriente les arêtes pour un flux visuel cohérent source -> aval.
+    Règle: nœud le plus proche de la racine = amont (source de l'arête).
+    """
+    if not edge_records:
+        return edge_records
+    if not root:
+        return edge_records
+
+    UG = nx.Graph()
+    for s, t, _ls, _lg in edge_records:
+        UG.add_edge(s, t)
+    if root not in UG:
+        return edge_records
+
+    distances = nx.single_source_shortest_path_length(UG, root)
+    oriented: list[tuple[str, str, str, str]] = []
+    for s, t, ls, lg in edge_records:
+        s_slug = _schema_unifilaire_node_slug(s)
+        t_slug = _schema_unifilaire_node_slug(t)
+        # Priorité métier absolue: poste source toujours amont.
+        s_is_source = "poste-source" in s_slug
+        t_is_source = "poste-source" in t_slug
+        if s_is_source and not t_is_source:
+            oriented.append((s, t, ls, lg))
+            continue
+        if t_is_source and not s_is_source:
+            oriented.append((t, s, ls, lg))
+            continue
+
+        ds = distances.get(s)
+        dt = distances.get(t)
+        if ds is None or dt is None:
+            oriented.append((s, t, ls, lg))
+            continue
+        if ds < dt:
+            oriented.append((s, t, ls, lg))
+            continue
+        if dt < ds:
+            oriented.append((t, s, ls, lg))
+            continue
+        # Égalité de profondeur: fallback métier par étage unifilaire.
+        ss = _unifilaire_stage_order(_schema_unifilaire_node_slug(s))
+        st = _unifilaire_stage_order(_schema_unifilaire_node_slug(t))
+        if ss <= st:
+            oriented.append((s, t, ls, lg))
+        else:
+            oriented.append((t, s, ls, lg))
+    return oriented
+
+
 def _schema_unifilaire_layout_linear_tree(G: nx.DiGraph, root: str) -> dict[str, tuple[float, float]]:
     """
     Étape 3 — Linéarisation : placement orthogonal « synoptique ».
@@ -2414,7 +2765,7 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     effective_direction = direction
     if direction == "tous" and from_point_raccordement:
         effective_direction = "amont"
-    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id)
+    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id, ref_slug="")
     if not start_nodes:
         return set()
     restrict_to_bt = (
@@ -2431,6 +2782,7 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
 
         needs_bt_bridge = (
             trace_type in ("abonne", "poste_transformation")
+            or from_point_raccordement
             or (trace_type == "ouvrage" and not _trace_has_hta_depart_nodes(cur, start_nodes))
         )
         if needs_bt_bridge:
@@ -2438,7 +2790,20 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
             if from_point_raccordement and ligne_brcht_only_gid:
                 seed_pairs = [("ligne-brcht", ligne_brcht_only_gid)]
                 bt_pairs_amont.extend(seed_pairs)
-                bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
+                try:
+                    lg = _canon_id(ligne_brcht_only_gid)
+                    cur.execute(
+                        "SELECT id_depart_bt FROM ligne_brcht WHERE "
+                        + _canon_sql_expr("gid") + " = %s LIMIT 1",
+                        (lg,),
+                    )
+                    brcht_row = cur.fetchone()
+                    if brcht_row:
+                        v = brcht_row.get("id_depart_bt")
+                        if v is not None and str(v).strip():
+                            bt_bridge_start.add(_canon_id(v))
+                except Exception:
+                    bt_bridge_start |= _trace_line_endpoints_gids_from_pairs(cur, seed_pairs)
             bt_pairs_walk, bt_visited_walk, poste_cabine_found = _trace_bfs_bt_to_cabine(cur, bt_bridge_start)
             bt_pairs_amont.extend(bt_pairs_walk)
             bt_visited_amont |= bt_visited_walk
@@ -2483,13 +2848,16 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     point_pairs = _trace_points_from_node_ids(cur, visited_nodes)
     equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
     raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
-    links_count = _trace_directional_links_count(cur)
-    if not pairs and links_count == 0:
-        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120)
-        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150)
+    # Si le graphe directionnel n'a rien renvoyé, on tente une recherche spatiale (utile
+    # avec les imports rx_* qui ne remplissent pas forcément les champs id_depart_*/id_poteau_*).
+    if not pairs:
+        ref_slug_norm_local = ""
+        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120, ref_slug=ref_slug_norm_local)
+        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150, ref_slug=ref_slug_norm_local)
         equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
         raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
         visited_nodes |= _trace_line_endpoints_gids_from_pairs(cur, pairs)
+        used_spatial_fallback = len(pairs) > 0
 
     merged: list[tuple[str, str]] = []
     seen_merged: set[tuple[str, str]] = set()
@@ -2530,6 +2898,7 @@ def get_schema_unifilaire(
     ref_id: str = Query(..., description="Codification (numéro de l'ouvrage) ou gid pour lequel générer le schéma"),
     type_ouvrage: str = Query("ouvrage", description="Type d'ouvrage : poste_source | poste_transformation | abonne | ouvrage"),
     direction: str = Query("tous", description="Direction du tracé : amont | aval | tous (réseau connecté)"),
+    ref_slug: str = Query("", description="Slug de la couche source (optionnel, recommandé pour RX)"),
     mode: str = Query("complet", description="Mode de rendu : complet | compact"),
 ):
     """
@@ -2564,6 +2933,18 @@ def get_schema_unifilaire(
     try:
         with get_connection() as conn:
             with get_cursor(conn) as cur:
+                ref_slug_norm = (ref_slug or "").strip().lower()
+                if type_ouvrage == "ouvrage" and has_rx_topology(cur):
+                    rx_result = None
+                    if ref_slug_norm and is_rx_topology_slug(ref_slug_norm):
+                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug=ref_slug_norm, direction=direction, mode=mode)
+                    elif not ref_slug_norm:
+                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug="", direction=direction, mode=mode)
+                    if rx_result and (rx_result.get("nodes") or rx_result.get("edges")):
+                        for node in rx_result.get("nodes", []):
+                            node["symbol"] = _slug_to_symbol(str(node.get("type") or ""))
+                        return rx_result
+
                 # 1) Même ensemble de nœuds que le tracé carte (/gis/trace) pour ref_id + type + direction
                 visited = _trace_visited_nodes_for_schema_unifilaire(cur, type_ouvrage, ref_id, direction)
                 if not visited:
@@ -2872,6 +3253,7 @@ def get_schema_unifilaire(
                         G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
                     pos = _schema_unifilaire_layout_linear_tree(G, tree_root)
                     edge_records = tree_edges
+                    edge_records = _schema_unifilaire_orient_edges_from_root(edge_records, tree_root)
                 else:
                     # Mode complet: conserver les objets connectés sans simplification ni réduction en arbre.
                     visited_gids = {_canon_id(g) for g in visited if _canon_id(g)}
@@ -2921,6 +3303,7 @@ def get_schema_unifilaire(
                         for s, t, line_slug, line_gid in all_edge_records
                         if s in keep_nodes and t in keep_nodes
                     ]
+                    edge_records = _schema_unifilaire_orient_edges_from_root(edge_records, root_full)
 
                     if len(node_list) == 1:
                         pos = {node_list[0]: (120.0, 120.0)}
@@ -2941,6 +3324,24 @@ def get_schema_unifilaire(
                             x = margin + ((rx - min_x) / span_x) * (width - 2 * margin)
                             y = margin + ((ry - min_y) / span_y) * (height - 2 * margin)
                             pos[nid] = (x, y)
+
+                # Cohérence métier: une ligne de branchement (ligne-brcht) ne doit pas relier un poste source.
+                # Ces arêtes peuvent apparaître dans les données de compatibilité RX (migration) mais ne doivent
+                # pas être visualisées comme liaison électrique métier dans le schéma unifilaire.
+                filtered_edge_records: list[tuple[str, str, str, str]] = []
+                for s, t, line_slug, line_gid in edge_records:
+                    if line_slug == "ligne-brcht":
+                        s_slug = (_schema_unifilaire_node_slug(s) or "").lower()
+                        t_slug = (_schema_unifilaire_node_slug(t) or "").lower()
+                        if "poste-source" in s_slug or "poste-source" in t_slug:
+                            continue
+                    filtered_edge_records.append((s, t, line_slug, line_gid))
+                edge_records = filtered_edge_records
+
+                # Après filtrage métier, conserver les nœuds réellement connectés.
+                if edge_records:
+                    connected_nodes = {s for s, _t, _ls, _lg in edge_records} | {t for _s, t, _ls, _lg in edge_records}
+                    node_list = [n for n in node_list if n in connected_nodes]
 
                 node_extra = _schema_unifilaire_node_extra(cur, gid_to_slug)
                 # Sortie JSON : nodes avec x, y, type (slug), label ; optionnel : state, tension, courant, puissance

@@ -8,6 +8,7 @@ import { AuthService } from '../../../services/auth.service';
 import { GisApiService } from '../../../services/gis-api.service';
 import { environment } from '@environments/environment';
 import { forkJoin, of } from 'rxjs';
+import { createNetworkLeafletIcon } from '../../shared/network-icons';
 import { map, catchError, switchMap } from 'rxjs/operators';
 
 export interface StatCard {
@@ -455,8 +456,17 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 							const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
 							const geoJsonLayer = leaflet.geoJSON(featureCollection, {
 								style: () => style,
-								pointToLayer: (_: unknown, latlng: unknown) =>
-									leaflet.circleMarker(latlng, { ...style, radius: 8 }),
+						pointToLayer: (_: unknown, latlng: unknown) => {
+								const networkIcon = createNetworkLeafletIcon(
+									(leaflet as unknown) as Parameters<typeof createNetworkLeafletIcon>[0],
+									slug,
+								);
+								if (networkIcon) {
+									return ((leaflet as unknown) as { marker: (latlng: unknown, opts: object) => unknown })
+										.marker(latlng, { icon: networkIcon });
+								}
+								return leaflet.circleMarker(latlng, { ...style, radius: 8 });
+							},
 								onEachFeature: (feature: { properties?: Record<string, unknown> }, layer: { bindPopup: (content: string, opts?: { maxWidth?: number }) => void }) => {
 									const props = feature.properties ?? {};
 									layer.bindPopup(self.buildPopupContent(props), { maxWidth: 320 });

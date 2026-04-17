@@ -232,47 +232,115 @@
 							<span class="schema-scada-toolbar-kicker">Vue unifilaire</span>
 							<span class="schema-scada-toolbar-title">{{ refId?.trim() || '—' }}</span>
 						</div>
-						<div class="schema-scada-toolbar-right">
-							<span class="schema-scada-toolbar-chip">{{ nodes.length }} objets</span>
-							<span class="schema-scada-toolbar-chip">{{ edges.length }} liaisons</span>
-						</div>
+					<div class="schema-scada-toolbar-right">
+						<span class="schema-scada-toolbar-chip">{{ nodes.length }} objets</span>
+						<span class="schema-scada-toolbar-chip">{{ edges.length }} liaisons</span>
+						<button
+							type="button"
+							class="schema-scada-flux-btn"
+							[class.schema-scada-flux-btn--active]="showFlux"
+							(click)="showFlux = !showFlux"
+							[attr.title]="showFlux ? 'Masquer le flux électrique' : 'Afficher le flux électrique (source → consommateurs)'"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M1 7 H10 M7 4 L10 7 L7 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+							Flux
+						</button>
+						<button
+							type="button"
+							class="schema-scada-flux-btn"
+							[class.schema-scada-flux-btn--active]="layoutMode === 'hierarchical'"
+							(click)="toggleLayout()"
+							[attr.title]="layoutMode === 'hierarchical' ? 'Passer en vue géographique (coordonnées SIG)' : 'Passer en vue hiérarchique (arbre sans chevauchement)'"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="7" cy="2" r="1.5" fill="currentColor"/>
+								<circle cx="3" cy="10" r="1.5" fill="currentColor"/>
+								<circle cx="11" cy="10" r="1.5" fill="currentColor"/>
+								<line x1="7" y1="3.5" x2="3" y2="8.5" stroke="currentColor" stroke-width="1.4"/>
+								<line x1="7" y1="3.5" x2="11" y2="8.5" stroke="currentColor" stroke-width="1.4"/>
+							</svg>
+							{{ layoutMode === 'hierarchical' ? 'Hiérarchique' : 'Géographique' }}
+						</button>
+						@if (layoutMode === 'hierarchical') {
+							<span class="schema-scada-zoom-group">
+								<button type="button" class="schema-scada-zoom-btn" (click)="zoomIn()" title="Zoomer (+)">
+									<svg width="13" height="13" viewBox="0 0 13 13"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+								</button>
+								<button type="button" class="schema-scada-zoom-btn" (click)="zoomOut()" title="Dézoomer (−)">
+									<svg width="13" height="13" viewBox="0 0 13 13"><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+								</button>
+								<button type="button" class="schema-scada-zoom-btn schema-scada-zoom-btn--fit" (click)="resetZoom()" title="Vue complète (tout afficher)">
+									<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M4 4 L1 1 M9 4 L12 1 M4 9 L1 12 M9 9 L12 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+								</button>
+							</span>
+						}
 					</div>
-					<div class="schema-reseau-svg-wrap schema-reseau-svg-wrap--scada" #svgWrap (scroll)="onWrapScroll()">
-				<svg
-					#schemaSvg
-					[attr.viewBox]="viewBox"
-					class="schema-reseau-svg schema-scada-svg"
-					preserveAspectRatio="xMidYMid meet"
+					</div>
+					<div
+					class="schema-reseau-svg-wrap schema-reseau-svg-wrap--scada"
+					[class.schema-reseau-svg-wrap--hierarchical]="layoutMode === 'hierarchical'"
+					#svgWrap
+					(scroll)="onWrapScroll()"
+					(mousemove)="onPanMove($event)"
+					(mouseup)="onPanEnd()"
+					(mouseleave)="onPanEnd()"
 				>
+			<svg
+				#schemaSvg
+				[attr.viewBox]="activeViewBox"
+				class="schema-reseau-svg schema-scada-svg"
+				[class.schema-reseau-svg--hierarchical]="layoutMode === 'hierarchical'"
+				[class.schema-reseau-svg--panning]="isPanning"
+				[style.--flux-cycle.px]="fluxDashCycle"
+				preserveAspectRatio="xMidYMid meet"
+				(mousedown)="onSvgMouseDown($event)"
+			>
 					<!-- Liaisons (câbles / bus) — traits épais type synoptique -->
 					<g class="schema-reseau-edges schema-scada-edges">
 						@for (edge of edges; track edge.source + '-' + edge.target + '-' + edge.line_gid) {
 							@let src = nodeById(edge.source);
 							@let tgt = nodeById(edge.target);
 							@if (src && tgt) {
-								<path
-									fill="none"
-									[attr.d]="getOrthogonalEdgePath(src, tgt)"
-									class="schema-reseau-edge schema-reseau-edge--scada schema-reseau-edge--orthogonal"
-									[class.schema-reseau-edge--active]="selectedNodeId && isEdgeLinked(edge)"
-									[class.schema-reseau-edge--dimmed]="selectedNodeId && !isEdgeLinked(edge)"
-									[attr.stroke]="getEdgeColor(edge)"
-									[attr.stroke-width]="getEdgeStrokeWidth(edge)"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									[attr.data-line-type]="edge.line_type"
-								/>
+							<path
+								fill="none"
+								[attr.d]="getOrthogonalEdgePath(src, tgt)"
+								class="schema-reseau-edge schema-reseau-edge--scada schema-reseau-edge--orthogonal"
+								[class.schema-reseau-edge--active]="selectedNodeId && isEdgeLinked(edge)"
+								[class.schema-reseau-edge--dimmed]="selectedNodeId && !isEdgeLinked(edge)"
+								[class.schema-reseau-edge--flux]="showFlux"
+								[attr.stroke-dasharray]="showFlux ? fluxDashArrayValue : null"
+								[attr.stroke]="getEdgeColor(edge)"
+								[attr.stroke-width]="getEdgeStrokeWidth(edge)"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								[attr.data-line-type]="edge.line_type"
+							/>
 							}
 						}
 					</g>
-					<!-- Nœuds (symboles IEC 60617 / CEI 61850) -->
+					<!-- Flèches de flux électrique (source → consommateurs) -->
+				@if (showFlux && flowArrows.length) {
+					<g class="schema-flux-arrows" pointer-events="none">
+						@for (arrow of flowArrows; track arrow.id) {
+						<polygon
+							class="schema-flux-arrow"
+							[attr.points]="fluxArrowPointsScaled"
+								[attr.transform]="'translate(' + arrow.x + ',' + arrow.y + ') rotate(' + arrow.angle + ')'"
+								[attr.fill]="arrow.color"
+							/>
+						}
+					</g>
+				}
+				<!-- Nœuds (symboles IEC 60617 / CEI 61850) -->
 					<g class="schema-reseau-nodes schema-scada-nodes">
 						@for (node of nodes; track node.id) {
 							<g
 								class="schema-scada-node"
 								[class.schema-scada-node--selected]="isNodeSelected(node)"
 								[class.schema-scada-node--dimmed]="selectedNodeId && !isNodeSelected(node)"
-								[attr.transform]="'translate(' + node.x + ',' + node.y + ')'"
+								[attr.transform]="getNodeTransform(node)"
 								[attr.data-symbol]="node.symbol"
 								[attr.data-iec60617]="getIec60617(node.symbol)"
 								[attr.data-iec61850]="getIec61850(node.symbol)"
@@ -363,13 +431,13 @@
 									@case ('sym-branchement') {
 										<polygon points="-9,0 -4,-8 4,-8 9,0 4,8 -4,8" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
 									}
-									@default {
-										<circle r="10" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
-										<line x1="-14" y1="0" x2="-10" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
-										<line x1="10" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
-									}
+								@default {
+									<circle r="10" fill="none" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="2"/>
+									<line x1="-14" y1="0" x2="-10" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
+									<line x1="10" y1="0" x2="14" y2="0" [attr.stroke]="getSymbolColor(node.symbol)" stroke-width="1"/>
 								}
-							</g>
+							}
+						</g>
 						}
 					</g>
 				</svg>

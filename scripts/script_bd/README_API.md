@@ -141,3 +141,35 @@ Option annee (2 chiffres) :
 ```powershell
 python codifier_equipements.py --year 26
 ```
+
+## Import de donnees SHP (CIE)
+
+Un script batch est disponible pour importer automatiquement des shapefiles vers PostGIS :
+`scripts/script_bd/import_shp_to_postgis.py`.
+
+### Prerequis
+
+- `ogr2ogr` installe et disponible dans le `PATH` (GDAL / QGIS / OSGeo4W).
+- Base PostgreSQL avec extension PostGIS active.
+- Variables d'environnement DB si differentes des valeurs par defaut :
+  `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+
+### Execution
+
+Depuis `scripts/script_bd` :
+
+```powershell
+python import_shp_to_postgis.py --shp-root "F:\CIE\SHP" --overwrite
+```
+
+Options utiles :
+
+- `--target-srid 4326` : reprojection cible (defaut 4326).
+- `--mapping-out shp_import_mapping.json` : export du mapping source -> table.
+- sans `--overwrite`, le script travaille en mode append.
+
+### Remarques
+
+- Le script n'importe que les vrais shapefiles (`.shp`) et ignore les fichiers annexes seuls (`.prj`, `.cpg`, `.shp.xml`).
+- Les noms de tables sont generes automatiquement depuis le chemin du fichier (normalises et tronques a 63 caracteres).
+- Apres import, executer `python extract_tables.py` pour regenerer `database_structure.json` et exposer les nouvelles tables via l'API.

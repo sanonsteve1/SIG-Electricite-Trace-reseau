@@ -1,4 +1,5 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -14,6 +15,7 @@ import {
 } from '../../../services/gis-api.service';
 import { forkJoin, of, from } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
+import { createNetworkLeafletIcon } from '../../shared/network-icons';
 
 export interface CoupureCauseOption {
 	label: string;
@@ -299,7 +301,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	constructor(
 		private gisApi: GisApiService,
 		private cdr: ChangeDetectorRef,
-		private sanitizer: DomSanitizer
+		private sanitizer: DomSanitizer,
+		private router: Router
 	) {}
 
 	ngOnInit(): void {
@@ -996,12 +999,14 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		const ligneSecoursId = this.getLigneSecoursId();
 		if (!refId || !ligneSecoursId) return;
 		const traceType = this.selectedMapStart ? 'ouvrage' : this.paramTypePoint;
+		const refSlug = this.selectedMapStart?.slug || this.getSlugForCurrentType() || '';
+		const ligneSecours = this.getLigneSecoursSelectionInfo();
 		this.mapLoading = true;
 		this.resetReelimentationState();
 		this.cdr.markForCheck();
 		forkJoin({
-			coupure: this.gisApi.getTrace(traceType, refId, 'tous').pipe(catchError(() => of({ ouvrage_ids: [] }))),
-			secours: this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous').pipe(catchError(() => of({ ouvrage_ids: [] })))
+			coupure: this.gisApi.getTrace(traceType, refId, 'tous', refSlug).pipe(catchError(() => of({ ouvrage_ids: [] }))),
+			secours: this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous', ligneSecours?.slug).pipe(catchError(() => of({ ouvrage_ids: [] })))
 		}).subscribe({
 			next: ({ coupure, secours }) => {
 				this.mapLoading = false;
@@ -1054,9 +1059,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		const refId = this.getSelectedRefId();
 		if (!refId) return;
 		const traceType = this.selectedMapStart ? 'ouvrage' : this.paramTypePoint;
+		const refSlug = this.selectedMapStart?.slug || this.getSlugForCurrentType() || '';
 		this.mapLoading = true;
 		this.cdr.markForCheck();
-		this.gisApi.getTrace(traceType, refId, direction).pipe(
+		this.gisApi.getTrace(traceType, refId, direction, refSlug).pipe(
 			catchError(() => of({ ouvrage_ids: [] }))
 		).subscribe({
 			next: (res) => {
@@ -1320,6 +1326,233 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		return null;
 	}
 
+	private normalizeTraceContextValue(v: unknown): string {
+		return String(v ?? '').trim().toLowerCase();
+	}
+
+	private getTraceFamilyToken(slug: string): string {
+		const s = (slug || '').toLowerCase();
+		if (s.includes('express')) return 'express';
+		if (s.includes('raz-4') || s.includes('raz4')) return 'raz4';
+		if (s.includes('raz-3') || s.includes('raz3')) return 'raz3';
+		if (s.includes('motobe')) return 'motobe';
+		return '';
+	}
+
+	private addTraceDisplayItem(merged: Map<string, { slug: string; id: string }>, slug: string, id: string): void {
+		if (!slug || !id) return;
+		const item = { slug, id };
+		merged.set(this.normalizeOuvrageKey(`${slug}:${id}`), item);
+	}
+
+	private getTraceSlugsByTerms(includeTerms: string[], excludeTerms: string[] = []): string[] {
+		const includes = includeTerms.map((x) => x.toLowerCase()).filter((x) => !!x);
+		const excludes = excludeTerms.map((x) => x.toLowerCase()).filter((x) => !!x);
+		const out: string[] = [];
+		for (const slug of this.rowsBySlug.keys()) {
+			const s = slug.toLowerCase();
+			if (includes.some((term) => !s.includes(term))) continue;
+			if (excludes.some((term) => s.includes(term))) continue;
+			out.push(slug);
+		}
+		return out;
+	}
+
+	private isTraceFamilyCompatible(sourceSlug: string, targetSlug: string): boolean {
+		const sourceFamily = this.getTraceFamilyToken(sourceSlug);
+		if (!sourceFamily) return true;
+		const targetFamily = this.getTraceFamilyToken(targetSlug);
+		return !targetFamily || targetFamily === sourceFamily;
+	}
+
+	private addRowsByCanonicalId(
+		merged: Map<string, { slug: string; id: string }>,
+		canonId: string,
+		candidateSlugs: string[],
+		sourceSlug: string
+	): void {
+		if (!canonId) return;
+		for (const slug of candidateSlugs) {
+			if (!this.isTraceFamilyCompatible(sourceSlug, slug)) continue;
+			const row = this.getRowBySlugAndCanonicalId(slug, canonId);
+			const rowId = this.extractRowId(row);
+			if (!rowId) continue;
+			this.addTraceDisplayItem(merged, slug, rowId);
+		}
+	}
+
+	private addConnectedOuvragesForTracedLines(merged: Map<string, { slug: string; id: string }>): void {
+		const lineLinkRules: { column: string; include: string[]; exclude?: string[]; extraSlugs?: string[] }[] = [
+			{ column: 'id_depart_hta', include: ['depart'], exclude: ['bt'] },
+			{ column: 'id_depart_bt', include: ['depart', 'bt'] },
+			{ column: 'id_poste_source', include: ['poste-source'], extraSlugs: this.slugPosteSource ? [this.slugPosteSource] : [] },
+			{ column: 'id_poteau_hta', include: ['poteau', 'hta'] },
+			{ column: 'id_poteau_bt', include: ['poteau', 'bt'] },
+			{ column: 'id_poste_cabine', include: ['poste-cabine'], extraSlugs: this.slugPosteTransfo ? [this.slugPosteTransfo] : [] },
+			{ column: 'id_poste_sur_poteau', include: ['poste', 'poteau'], extraSlugs: this.slugPosteTransfo ? [this.slugPosteTransfo] : [] },
+			{ column: 'id_transfo_poteau', include: ['transfo', 'poteau'], extraSlugs: this.slugPosteTransfo ? [this.slugPosteTransfo] : [] },
+			{ column: 'id_transfo_ht_bt', include: ['transfo', 'ht', 'bt'], extraSlugs: this.slugPosteTransfo ? [this.slugPosteTransfo] : [] }
+		];
+
+		const tracedBtLineIds = new Set<string>();
+		const tracedHtaLineIds = new Set<string>();
+		const tracedBrchtLineIds = new Set<string>();
+
+		for (const item of Array.from(merged.values())) {
+			const slugNorm = item.slug.toLowerCase();
+			if (!this.isLineSlug(slugNorm)) continue;
+			const canonId = this.normalizeId(item.id);
+			if (slugNorm.includes('bt') || slugNorm.includes('cable-bt')) tracedBtLineIds.add(canonId);
+			if (slugNorm.includes('hta') || slugNorm.includes('troncons')) tracedHtaLineIds.add(canonId);
+			if (slugNorm.includes('brcht') || slugNorm.includes('branchement')) tracedBrchtLineIds.add(canonId);
+
+			const row = this.getRowBySlugAndId(item.slug, item.id);
+			if (!row) continue;
+			for (const rule of lineLinkRules) {
+				const canonRef = this.valueToCanon(row[rule.column]);
+				if (!canonRef) continue;
+				const candidateSlugs = Array.from(new Set([...(rule.extraSlugs || []), ...this.getTraceSlugsByTerms(rule.include, rule.exclude || [])]));
+				this.addRowsByCanonicalId(merged, canonRef, candidateSlugs, item.slug);
+			}
+		}
+
+		for (const [slug, rows] of this.rowsBySlug.entries()) {
+			const slugNorm = slug.toLowerCase();
+			if (this.isLineSlug(slugNorm)) continue;
+			for (const row of rows || []) {
+				const rowId = this.extractRowId(row);
+				if (!rowId) continue;
+				const btRef = this.valueToCanon(row['id_ligne_bt']);
+				const brchtRef = this.valueToCanon(row['id_ligne_brcht']);
+				const htaRef = this.valueToCanon(row['id_ligne_hta']);
+				if ((btRef && tracedBtLineIds.has(btRef)) || (brchtRef && tracedBrchtLineIds.has(brchtRef)) || (htaRef && tracedHtaLineIds.has(htaRef))) {
+					this.addTraceDisplayItem(merged, slug, rowId);
+				}
+			}
+		}
+	}
+
+	private extractTraceCoordinatePairs(wkt: unknown): { lng: number; lat: number }[] {
+		const raw = String(wkt ?? '').replace(/^SRID=\d+;/i, '').trim();
+		if (!raw) return [];
+		const normalized = raw.replace(/\s+ZM\b/gi, '').replace(/\s+Z\b/gi, '').replace(/\s+M\b/gi, '');
+		const matches = Array.from(normalized.matchAll(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g));
+		return matches
+			.map((m) => ({ lng: Number(m[1]), lat: Number(m[2]) }))
+			.filter((p) => Number.isFinite(p.lng) && Number.isFinite(p.lat));
+	}
+
+	private getTracePointCoord(row: Record<string, unknown> | null): { lng: number; lat: number } | null {
+		if (!row) return null;
+		const coords = this.extractTraceCoordinatePairs(row['geom'] ?? row['Geom']);
+		return coords.length > 0 ? coords[0] : null;
+	}
+
+	private getTraceLineEndpointCoords(row: Record<string, unknown> | null): { lng: number; lat: number }[] {
+		if (!row) return [];
+		const coords = this.extractTraceCoordinatePairs(row['geom'] ?? row['Geom']);
+		if (coords.length <= 1) return coords;
+		return [coords[0], coords[coords.length - 1]];
+	}
+
+	private getTraceDistanceMeters(a: { lng: number; lat: number }, b: { lng: number; lat: number }): number {
+		const toRad = (deg: number): number => (deg * Math.PI) / 180;
+		const r = 6371000;
+		const dLat = toRad(b.lat - a.lat);
+		const dLng = toRad(b.lng - a.lng);
+		const lat1 = toRad(a.lat);
+		const lat2 = toRad(b.lat);
+		const sinLat = Math.sin(dLat / 2);
+		const sinLng = Math.sin(dLng / 2);
+		const h = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng;
+		return 2 * r * Math.asin(Math.min(1, Math.sqrt(h)));
+	}
+
+	private addNearbyPointOuvragesForTracedLines(
+		merged: Map<string, { slug: string; id: string }>,
+		toleranceM: number = 45
+	): void {
+		const tracedLineEndpoints: { slug: string; coords: { lng: number; lat: number }[] }[] = [];
+		for (const item of Array.from(merged.values())) {
+			const slugNorm = item.slug.toLowerCase();
+			if (!this.isLineSlug(slugNorm)) continue;
+			const row = this.getRowBySlugAndId(item.slug, item.id);
+			const endpoints = this.getTraceLineEndpointCoords(row);
+			if (endpoints.length === 0) continue;
+			tracedLineEndpoints.push({ slug: item.slug, coords: endpoints });
+		}
+		if (tracedLineEndpoints.length === 0) return;
+
+		for (const [slug, rows] of this.rowsBySlug.entries()) {
+			const slugNorm = slug.toLowerCase();
+			if (!this.isPointSlug(slugNorm)) continue;
+			for (const row of rows || []) {
+				const rowId = this.extractRowId(row);
+				if (!rowId) continue;
+				const pointCoord = this.getTracePointCoord(row);
+				if (!pointCoord) continue;
+				const isNearTracedLine = tracedLineEndpoints.some((line) =>
+					this.isTraceFamilyCompatible(line.slug, slug) &&
+					line.coords.some((coord) => this.getTraceDistanceMeters(coord, pointCoord) <= toleranceM)
+				);
+				if (!isNearTracedLine) continue;
+				this.addTraceDisplayItem(merged, slug, rowId);
+			}
+		}
+	}
+
+	private addLocalBtContextForAmont(merged: Map<string, { slug: string; id: string }>): void {
+		if (!this.selectedMapStart) return;
+		const selectedSlug = (this.selectedMapStart.slug || '').toLowerCase();
+		if (!this.isPointSlug(selectedSlug) || !selectedSlug.includes('bt') || !selectedSlug.includes('poste')) return;
+
+		const selectedRow = this.getRowBySlugAndId(selectedSlug, this.selectedMapStart.id);
+		if (!selectedRow) return;
+
+		const familyToken = this.getTraceFamilyToken(selectedSlug);
+		const localRefs = new Set(
+			[selectedRow['num_poste'], selectedRow['nom_poste'], selectedRow['label'], selectedRow['libelle']]
+				.map((v) => this.normalizeTraceContextValue(v))
+				.filter((v) => !!v)
+		);
+		if (localRefs.size === 0) return;
+
+		for (const [slug, rows] of this.rowsBySlug.entries()) {
+			const slugNorm = slug.toLowerCase();
+			if (!this.isLineSlug(slugNorm) || !slugNorm.includes('bt')) continue;
+			if (familyToken && !this.isTraceFamilyCompatible(selectedSlug, slugNorm)) continue;
+			for (const row of rows || []) {
+				const rowRefs = [
+					row['num_poste'],
+					row['nom_poste'],
+					row['nom_du_dep'],
+					row['label'],
+					row['libelle']
+				]
+					.map((v) => this.normalizeTraceContextValue(v))
+					.filter((v) => !!v);
+				if (!rowRefs.some((v) => localRefs.has(v))) continue;
+				const rowId = this.extractRowId(row);
+				if (!rowId) continue;
+				this.addTraceDisplayItem(merged, slug, rowId);
+			}
+		}
+	}
+
+	private enrichTraceResultForDisplay(
+		ouvrageIds: { slug: string; id: string }[],
+		direction: 'amont' | 'aval' | 'tous'
+	): { slug: string; id: string }[] {
+		const merged = new Map<string, { slug: string; id: string }>();
+		for (const o of ouvrageIds) {
+			this.addTraceDisplayItem(merged, o.slug, o.id);
+		}
+		this.addConnectedOuvragesForTracedLines(merged);
+		this.addNearbyPointOuvragesForTracedLines(merged);
+		if (direction === 'amont') this.addLocalBtContextForAmont(merged);
+		return Array.from(merged.values());
+	}
+
 	resetSimulationCoupure(): void {
 		this.effacerTrace();
 	}
@@ -1330,17 +1563,18 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	/** Affiche sur la carte uniquement les ouvrages du tracé (ou tous si liste vide). */
 	private applyTraceResult(ouvrageIds: { slug: string; id: string }[], direction: 'amont' | 'aval' | 'tous'): void {
+		const displayOuvrageIds = this.enrichTraceResultForDisplay(ouvrageIds, direction);
 		// Pour l’instant : si le backend renvoie des IDs, on pourrait masquer les couches non concernées ou surligner.
 		// Ici on garde l’affichage actuel ; à étendre quand le backend renverra les géométries ou IDs.
-		this.traceOuvrageIds = new Set(ouvrageIds.map((o) => `${o.slug}:${o.id}`));
-		this.traceOuvrageIdsCanon = new Set(ouvrageIds.map((o) => this.normalizeOuvrageKey(`${o.slug}:${o.id}`)));
+		this.traceOuvrageIds = new Set(displayOuvrageIds.map((o) => `${o.slug}:${o.id}`));
+		this.traceOuvrageIdsCanon = new Set(displayOuvrageIds.map((o) => this.normalizeOuvrageKey(`${o.slug}:${o.id}`)));
 		this.lastTraceDirection = direction;
 		this.flowDashOffset = 0;
-		this.resumeOuvrages = ouvrageIds.length;
-		this.resumePoteaux = ouvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
+		this.resumeOuvrages = displayOuvrageIds.length;
+		this.resumePoteaux = displayOuvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
 		this.resumeLongueurKm = 0;
-		this.buildTraceInsights(ouvrageIds);
-		this.traceInsightsOpen = ouvrageIds.length > 0;
+		this.buildTraceInsights(displayOuvrageIds);
+		this.traceInsightsOpen = displayOuvrageIds.length > 0;
 		this.applyTraceStyleToMap();
 		this.updateTracePointClusters();
 		this.startFlowAnimation();
@@ -1373,7 +1607,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 
 	private isLineSlug(slug: string): boolean {
-		return /ligne|electricline/.test((slug || '').toLowerCase());
+		const s = (slug || '').toLowerCase();
+		return /ligne|electricline|troncon|cable-bt/.test(s) || s === 'rx-topology-edges';
 	}
 
 	private isAbonneSlug(slug: string): boolean {
@@ -1447,6 +1682,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	private getTraceNodeMeaningLine(): string {
 		return "Correspondance des nœuds: nœud amont = champs id_depart_hta/id_depart_bt (départ HTA ou départ BT, donc source de la ligne) ; nœud aval = champs id_poteau_hta/id_poteau_bt (poteau/ouvrage d'arrivée de la ligne).";
+	}
+
+	getTraceKindLabel(kind: 'ligne' | 'point' | 'autre'): string {
+		if (kind === 'ligne') return 'Ligne';
+		if (kind === 'point') return 'Point';
+		return 'Autre ouvrage';
 	}
 
 	getSelectedOptionLabel(): string {
@@ -1680,6 +1921,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				layerFlags.set(layer, true);
 			}
 		});
+		// Sécurité UX: n'appliquer l'effet "grisé" que si au moins une entité tracée
+		// est réellement présente parmi les couches visibles de la carte.
+		const hasVisibleHighlighted = Array.from(layerFlags.values()).some((v) => v);
+		const canDimNonTrace = hasTrace && hasVisibleHighlighted;
 		const layerHasCanon = (layer: unknown, canon: string): boolean => {
 			if (!canon) return false;
 			const s = layerCanonKeys.get(layer);
@@ -1712,6 +1957,15 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				opacity: 0.95,
 				fillOpacity: 0.5,
 				weight: isLine ? 5 : 3,
+				dashArray: null,
+				dashOffset: null
+			};
+			const dimmed: Record<string, unknown> = {
+				color: '#9ca3af',
+				fillColor: '#9ca3af',
+				opacity: 0.28,
+				fillOpacity: 0.12,
+				weight: isLine ? 3 : 2,
 				dashArray: null,
 				dashOffset: null
 			};
@@ -1764,7 +2018,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					});
 					return;
 				}
-				setStyle.call(layer, normal);
+				setStyle.call(layer, canDimNonTrace ? dimmed : normal);
 				return;
 			}
 			if (this.reelimentationActive) {
@@ -1795,7 +2049,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					});
 					return;
 				}
-				setStyle.call(layer, normal);
+				setStyle.call(layer, canDimNonTrace ? dimmed : normal);
 				return;
 			}
 			if (this.coupureActive) {
@@ -1827,7 +2081,12 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				highlight['fillOpacity'] = this.pointPulsePhase ? 0.95 : 0.45;
 				highlight['opacity'] = 1;
 			} else {
-				highlight['dashArray'] = null;
+				highlight['color'] = baseColor;
+				highlight['fillColor'] = baseColor;
+				highlight['weight'] = 5;
+				highlight['fillOpacity'] = 0.3;
+				highlight['dashArray'] = this.lastTraceDirection ? '10 8' : null;
+				highlight['dashOffset'] = this.lastTraceDirection ? String(this.flowDashOffset) : null;
 			}
 			setStyle.call(layer, highlight);
 		});
@@ -1948,17 +2207,37 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.cdr.markForCheck();
 	}
 
+	/**
+	 * Ouvre le schéma unifilaire correspondant au tracé actif.
+	 * Transmet le slug + id de l'ouvrage sélectionné ainsi que la direction du tracé
+	 * pour que le schéma affiche exactement le même sous-réseau.
+	 */
+	ouvrirSchemaUnifilaire(): void {
+		if (!this.selectedMapStart || !this.lastTraceDirection) return;
+		const { slug, id } = this.selectedMapStart;
+		// Format "slug:id" pour que parseSchemaRefInput puisse extraire le slug
+		const ref = slug ? `${slug}:${id}` : id;
+		void this.router.navigate(['/reseau/schema-reseau'], {
+			queryParams: {
+				ref,
+				direction: this.lastTraceDirection,
+				type: 'ouvrage',
+			},
+		});
+	}
+
 	/** Charge le tracé du départ de secours sélectionné pour mettre en évidence les lignes pouvant alimenter la zone coupée. */
 	private loadCoupureSupplyTrace(): void {
 		this.coupureSupplyOuvrageIdsCanon = new Set();
 		if (!this.coupureActive) return;
 		const ligneSecoursId = this.getLigneSecoursId();
+		const ligneSecours = this.getLigneSecoursSelectionInfo();
 		if (!ligneSecoursId) {
 			this.applyTraceStyleToMap();
 			this.cdr.markForCheck();
 			return;
 		}
-		this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous').pipe(
+		this.gisApi.getTrace('ouvrage', ligneSecoursId, 'tous', ligneSecours?.slug).pipe(
 			catchError(() => of({ ouvrage_ids: [] }))
 		).subscribe({
 			next: (res) => {
@@ -2583,12 +2862,22 @@ stop
 						const geoJsonLayer = leaflet.geoJSON(fc, {
 							pane: paneName,
 							style: () => styleWithPane,
-							pointToLayer: (_: unknown, latlng: unknown) => leaflet.circleMarker(latlng, {
+						pointToLayer: (_: unknown, latlng: unknown) => {
+							const networkIcon = createNetworkLeafletIcon(
+								(leaflet as unknown) as Parameters<typeof createNetworkLeafletIcon>[0],
+								slug,
+							);
+							if (networkIcon) {
+								return ((leaflet as unknown) as { marker: (latlng: unknown, opts: object) => unknown })
+									.marker(latlng, { icon: networkIcon, pane: paneName });
+							}
+							return leaflet.circleMarker(latlng, {
 								...styleWithPane,
 								radius: 14,
 								weight: 3,
-								interactive: true
-							}),
+								interactive: true,
+							});
+						},
 							onEachFeature: (
 								feature: { properties?: Record<string, unknown> },
 								layer: {
@@ -2661,28 +2950,223 @@ stop
 						this.slugToLayerGroups.set(slug, slugGroup);
 						couches.push({ id: slug, label, color, visible: true });
 					}
-					this.couchesReseau = couches;
-					this.initialBounds = bounds ?? this.initialBounds;
-					const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
-					if (m?.invalidateSize) m.invalidateSize();
-					if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
-					this.mapLoading = false;
-					this.cdr.markForCheck();
-					this.updateLigneSecoursOptionsBySelection();
-					setTimeout(() => self.highlightSelectionOnMap(), 0);
-					resolve();
-				}).catch(() => {
-					this.mapLoading = false;
-					this.cdr.markForCheck();
-					resolve();
-				});
-			},
-			error: () => {
+				this.couchesReseau = couches;
+				this.initialBounds = bounds ?? this.initialBounds;
+				const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
+				if (m?.invalidateSize) m.invalidateSize();
+				if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
+				this.mapLoading = false;
+				this.cdr.markForCheck();
+				this.updateLigneSecoursOptionsBySelection();
+				// Charger les couches invisibles de topologie RX synthétique (nœuds + arcs bridge)
+				void this.loadRxTopologyNodesLayer();
+				void this.loadRxTopologyEdgesLayer();
+				setTimeout(() => self.highlightSelectionOnMap(), 0);
+				resolve();
+			}).catch(() => {
 				this.mapLoading = false;
 				this.cdr.markForCheck();
 				resolve();
-			}
+			});
+		},
+		error: () => {
+			this.mapLoading = false;
+			this.cdr.markForCheck();
+			resolve();
+		}
+	});
+	});
+}
+
+/**
+ * Charge les nœuds synthétiques de la topologie RX (poteau-hta, poteau-bt, depart-bt)
+ * et les enregistre dans slugIdToLayer avec le slug "rx-topology-nodes".
+ * Ces nœuds sont normalement invisibles (couche transparente) mais deviennent
+ * visibles (colorés, animés) lorsqu'ils font partie d'un tracé actif.
+ */
+private loadRxTopologyNodesLayer(): Promise<void> {
+	if (!this.map || !this.layerGroup || !this.gisApi) return Promise.resolve();
+	return new Promise((resolve) => {
+		this.gisApi.getRxTopologyNodes('rx_raz4').pipe(
+			catchError(() => of({ slug: 'rx-topology-nodes', rows: [], count: 0 }))
+		).subscribe({
+			next: (result) => {
+				if (!result?.rows?.length) { resolve(); return; }
+				Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
+					const leaflet = (LModule as { default: unknown }).default as {
+						geoJSON: (f: object, opts: object) => { eachLayer: (fn: (layer: unknown) => void) => void };
+						circleMarker: (latlng: unknown, opts: object) => unknown;
+						layerGroup: () => { addLayer: (l: unknown) => void };
+					};
+					const group = this.layerGroup as { addLayer: (l: unknown) => void };
+					const wk = (wellknown as { parse?: (wkt: string) => unknown }).parse ?? (wellknown as { default?: { parse: (wkt: string) => unknown } }).default?.parse;
+					const parseWkt = typeof wk === 'function' ? wk : ((): null => null);
+					const self = this;
+					const SLUG = 'rx-topology-nodes';
+					const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
+					if (!slugGroup) { resolve(); return; }
+
+					for (const row of result.rows) {
+						if (!row.geom) continue;
+						const geom = parseWkt(row.geom);
+						if (!geom || typeof geom !== 'object') continue;
+						try {
+							const feature = { type: 'Feature' as const, geometry: geom, properties: {
+								_layerSlug: SLUG,
+								_layerLabel: 'Nœud topologie RX',
+								gid: row.gid,
+								node_type: row.node_type,
+								network_level: row.network_level,
+								label: row.label,
+								source_slug: row.source_slug,
+								source_gid: row.source_gid,
+								depart_code: row.depart_code,
+							}};
+							const fc = { type: 'FeatureCollection' as const, features: [feature] };
+							const geoJsonLayer = leaflet.geoJSON(fc, {
+								pane: 'trace-points',
+								style: () => ({ color: '#ff8c00', weight: 2, opacity: 0, fillColor: '#ff8c00', fillOpacity: 0, pane: 'trace-points' }),
+								pointToLayer: (_: unknown, latlng: unknown) =>
+									leaflet.circleMarker(latlng, {
+										radius: 10,
+										weight: 2,
+										color: '#ff8c00',
+										fillColor: '#ff8c00',
+										fillOpacity: 0,
+										opacity: 0,
+										pane: 'trace-points',
+									}),
+								onEachFeature: (
+									feat: { properties?: Record<string, unknown> },
+									layer: { bindPopup: (c: string) => void; feature?: unknown }
+								) => {
+									(layer as { feature?: unknown }).feature = feat;
+									const p = feat.properties ?? {};
+									layer.bindPopup(`<b>Nœud RX</b><br>Type : ${p['node_type']}<br>ID : ${p['gid']}`);
+								},
+							});
+							geoJsonLayer.eachLayer((l: unknown) => {
+								(slugGroup as { addLayer: (l: unknown) => void }).addLayer(l);
+								const withBounds = l as {
+									getBounds?: () => unknown;
+									getLatLng?: () => { lat: number; lng: number };
+									setStyle?: (s: object) => void;
+									bringToFront?: () => void;
+								};
+								const withFeature = l as { feature?: { properties?: Record<string, unknown> } };
+								const nodeId = String(withFeature.feature?.properties?.['gid'] ?? '').trim();
+								if (nodeId && (typeof withBounds.getLatLng === 'function')) {
+									const nodeIdNorm = nodeId.replace(/^\{|\}$/g, '');
+									self.slugIdToLayer.set(`${SLUG}:${nodeId}`, withBounds);
+									if (nodeIdNorm !== nodeId) self.slugIdToLayer.set(`${SLUG}:${nodeIdNorm}`, withBounds);
+									self.slugIdToLayer.set(`${SLUG}:${nodeIdNorm.toLowerCase()}`, withBounds);
+								}
+							});
+						} catch {
+							// ignore
+						}
+					}
+					group.addLayer(slugGroup);
+					this.slugToLayerGroups.set(SLUG, slugGroup);
+					resolve();
+			}).catch(() => resolve());
+		},
+		error: () => resolve(),
+	});
+	});
+}
+
+/**
+ * Charge les arcs synthétiques de la topologie RX (bridges HTA-BT) avec leur géométrie
+ * et les enregistre dans slugIdToLayer avec le slug "rx-topology-edges".
+ * Ces arcs sont invisibles par défaut (opacity=0) et deviennent visibles (ligne pointillée orange)
+ * uniquement quand ils font partie du tracé actif.
+ */
+private loadRxTopologyEdgesLayer(): Promise<void> {
+	if (!this.map || !this.layerGroup || !this.gisApi) return Promise.resolve();
+	return new Promise((resolve) => {
+		this.gisApi.getRxTopologyEdges('rx_raz4').pipe(
+			catchError(() => of({ slug: 'rx-topology-edges', rows: [], count: 0 }))
+		).subscribe({
+			next: (result) => {
+				if (!result?.rows?.length) { resolve(); return; }
+				Promise.all([import('leaflet'), import('wellknown').then((w) => w.default ?? w)]).then(([LModule, wellknown]) => {
+					const leaflet = (LModule as { default: unknown }).default as {
+						geoJSON: (f: object, opts: object) => { eachLayer: (fn: (layer: unknown) => void) => void };
+						layerGroup: () => { addLayer: (l: unknown) => void };
+					};
+					const group = this.layerGroup as { addLayer: (l: unknown) => void };
+					const wk = (wellknown as { parse?: (wkt: string) => unknown }).parse ?? (wellknown as { default?: { parse: (wkt: string) => unknown } }).default?.parse;
+					const parseWkt = typeof wk === 'function' ? wk : ((): null => null);
+					const normalizeWkt = (wkt: string): string => String(wkt).replace(/^SRID=\d+;/i, '').trim();
+					const self = this;
+					const SLUG = 'rx-topology-edges';
+					const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
+					if (!slugGroup) { resolve(); return; }
+
+					for (const row of result.rows) {
+						if (!row.geom) continue;
+						const geom = parseWkt(normalizeWkt(row.geom));
+						if (!geom || typeof geom !== 'object') continue;
+						try {
+							const feature = { type: 'Feature' as const, geometry: geom, properties: {
+								_layerSlug: SLUG,
+								_layerLabel: 'Pont topologie RX',
+								gid: row.gid,
+								edge_type: row.edge_type,
+								network_level: row.network_level,
+								label: row.label,
+								source_node_id: row.source_node_id,
+								target_node_id: row.target_node_id,
+								depart_code: row.depart_code,
+							}};
+							const fc = { type: 'FeatureCollection' as const, features: [feature] };
+							const geoJsonLayer = leaflet.geoJSON(fc, {
+								pane: 'trace-lines',
+								style: () => ({
+									color: '#f97316',
+									weight: 3,
+									opacity: 0,
+									dashArray: '8 6',
+									pane: 'trace-lines',
+								}),
+								onEachFeature: (
+									feat: { properties?: Record<string, unknown> },
+									layer: { bindPopup: (c: string) => void; feature?: unknown }
+								) => {
+									(layer as { feature?: unknown }).feature = feat;
+									const p = feat.properties ?? {};
+									layer.bindPopup(`<b>Pont RX HTA/BT</b><br>${p['label'] ?? ''}`);
+								},
+							});
+							geoJsonLayer.eachLayer((l: unknown) => {
+								(slugGroup as { addLayer: (l: unknown) => void }).addLayer(l);
+								const withBounds = l as {
+									getBounds?: () => unknown;
+									getLatLng?: () => { lat: number; lng: number };
+									setStyle?: (s: object) => void;
+									bringToFront?: () => void;
+								};
+								const withFeature = l as { feature?: { properties?: Record<string, unknown> } };
+								const edgeId = String(withFeature.feature?.properties?.['gid'] ?? '').trim();
+								if (edgeId && typeof withBounds.getBounds === 'function') {
+									const edgeIdNorm = edgeId.replace(/^\{|\}$/g, '');
+									self.slugIdToLayer.set(`${SLUG}:${edgeId}`, withBounds);
+									if (edgeIdNorm !== edgeId) self.slugIdToLayer.set(`${SLUG}:${edgeIdNorm}`, withBounds);
+									self.slugIdToLayer.set(`${SLUG}:${edgeIdNorm.toLowerCase()}`, withBounds);
+								}
+							});
+						} catch {
+							// ignore
+						}
+					}
+					group.addLayer(slugGroup);
+					this.slugToLayerGroups.set(SLUG, slugGroup);
+					resolve();
+				}).catch(() => resolve());
+			},
+			error: () => resolve(),
 		});
-		});
-	}
+	});
+}
 }

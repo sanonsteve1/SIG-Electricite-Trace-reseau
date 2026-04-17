@@ -1,0 +1,86 @@
+[
+  {
+    "source": "F:\\CIE\\SHP\\CLIENTS_BT\\EXPRESS\\R380\\XYextraction_gps_postpaied_15_02_2023_-_v2.shp",
+    "table": "clients_bt_express_r380_xyextraction_gps_postpaied_15_02_2023_v"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\CLIENTS_BT\\RAZ 3\\R226\\XYextraction_gps_postpaied_15_02_2023_-_v2.shp",
+    "table": "clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023_v2"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\CLIENTS_BT\\RAZ 4\\R227\\XYextraction_gps_postpaied_15_02_2023_-_v2.shp",
+    "table": "clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023_v2"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\CLIENTS_BT\\RAZ 4\\R333\\XYextraction_gps_postpaied_15_02_2023_-_v2.shp",
+    "table": "clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023_v2"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\PS\\poste_source.shp",
+    "table": "ps_poste_source"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\EXPRESS\\R380\\Cable_BT.shp",
+    "table": "rx_bt_express_r380_cable_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\EXPRESS\\R380\\Poste_H59.shp",
+    "table": "rx_bt_express_r380_poste_h59"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 3\\R226\\Cable_BT.shp",
+    "table": "rx_bt_raz_3_r226_cable_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 3\\R226\\Poste_H59.shp",
+    "table": "rx_bt_raz_3_r226_poste_h59"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 4\\R227\\Cable_BT.shp",
+    "table": "rx_bt_raz_4_r227_cable_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 4\\R227\\Poste_H59.shp",
+    "table": "rx_bt_raz_4_r227_poste_h59"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 4\\R333\\Cable_BT.shp",
+    "table": "rx_bt_raz_4_r333_cable_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_BT\\RAZ 4\\R333\\Poste_H59.shp",
+    "table": "rx_bt_raz_4_r333_poste_h59"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\EXPRESS\\Poste_HTA_BT.shp",
+    "table": "rx_hta_express_poste_hta_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\EXPRESS\\Troncons.shp",
+    "table": "rx_hta_express_troncons"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\MOTOBE\\Troncons.shp",
+    "table": "rx_hta_motobe_troncons"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\RAZ 3\\Poste_HTA_BT.shp",
+    "table": "rx_hta_raz_3_poste_hta_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\RAZ 3\\Troncons.shp",
+    "table": "rx_hta_raz_3_troncons"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\RAZ 4\\Poste_HTA.shp",
+    "table": "rx_hta_raz_4_poste_hta"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\RAZ 4\\Poste_HTA_BT.shp",
+    "table": "rx_hta_raz_4_poste_hta_bt"
+  },
+  {
+    "source": "F:\\CIE\\SHP\\RX_HTA\\RAZ 4\\Troncons.shp",
+    "table": "rx_hta_raz_4_troncons"
+  }
+]

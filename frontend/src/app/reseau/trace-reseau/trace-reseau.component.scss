@@ -224,6 +224,23 @@ $header-height: 56px;
 	color: #fff;
 }
 
+.trace-reseau-btn--schema {
+	background: #7c3aed;
+	color: #fff;
+	border-color: #7c3aed;
+}
+
+.trace-reseau-btn--schema:hover:not(:disabled) {
+	background: #6d28d9;
+	border-color: #6d28d9;
+	color: #fff;
+}
+
+.trace-reseau-btn--schema:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
 .trace-reseau-required {
 	color: #dc2626;
 }
@@ -1011,7 +1028,13 @@ $header-height: 56px;
 }
 
 .trace-reseau-insights-bar-fill--line {
-	background: #ef4444;
+	background: repeating-linear-gradient(
+		90deg,
+		#ef4444 0 14px,
+		#fca5a5 14px 24px
+	);
+	background-size: 32px 100%;
+	animation: trace-reseau-dash-slide 0.9s linear infinite;
 }
 
 .trace-reseau-insights-bar-fill--point {
@@ -1019,7 +1042,13 @@ $header-height: 56px;
 }
 
 .trace-reseau-insights-bar-fill--other {
-	background: #6b7280;
+	background: repeating-linear-gradient(
+		90deg,
+		#8b5cf6 0 14px,
+		#c4b5fd 14px 24px
+	);
+	background-size: 32px 100%;
+	animation: trace-reseau-dash-slide 1s linear infinite;
 }
 
 .trace-reseau-insights-type-chart {
@@ -1115,6 +1144,32 @@ $header-height: 56px;
 	vertical-align: middle;
 }
 
+.trace-reseau-insights-kind {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.15rem 0.45rem;
+	border-radius: 999px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+}
+
+.trace-reseau-insights-kind--line {
+	color: #991b1b;
+	background: #fee2e2;
+}
+
+.trace-reseau-insights-kind--point {
+	color: #1d4ed8;
+	background: #dbeafe;
+}
+
+.trace-reseau-insights-kind--other {
+	color: #6d28d9;
+	background: #ede9fe;
+}
+
 .trace-reseau-insights-row-clickable {
 	cursor: pointer;
 }
@@ -1127,6 +1182,15 @@ $header-height: 56px;
 	background: rgba($primary, 0.12);
 }
 
+@keyframes trace-reseau-dash-slide {
+	from {
+		background-position: 0 0;
+	}
+	to {
+		background-position: 32px 0;
+	}
+}
+
 // Override PrimeNG dans ce composant
 ::ng-deep .trace-reseau .trace-reseau-select .p-inputtext,
 ::ng-deep .trace-reseau .p-datepicker .p-inputtext {
@@ -1136,6 +1200,17 @@ $header-height: 56px;
 
 ::ng-deep .trace-reseau .p-select .p-select-label {
 	padding: 0.5rem 0.75rem !important;
+}
+
+// ─── Icônes réseau ArcGIS Utility Network style ──────────────────────────────
+::ng-deep .trace-reseau .network-icon {
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+	transition: filter 0.15s ease, transform 0.15s ease;
+
+	&:hover {
+		filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.65)) brightness(1.15);
+		transform: scale(1.15);
+	}
 }
 
 // Marqueurs Leaflet (D = départ, F = arrivée)

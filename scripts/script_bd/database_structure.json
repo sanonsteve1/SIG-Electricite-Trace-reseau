@@ -169,9 +169,9 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
-      "indexes_size": "16 kB",
+      "total_size": "19 MB",
+      "data_size": "904 kB",
+      "indexes_size": "18 MB",
       "table_rows": 0
     }
   },
@@ -321,6 +321,13 @@
       {
         "Field": "id_poste_source",
         "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
         "Null": "YES",
         "Default": null,
         "Extra": ""
@@ -487,9 +494,9 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
-      "indexes_size": "16 kB",
+      "total_size": "19 MB",
+      "data_size": "1080 kB",
+      "indexes_size": "18 MB",
       "table_rows": 0
     }
   },
@@ -571,6 +578,13 @@
         "Null": "YES",
         "Default": null,
         "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
       }
     ],
     "primary_keys": [
@@ -586,10 +600,318 @@
       }
     ],
     "table_info": {
-      "total_size": "64 kB",
-      "data_size": "16 kB",
+      "total_size": "80 kB",
+      "data_size": "24 kB",
       "indexes_size": "16 kB",
       "table_rows": 0
+    }
+  },
+  "clients_bt_express_r380_xyextraction_gps_postpaied_15_02_2023_v": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('clients_bt_express_r380_xyextraction_gps_postpaied_15_0_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "adresse_te",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_com",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "identifant",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "latitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "clients_bt_express_r380_xyextraction_gps_postpaie_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "clients_bt_express_r380_xyextraction_gps_postpaied_15_02_202_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "88 kB",
+      "data_size": "32 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 220
+    }
+  },
+  "clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023_v2": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "adresse_te",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_com",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "identifant",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "latitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "clients_bt_raz_3_r226_xyextraction_gps_postpaied_15_02_2023__pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "clients_bt_raz_3_r226_xyextraction_gps_postpaied__geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 77
+    }
+  },
+  "clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023_v2": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "adresse_te",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_com",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "identifant",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "latitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "clients_bt_raz_4_r227_xyextraction_gps_postpaied_15_02_2023__pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "clients_bt_raz_4_r227_xyextraction_gps_postpaied__geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "160 kB",
+      "data_size": "64 kB",
+      "indexes_size": "64 kB",
+      "table_rows": 532
+    }
+  },
+  "clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023_v2": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02__gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "adresse_te",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_com",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "identifant",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "latitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longitude",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "clients_bt_raz_4_r333_xyextraction_gps_postpaied_15_02_2023__pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "clients_bt_raz_4_r333_xyextraction_gps_postpaied__geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "152 kB",
+      "data_size": "64 kB",
+      "indexes_size": "56 kB",
+      "table_rows": 501
     }
   },
   "coffret": {
@@ -840,7 +1162,7 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
+      "total_size": "3384 kB",
       "data_size": "8192 bytes",
       "indexes_size": "16 kB",
       "table_rows": 0
@@ -1016,6 +1338,13 @@
         "Null": "YES",
         "Default": null,
         "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
       }
     ],
     "primary_keys": [
@@ -1031,8 +1360,8 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
+      "total_size": "72 kB",
+      "data_size": "16 kB",
       "indexes_size": "16 kB",
       "table_rows": 0
     }
@@ -1116,9 +1445,103 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
-      "indexes_size": "16 kB",
+      "total_size": "592 kB",
+      "data_size": "32 kB",
+      "indexes_size": "520 kB",
+      "table_rows": 0
+    }
+  },
+  "equipement_codification": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": "nextval('equipement_codification_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "table_name",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "equipement_id",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_code",
+        "Type": "character varying(8)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_equipement",
+        "Type": "character varying(64)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_at",
+        "Type": "timestamp with time zone",
+        "Null": "NO",
+        "Default": "now()",
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "equipement_codification_code_equipement_key",
+        "column_name": "code_equipement",
+        "is_unique": true,
+        "is_primary": false
+      },
+      {
+        "index_name": "equipement_codification_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      },
+      {
+        "index_name": "equipement_codification_table_name_equipement_id_key",
+        "column_name": "table_name",
+        "is_unique": true,
+        "is_primary": false
+      },
+      {
+        "index_name": "equipement_codification_table_name_equipement_id_key",
+        "column_name": "equipement_id",
+        "is_unique": true,
+        "is_primary": false
+      },
+      {
+        "index_name": "idx_equipement_codification_table_gid",
+        "column_name": "table_name",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "idx_equipement_codification_table_gid",
+        "column_name": "equipement_id",
+        "is_unique": false,
+        "is_primary": false
+      }
+    ],
+    "table_info": {
+      "total_size": "5256 kB",
+      "data_size": "1568 kB",
+      "indexes_size": "3648 kB",
       "table_rows": 0
     }
   },
@@ -1271,6 +1694,134 @@
     "indexes": [
       {
         "index_name": "jonction_hta_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "kaya_equipement_connexion": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "poste_gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "equip_gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "relation_type",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "kaya_equipement_connexion_pkey",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "32 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "16 kB",
+      "table_rows": 0
+    }
+  },
+  "kaya_poste_emprise": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "poste_type",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "poste_gid",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "poste_numero",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "collecte_par",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "kaya_poste_emprise_pkey",
         "column_name": "gid",
         "is_unique": true,
         "is_primary": true
@@ -4218,9 +4769,9 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
-      "indexes_size": "16 kB",
+      "total_size": "18 MB",
+      "data_size": "64 kB",
+      "indexes_size": "18 MB",
       "table_rows": 0
     }
   },
@@ -4366,9 +4917,9 @@
       }
     ],
     "table_info": {
-      "total_size": "96 kB",
-      "data_size": "32 kB",
-      "indexes_size": "32 kB",
+      "total_size": "9472 kB",
+      "data_size": "240 kB",
+      "indexes_size": "9192 kB",
       "table_rows": 0
     }
   },
@@ -4548,9 +5099,9 @@
       }
     ],
     "table_info": {
-      "total_size": "80 kB",
-      "data_size": "32 kB",
-      "indexes_size": "16 kB",
+      "total_size": "496 kB",
+      "data_size": "80 kB",
+      "indexes_size": "376 kB",
       "table_rows": 0
     }
   },
@@ -5119,6 +5670,150 @@
       "table_rows": 0
     }
   },
+  "network_rules": {
+    "columns": [
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "NO",
+        "Default": "nextval('network_rules_id_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "rule_type",
+        "Type": "character varying(32)",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "category",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rule_name",
+        "Type": "text",
+        "Null": "NO",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "concerned_objects",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "description",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "technical_constraints",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "examples",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "detected_errors",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "best_practices",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "source_file",
+        "Type": "text",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sort_order",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "0",
+        "Extra": ""
+      },
+      {
+        "Field": "created_at",
+        "Type": "timestamp with time zone",
+        "Null": "NO",
+        "Default": "now()",
+        "Extra": ""
+      },
+      {
+        "Field": "updated_at",
+        "Type": "timestamp with time zone",
+        "Null": "NO",
+        "Default": "now()",
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "id"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "idx_network_rules_sort",
+        "column_name": "rule_type",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "idx_network_rules_sort",
+        "column_name": "sort_order",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "idx_network_rules_sort",
+        "column_name": "id",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "idx_network_rules_type",
+        "column_name": "rule_type",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "network_rules_pkey",
+        "column_name": "id",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "136 kB",
+      "data_size": "48 kB",
+      "indexes_size": "48 kB",
+      "table_rows": 0
+    }
+  },
   "ocr": {
     "columns": [
       {
@@ -5317,6 +6012,13 @@
         "Null": "YES",
         "Default": null,
         "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
       }
     ],
     "primary_keys": [
@@ -5332,8 +6034,8 @@
       }
     ],
     "table_info": {
-      "total_size": "64 kB",
-      "data_size": "16 kB",
+      "total_size": "72 kB",
+      "data_size": "24 kB",
       "indexes_size": "16 kB",
       "table_rows": 0
     }
@@ -5617,9 +6319,9 @@
       }
     ],
     "table_info": {
-      "total_size": "80 kB",
-      "data_size": "32 kB",
-      "indexes_size": "16 kB",
+      "total_size": "20 MB",
+      "data_size": "72 kB",
+      "indexes_size": "18 MB",
       "table_rows": 0
     }
   },
@@ -5763,6 +6465,13 @@
         "Null": "YES",
         "Default": null,
         "Extra": ""
+      },
+      {
+        "Field": "id_depart_hta",
+        "Type": "uuid",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
       }
     ],
     "primary_keys": [
@@ -5778,9 +6487,9 @@
       }
     ],
     "table_info": {
-      "total_size": "32 kB",
-      "data_size": "8192 bytes",
-      "indexes_size": "16 kB",
+      "total_size": "216 kB",
+      "data_size": "16 kB",
+      "indexes_size": "160 kB",
       "table_rows": 0
     }
   },
@@ -5884,7 +6593,7 @@
       }
     ],
     "table_info": {
-      "total_size": "64 kB",
+      "total_size": "40 kB",
       "data_size": "16 kB",
       "indexes_size": "16 kB",
       "table_rows": 0
@@ -6159,9 +6868,9 @@
       }
     ],
     "table_info": {
-      "total_size": "232 kB",
-      "data_size": "144 kB",
-      "indexes_size": "56 kB",
+      "total_size": "19 MB",
+      "data_size": "176 kB",
+      "indexes_size": "18 MB",
       "table_rows": 0
     }
   },
@@ -6349,10 +7058,5092 @@
       }
     ],
     "table_info": {
-      "total_size": "288 kB",
-      "data_size": "192 kB",
-      "indexes_size": "64 kB",
+      "total_size": "2256 kB",
+      "data_size": "200 kB",
+      "indexes_size": "400 kB",
       "table_rows": 0
+    }
+  },
+  "ps_poste_source": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('ps_poste_source_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sstype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordx",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordy",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codeps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "niv_tensio",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell_ar",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell_de",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_barre",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell_cp",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell_co",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_jeu_bar",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_sstype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_niv_tens",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell_",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_barre",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cel_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cel_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_jeu_b",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "ps_poste_source_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "ps_poste_source_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 2
+    }
+  },
+  "rx_bt_express_r380_cable_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_express_r380_cable_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cable",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_desse",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_leng",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_du_dep",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_des_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_le_1",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_express_r380_cable_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_express_r380_cable_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 17
+    }
+  },
+  "rx_bt_express_r380_poste_h59": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_express_r380_poste_h59_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "s_quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "voie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle_vo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proximite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tab_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eclairage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "aeration",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grillage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_civi",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etancheite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "porte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sol",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "interieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exterieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "acces",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_h59",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_ci_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etat",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_express_r380_poste_h59_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_express_r380_poste_h59_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 1
+    }
+  },
+  "rx_bt_raz_3_r226_cable_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_3_r226_cable_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cable",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_desse",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_leng",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_du_dep",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_des_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_le_1",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_3_r226_cable_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_3_r226_cable_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 16
+    }
+  },
+  "rx_bt_raz_3_r226_poste_h59": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_3_r226_poste_h59_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "s_quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "voie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle_vo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proximite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tab_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eclairage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "aeration",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grillage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_civi",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etancheite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "porte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sol",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "interieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exterieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "acces",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_h59",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_ci_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etat",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_3_r226_poste_h59_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_3_r226_poste_h59_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 1
+    }
+  },
+  "rx_bt_raz_4_r227_cable_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_4_r227_cable_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cable",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_desse",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_leng",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_du_dep",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_des_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_le_1",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_4_r227_cable_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_4_r227_cable_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 14
+    }
+  },
+  "rx_bt_raz_4_r227_poste_h59": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_4_r227_poste_h59_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "s_quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "voie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle_vo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proximite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tab_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eclairage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "aeration",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grillage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_civi",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etancheite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "porte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sol",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "interieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exterieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "acces",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_h59",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_ci_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etat",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_4_r227_poste_h59_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_4_r227_poste_h59_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 1
+    }
+  },
+  "rx_bt_raz_4_r333_cable_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_4_r333_cable_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordre1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cable",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_desse",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_leng",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_du_dep",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_ordr_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "zone_des_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "shape_le_1",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_4_r333_cable_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_4_r333_cable_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 27
+    }
+  },
+  "rx_bt_raz_4_r333_poste_h59": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_bt_raz_4_r333_poste_h59_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid_1",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "objectid",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploitati",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "s_quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "voie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle_vo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "proximite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tab_bt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "eclairage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "aeration",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "grillage",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_civi",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etancheite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "porte",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sol",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "interieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exterieur",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "acces",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_h59",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploita_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie_ci_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "etat",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_bt_raz_4_r333_poste_h59_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_bt_raz_4_r333_poste_h59_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 1
+    }
+  },
+  "rx_hta_express_poste_hta_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_express_poste_hta_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordx",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordy",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "appartenan",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_transfo",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telecomman",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sstypes",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_creat",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_modif",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_depart",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds_c",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type_cel",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_apparten",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_t",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_trans",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_telecomm",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_sstypes",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_express_poste_hta_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_express_poste_hta_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 30
+    }
+  },
+  "rx_hta_express_troncons": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_express_troncons_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_amont",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_aval",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longeur",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "st_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_codetype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_express_troncons_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_express_troncons_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "112 kB",
+      "data_size": "40 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 38
+    }
+  },
+  "rx_hta_motobe_troncons": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_motobe_troncons_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_amont",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_aval",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longeur",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "st_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_codetype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_motobe_troncons_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_motobe_troncons_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "80 kB",
+      "data_size": "24 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 41
+    }
+  },
+  "rx_hta_raz_3_poste_hta_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_raz_3_poste_hta_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordx",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordy",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "appartenan",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_transfo",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telecomman",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sstypes",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_creat",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_modif",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_depart",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds_c",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type_cel",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_apparten",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_t",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_trans",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_telecomm",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_sstypes",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_raz_3_poste_hta_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_raz_3_poste_hta_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 10
+    }
+  },
+  "rx_hta_raz_3_troncons": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_raz_3_troncons_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_amont",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_aval",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longeur",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "st_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_codetype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_raz_3_troncons_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_raz_3_troncons_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "88 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 12
+    }
+  },
+  "rx_hta_raz_4_poste_hta": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_raz_4_poste_hta_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordx",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordy",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "niv_tensio",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_jeubar",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tfo_hta",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "stype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_creat",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_dds",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telecomman",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "numero_pos",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_qt",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_niv_tens",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_jeuba",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_tfo_h",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_stype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_telecomm",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_raz_4_poste_hta_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_raz_4_poste_hta_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "40 kB",
+      "data_size": "8192 bytes",
+      "indexes_size": "24 kB",
+      "table_rows": 3
+    }
+  },
+  "rx_hta_raz_4_poste_hta_bt": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_raz_4_poste_hta_bt_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "libelle",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordx",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "coordy",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "type_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "puiss_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "propr_tfo3",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "appartenan",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_tfo",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "marque_t_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_transfo",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "telecomman",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sstypes",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nom_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_creat",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_modif",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_tur",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nb_depart",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nbre_dds_c",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "num_poste",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_genie",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_cell",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_type_cel",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_puiss__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr_tf",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_propr__2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_apparten",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_t",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_1",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_marque_2",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nb_trans",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_telecomm",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_sstypes",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_raz_4_poste_hta_bt_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_raz_4_poste_hta_bt_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "72 kB",
+      "data_size": "16 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 23
+    }
+  },
+  "rx_hta_raz_4_troncons": {
+    "columns": [
+      {
+        "Field": "gid",
+        "Type": "integer(32)",
+        "Null": "NO",
+        "Default": "nextval('rx_hta_raz_4_troncons_gid_seq'::regclass)",
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "tension",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "codetype",
+        "Type": "integer(32)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "id",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_amont",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "n_aval",
+        "Type": "bigint(64)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_us",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "created_da",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edite",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "last_edi_1",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "globalid",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "commune",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "quartier",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "rue",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "date_mes",
+        "Type": "date",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "region",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "departemen",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "sous_prefe",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "longeur",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "code_sp",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "st_length",
+        "Type": "double precision(53)",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_exploit",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_nature",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_section",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_depart",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_struct",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_codetype",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_dr",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_ident_ps",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "d_fonction",
+        "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      }
+    ],
+    "primary_keys": [
+      "gid"
+    ],
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "index_name": "rx_hta_raz_4_troncons_geom_geom_idx",
+        "column_name": "geom",
+        "is_unique": false,
+        "is_primary": false
+      },
+      {
+        "index_name": "rx_hta_raz_4_troncons_pk",
+        "column_name": "gid",
+        "is_unique": true,
+        "is_primary": true
+      }
+    ],
+    "table_info": {
+      "total_size": "104 kB",
+      "data_size": "32 kB",
+      "indexes_size": "24 kB",
+      "table_rows": 28
     }
   },
   "spatial_ref_sys": {
@@ -6893,6 +12684,13 @@
       {
         "Field": "id_poste_source",
         "Type": "character varying",
+        "Null": "YES",
+        "Default": null,
+        "Extra": ""
+      },
+      {
+        "Field": "geom",
+        "Type": "USER-DEFINED",
         "Null": "YES",
         "Default": null,
         "Extra": ""

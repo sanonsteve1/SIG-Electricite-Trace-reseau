@@ -211,10 +211,56 @@ export class GisApiService {
 	getTrace(
 		type: string,
 		refId: string,
-		direction: 'amont' | 'aval' | 'tous'
+		direction: 'amont' | 'aval' | 'tous',
+		refSlug?: string
 	): Observable<{ ouvrage_ids: { slug: string; id: string }[] }> {
-		const url = `${this.baseUrl}/gis/trace?type=${encodeURIComponent(type)}&ref_id=${encodeURIComponent(refId)}&direction=${encodeURIComponent(direction)}`;
+		const refSlugPart = refSlug ? `&ref_slug=${encodeURIComponent(refSlug)}` : '';
+		const url = `${this.baseUrl}/gis/trace?type=${encodeURIComponent(type)}&ref_id=${encodeURIComponent(refId)}&direction=${encodeURIComponent(direction)}${refSlugPart}`;
 		return this.http.get<{ ouvrage_ids: { slug: string; id: string }[] }>(url);
+	}
+
+	/**
+	 * Nœuds de topologie RX avec géométrie (incluant nœuds synthétiques sans couche SHP propre).
+	 * topologyCode: "rx_raz4" (par défaut).
+	 */
+	getRxTopologyNodes(topologyCode = 'rx_raz4'): Observable<{
+		slug: string;
+		rows: {
+			gid: string;
+			node_type: string;
+			network_level: string;
+			label: string | null;
+			source_slug: string | null;
+			source_gid: string | null;
+			depart_code: string | null;
+			geom: string;
+		}[];
+		count: number;
+	}> {
+		const url = `${this.baseUrl}/gis/rx-topology-nodes?topology_code=${encodeURIComponent(topologyCode)}`;
+		return this.http.get<{ slug: string; rows: any[]; count: number }>(url);
+	}
+
+	/**
+	 * Arcs synthétiques de la topologie RX (bridges HTA-BT) avec leur géométrie LINESTRING.
+	 * Ces arcs n'ont pas de couche SHP propre mais disposent de coordonnées calculées.
+	 */
+	getRxTopologyEdges(topologyCode = 'rx_raz4'): Observable<{
+		slug: string;
+		rows: {
+			gid: string;
+			edge_type: string;
+			network_level: string;
+			label: string | null;
+			source_node_id: string;
+			target_node_id: string;
+			depart_code: string | null;
+			geom: string;
+		}[];
+		count: number;
+	}> {
+		const url = `${this.baseUrl}/gis/rx-topology-edges?topology_code=${encodeURIComponent(topologyCode)}`;
+		return this.http.get<{ slug: string; rows: any[]; count: number }>(url);
 	}
 
 	/**
@@ -277,7 +323,7 @@ export class GisApiService {
 	 */
 	getSchemaUnifilaire(
 		refId: string,
-		params?: { type?: string; direction?: string }
+		params?: { type?: string; direction?: string; refSlug?: string }
 	): Observable<SchemaUnifilaireResponse> {
 		if (!refId?.trim()) {
 			throw new Error('Codification (numéro de l\'ouvrage) requise.');
@@ -287,6 +333,8 @@ export class GisApiService {
 		if (typeOuvrage) url += `&type_ouvrage=${encodeURIComponent(typeOuvrage)}`;
 		const direction = params?.direction?.trim();
 		if (direction) url += `&direction=${encodeURIComponent(direction)}`;
+		const refSlug = params?.refSlug?.trim();
+		if (refSlug) url += `&ref_slug=${encodeURIComponent(refSlug)}`;
 		return this.http.get<SchemaUnifilaireResponse>(url);
 	}
 

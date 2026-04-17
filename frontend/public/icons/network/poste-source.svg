@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Poste source : carr� rouge/orange avec pyl�ne HTB -->
+  <rect x="1" y="1" width="30" height="30" rx="3" fill="#dc2626" stroke="#ffffff" stroke-width="1.5"/>
+  <!-- Pyl�ne (triangle) -->
+  <polygon points="16,4 26,20 6,20" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Jambe gauche du pyl�ne -->
+  <line x1="11" y1="20" x2="8" y2="28" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Jambe droite du pyl�ne -->
+  <line x1="21" y1="20" x2="24" y2="28" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Base -->
+  <line x1="8" y1="28" x2="24" y2="28" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <!-- Transversale -->
+  <line x1="12" y1="14" x2="20" y2="14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

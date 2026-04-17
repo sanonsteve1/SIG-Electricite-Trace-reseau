@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Poste cabine : carr� bleu avec symbole transformateur IEC -->
+  <rect x="1" y="1" width="30" height="30" rx="3" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <!-- Bobine HTA (haut) -->
+  <circle cx="16" cy="11" r="5" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <!-- Trait de liaison central -->
+  <line x1="16" y1="6" x2="16" y2="8" stroke="#ffffff" stroke-width="2"/>
+  <!-- Bobine BT (bas) -->
+  <circle cx="16" cy="21" r="5" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <line x1="16" y1="24" x2="16" y2="26" stroke="#ffffff" stroke-width="2"/>
+  <!-- Lettre T -->
+  <line x1="10" y1="6" x2="22" y2="6" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="26" x2="22" y2="26" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

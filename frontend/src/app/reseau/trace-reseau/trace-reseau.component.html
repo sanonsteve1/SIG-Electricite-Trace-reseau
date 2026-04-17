@@ -77,12 +77,19 @@
 							<i class="fa fa-sitemap"></i>
 							Tous connectés
 						</button>
-						<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="effacerTrace()">
-							<i class="fa fa-eraser"></i>
-							Effacer le tracé
-						</button>
-					</div>
-				</section>
+					<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="effacerTrace()">
+						<i class="fa fa-eraser"></i>
+						Effacer le tracé
+					</button>
+					<button type="button" class="trace-reseau-btn trace-reseau-btn--schema trace-reseau-btn--block"
+						(click)="ouvrirSchemaUnifilaire()"
+						[disabled]="!hasSelection() || !lastTraceDirection"
+						title="Ouvre le schéma unifilaire correspondant au tracé actif">
+						<i class="fa fa-project-diagram"></i>
+						Voir le schéma unifilaire
+					</button>
+				</div>
+			</section>
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-shield"></i> Contrôle des règles</h2>
 					<p class="trace-reseau-topology-desc">Vérifie les règles de connectivité/topologie et met en évidence en rouge les ouvrages non conformes sur la carte.</p>
@@ -401,7 +408,16 @@
 											<tr class="trace-reseau-insights-row-clickable" [class.trace-reseau-insights-row-clickable--active]="isTraceRowSelected(item)" (click)="onTraceRowClick(item)">
 												<td><span class="trace-reseau-insights-dot" [style.background]="item.color"></span>{{ item.slug }}</td>
 												<td>{{ item.id }}</td>
-												<td>{{ item.kind }}</td>
+												<td>
+													<span
+														class="trace-reseau-insights-kind"
+														[class.trace-reseau-insights-kind--line]="item.kind === 'ligne'"
+														[class.trace-reseau-insights-kind--point]="item.kind === 'point'"
+														[class.trace-reseau-insights-kind--other]="item.kind === 'autre'"
+													>
+														{{ getTraceKindLabel(item.kind) }}
+													</span>
+												</td>
 											</tr>
 										}
 									</tbody>
