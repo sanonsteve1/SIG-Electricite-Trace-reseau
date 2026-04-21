@@ -14,13 +14,26 @@ import {
 	TopologyValidationResponse
 } from '../../../services/gis-api.service';
 import { forkJoin, of, from } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError, switchMap, finalize } from 'rxjs/operators';
 import { createNetworkLeafletIcon } from '../../shared/network-icons';
+import { environment } from '../../../../environments/environment';
 
 export interface CoupureCauseOption {
 	label: string;
 	value: string;
 	explanation: string;
+}
+
+export interface ChatbotPreset {
+	id: string;
+	shortLabel: string;
+	prompt: string;
+	reply: string;
+}
+
+export interface ChatbotMessage {
+	role: 'assistant' | 'user';
+	text: string;
 }
 
 /** Causes de coupure par type d'ouvrage (expert métier). */
@@ -123,6 +136,161 @@ const MAP_COLORS = [
 	'#10b981', '#6366f1', '#f59e0b', '#fb923c', '#4ade80', '#2dd4bf', '#c084fc', '#f472b6'
 ];
 
+/** Libellé métier affiché après identification (slug → type). */
+const CHATBOT_KIND_LABELS: Record<string, string> = {
+	client_bt: 'Client BT (abonné)',
+	poste_source: 'Poste source',
+	ligne_hta: 'Ligne ou tronçon HTA',
+	ligne_bt: 'Ligne ou câble BT',
+	poste_hta: 'Poste HTA',
+	poste_cabine: 'Poste cabine / transfo poteau',
+	transformateur: 'Transformateur',
+	cellule: 'Cellule (disjoncteur / sectionneur)',
+	parafoudre: 'Parafoudre',
+	arrivee_depart: 'Arrivée ou départ',
+	poteau: 'Poteau',
+	raccordement: 'Point de raccordement / branchement',
+	default: 'Ouvrage réseau (type générique)'
+};
+
+/** Une question métier caractéristique par type d’ouvrage. */
+const CHATBOT_PRESETS_BY_KIND: Record<string, ChatbotPreset[]> = {
+	client_bt: [
+		{
+			id: 'client-poste',
+			shortLabel: 'Poste d’alimentation',
+			prompt: 'Ce client est connecté à quel poste ?',
+			reply:
+				'Pour le savoir : sélectionnez ce client sur la carte, lancez un tracé amont (ou « Tous connectés » puis regardez la chaîne vers les postes). Le schéma unifilaire résume aussi le chemin vers le poste cabine ou la source selon la topologie RX. En cas d’incohérence, vérifiez les données et le rattachement BT dans la base.'
+		}
+	],
+	poste_source: [
+		{
+			id: 'poste-source-departs',
+			shortLabel: 'Départs et zone',
+			prompt: 'Depuis ce poste source, quels départs alimentent le réseau et quelle zone est concernée ?',
+			reply:
+				'Utilisez le tracé aval depuis ce poste pour suivre les départs HTA/BT et les lignes issues du poste. Analyse & simulation et le dashboard donnent une vue agrégée. La zone exacte dépend de la modélisation des départs et tronçons dans votre jeu de données.'
+		}
+	],
+	ligne_hta: [
+		{
+			id: 'hta-impact',
+			shortLabel: 'Impact coupure HTA',
+			prompt: 'Si ce tronçon ou cette ligne HTA est hors service, quels ouvrages et abonnés sont impactés ?',
+			reply:
+				'Lancez un tracé amont, aval ou tous connectés puis une simulation de coupure : l’application met en évidence l’infrastructure et les points de raccordement côté BT selon la topologie. Le résultat est indicatif : validez toujours avec le schéma d’exploitation et les protections réelles.'
+		}
+	],
+	ligne_bt: [
+		{
+			id: 'bt-impact',
+			shortLabel: 'Impact coupure BT',
+			prompt: 'Si cette ligne ou ce câble BT est hors service, quels clients ou ouvrages sont impactés ?',
+			reply:
+				'Tracez depuis cette ligne BT puis simulez une coupure : les clients BT rattachés au même sous-réseau (token, câble) peuvent apparaître dans la zone impactée. Contrôlez sur la carte et dans Analyse & simulation ; la qualité du lien client ↔ câble BT dans la base est déterminante.'
+		}
+	],
+	poste_hta: [
+		{
+			id: 'poste-hta-role',
+			shortLabel: 'Rôle dans la chaîne',
+			prompt: 'Quel est le rôle de ce poste HTA dans la chaîne d’alimentation ?',
+			reply:
+				'Un tracé amont montre d’où provient l’alimentation ; un tracé aval montre les départs et la desserte. Le schéma unifilaire aide à situer ce poste entre source, lignes et transfo. Adaptez l’analyse au schéma interne du poste si besoin.'
+		}
+	],
+	poste_cabine: [
+		{
+			id: 'cabine-secteurs',
+			shortLabel: 'Secteurs alimentés',
+			prompt: 'Ce poste cabine alimente quels départs BT et quels secteurs ?',
+			reply:
+				'Partez de ce poste avec un tracé aval pour suivre les câbles BT et les raccordements. Les clients apparaissent lorsque le tracé inclut les câbles BT correspondants dans la topologie. Vérifiez les capacités et protections hors outil pour toute manœuvre.'
+		}
+	],
+	transformateur: [
+		{
+			id: 'transfo-liaison',
+			shortLabel: 'Liaison HT / BT',
+			prompt: 'Ce transformateur relie quels niveaux de tension et quelles lignes amont / aval ?',
+			reply:
+				'Utilisez tracé amont pour l’arrivée HT et tracé aval pour le réseau BT ou les départs. Le transfo est souvent un nœud clé : le schéma unifilaire peut clarifier la continuité entre côtés HT et BT.'
+		}
+	],
+	cellule: [
+		{
+			id: 'cellule-zone',
+			shortLabel: 'Zone sous cellule',
+			prompt: 'Cette cellule (disjoncteur / sectionneur) protège ou sectionne quelle partie du réseau ?',
+			reply:
+				'Tracez en aval depuis la cellule pour voir ce qui est alimenté en aval de l’organe de coupure ; en amont pour voir l’alimentation. Pour une coupure planifiée, croisez avec les consignes et le schéma de protection : l’outil visualise la topologie, pas les autorisations de manœuvre.'
+		}
+	],
+	parafoudre: [
+		{
+			id: 'para-zone',
+			shortLabel: 'Équipement protégé',
+			prompt: 'Quel tronçon ou équipement est protégé par ce parafoudre ?',
+			reply:
+				'Le parafoudre est en général au plus près du jeu de barres ou de la ligne protégée : utilisez le tracé pour rattacher géométriquement et topologiquement ce point aux lignes et postes voisins. Pour la maintenance, suivez vos procédures matérielles et cartographie interne.'
+		}
+	],
+	arrivee_depart: [
+		{
+			id: 'arr-dep-chain',
+			shortLabel: 'Chaîne amont / aval',
+			prompt: 'Cette arrivée ou ce départ relie quels ouvrages en amont et en aval ?',
+			reply:
+				'Tracé amont depuis le départ pour remonter vers la source ou le poste ; tracé aval pour suivre la desserte. Les champs métier « arrivée / départ » dans la base doivent être cohérents avec la topologie RX pour un résultat fiable.'
+		}
+	],
+	poteau: [
+		{
+			id: 'poteau-parcours',
+			shortLabel: 'Parcours sur la ligne',
+			prompt: 'Ce poteau appartient à quel parcours de ligne et quels chemins de tracé ?',
+			reply:
+				'Lancez « Tous connectés » depuis le poteau pour voir les tronçons et nœuds voisins sur la même continuité. Utile pour localiser une interruption ou une intervention ; la géométrie et les identifiants de connectivité doivent être à jour.'
+		}
+	],
+	raccordement: [
+		{
+			id: 'raccord-origine',
+			shortLabel: 'Origine alimentation',
+			prompt: 'Ce point de raccordement est alimenté depuis quel poste ou transformateur ?',
+			reply:
+				'Effectuez un tracé amont depuis ce point : la chaîne doit remonter vers le transfo ou poste cabine, puis éventuellement le poste source. Pour un enregistrement dans une table clients-bt, le libellé métier exact est : ce client est connecté à quel poste ?'
+		}
+	],
+	default: [
+		{
+			id: 'generic-connexions',
+			shortLabel: 'Connexions réseau',
+			prompt: 'Quels ouvrages sont connectés à cet élément et comment le situer dans le réseau ?',
+			reply:
+				'Utilisez tracé amont, tracé aval ou tous connectés selon que vous cherchez l’origine, la desserte ou la composante complète. Analyse & simulation liste les couches concernées ; affinez avec le schéma unifilaire si un tracé est déjà actif.'
+		}
+	]
+};
+
+/**
+ * Libellés zones / sous-réseaux : token Rxxx issu des noms de tables SHP (rx_bt_raz_3_r226_…).
+ * À tenir aligné avec le référentiel géographique SONABEL.
+ */
+const GEO_ZONE_CODE_LABELS: Record<string, string> = {
+	R226: 'Zone officielle R226',
+	R227: 'Zone officielle R227',
+	R333: 'Zone officielle R333',
+	R380: 'Zone officielle R380 (réseau express)'
+};
+
+/** Libellés court pour indice RAZ dans le slug (raz-3, raz_4, …). */
+const RAZ_DIRECTEUR_LABELS: Record<string, string> = {
+	'3': 'RAZ 3',
+	'4': 'RAZ 4'
+};
+
 @Component({
 	selector: 'app-trace-reseau',
 	standalone: true,
@@ -133,8 +301,6 @@ const MAP_COLORS = [
 export class TraceReseau implements AfterViewInit, OnDestroy {
 	@ViewChild('mapContainer') mapContainer!: ElementRef<HTMLDivElement>;
 	sidebarCollapsed = false;
-	legendOpen = false;
-	resumeOpen = false;
 	layersOpen = false;
 	mapLoading = false;
 
@@ -182,7 +348,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	resumeLongueurKm = 0;
 	resumePoteaux = 0;
 	resumeOuvrages = 0;
-	traceInsightsOpen = false;
+	/** Panneau carte : analyse du tracé + résultat de simulation de coupure. */
+	analysisSimulationPanelOpen = false;
 	lastTraceDirection: 'amont' | 'aval' | 'tous' | null = null;
 	traceDetails: { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] = [];
 	traceTypeCounts: { slug: string; count: number; color: string }[] = [];
@@ -224,7 +391,6 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	}
 	private _coupureCauseEnCours = '';
 	reelimentationActive = false;
-	reelimentationOpen = false;
 	reelimentationImpacted = 0;
 	reelimentationBypass = 0;
 	reelimentationImpossible = 0;
@@ -263,6 +429,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	topologyResult: (TopologyCorrectResponse & { error?: string }) | null = null;
 	topologyValidationType: 'connectivite' | 'topologie' | 'all' = 'all';
 	topologyValidating = false;
+	/** À `true`, affiche la section latérale et le bouton flottant « Contrôle des règles ». */
+	showTopologyRulesUi = false;
 	topologyValidationFloatOpen = false;
 	topologyValidationResult: (TopologyValidationResponse & { error?: string }) | null = null;
 	topologyAutoCorrectionInProgress = false;
@@ -298,6 +466,40 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	selectedMapStart: { slug: string; id: string; label: string } | null = null;
 	showStartSelectors = true;
 
+	/**
+	 * Modale état réseau (ABSENSOR : abonné, compteur, branchement, point de raccordement).
+	 * Fermé → lance la simulation de coupure ; ouvert → efface tracé / simulation.
+	 */
+	showEtatReseauModal = false;
+	etatReseauCtx: { slug: string; id: string; label: string } | null = null;
+	etatReseauOuvert = true;
+	etatReseauDialogLoading = false;
+	etatReseauUpdating = false;
+
+	/**
+	 * Synchronisation ABSENSOR → ABUN : lecture périodique de etat_reseau sur les couches concernées.
+	 * Passage à « fermé » → simulation de coupure automatique ; retour à « ouvert » → effacement du tracé.
+	 */
+	private etatReseauPollTimer: ReturnType<typeof setInterval> | null = null;
+	private etatReseauPollBusy = false;
+	private absensorEtatSnapshot = new Map<string, 'ouvert' | 'fermé'>();
+	/** Clé slug:id (id normalisé) pour la coupure déclenchée automatiquement par ABSENSOR */
+	private autoCoupureAbsensorKey: string | null = null;
+	private readonly ABSENSOR_ETAT_POLL_MS = 2000;
+
+	/** Modale assistant : conversation et questions métier. */
+	showChatbotModal = false;
+	chatbotOuvrageContext: { slug: string; id: string; label: string } | null = null;
+	chatbotMessages: ChatbotMessage[] = [];
+	/** Type détecté à partir du slug (clé interne). */
+	chatbotActiveKind = '';
+	/** Libellé lisible pour l’utilisateur (ex. « Client BT (abonné) »). */
+	chatbotIdentifiedKindLabel = '';
+	/** Questions métier proposées pour ce type (en pratique une question caractéristique). */
+	chatbotActivePresets: ChatbotPreset[] = [];
+
+	@ViewChild('chatbotThread') chatbotThreadRef?: ElementRef<HTMLDivElement>;
+
 	constructor(
 		private gisApi: GisApiService,
 		private cdr: ChangeDetectorRef,
@@ -326,6 +528,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			(this.map as { remove: () => void }).remove();
 			this.map = null;
 		}
+		this.stopEtatReseauAbsensorPolling();
 	}
 
 	/** Charge les listes poste source, poste transfo, point de raccordement depuis les tables API. */
@@ -1042,15 +1245,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.cdr.markForCheck();
 	}
 
-	toggleReelimentationPanel(): void {
-		this.reelimentationOpen = !this.reelimentationOpen;
-		if (this.reelimentationOpen) {
-			this.updateLigneSecoursOptionsBySelection();
-			this.startSecoursAnimation();
-		} else {
-			this.stopSecoursAnimation();
-			this.applyTraceStyleToMap();
-		}
+	toggleAnalysisSimulationPanel(): void {
+		this.analysisSimulationPanelOpen = !this.analysisSimulationPanelOpen;
 		this.cdr.markForCheck();
 	}
 
@@ -1094,6 +1290,355 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.showCoupureCauseModal = true;
 		this.coupureCauseSelected = null;
 		this.cdr.markForCheck();
+	}
+
+	/**
+	 * Détection des couches éligibles à etat_reseau.
+	 * Exigence métier : couvrir tous les slugs / toutes les couches.
+	 */
+	private isAbsensorEtatReseauSlug(slug: string): boolean {
+		return !!String(slug || '').trim();
+	}
+
+	/** Ouvre la modale état réseau et recharge la valeur depuis l’API. */
+	openEtatReseauFromMap(slug: string, id: string, label: string): void {
+		if (!slug || !id) return;
+		this.etatReseauCtx = { slug, id, label: label || `${slug}:${id}` };
+		this.showEtatReseauModal = true;
+		this.etatReseauDialogLoading = true;
+		this.etatReseauUpdating = false;
+		this.cdr.markForCheck();
+		this.gisApi.getById(slug, id).subscribe({
+			next: (row) => {
+				this.etatReseauOuvert = this.parseReseauOuvertFromProps(row);
+				this.etatReseauDialogLoading = false;
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.etatReseauOuvert = true;
+				this.etatReseauDialogLoading = false;
+				this.cdr.markForCheck();
+			}
+		});
+	}
+
+	fermerEtatReseauModal(): void {
+		this.showEtatReseauModal = false;
+		this.etatReseauCtx = null;
+		this.cdr.markForCheck();
+	}
+
+	/** Bascule etat_reseau : fermé → simulation de coupure ; ouvert → efface tracé / coupure. */
+	basculerEtatReseauAbsensor(): void {
+		if (!this.etatReseauCtx || this.etatReseauUpdating || this.etatReseauDialogLoading) return;
+		const prochainEtat: 'ouvert' | 'fermé' = this.etatReseauOuvert ? 'fermé' : 'ouvert';
+		const { slug, id, label } = this.etatReseauCtx;
+		this.etatReseauUpdating = true;
+		this.cdr.markForCheck();
+		this.gisApi
+			.updateEtatReseau(slug, id, prochainEtat)
+			.pipe(
+				finalize(() => {
+					this.etatReseauUpdating = false;
+					this.cdr.markForCheck();
+				})
+			)
+			.subscribe({
+				next: () => {
+					this.etatReseauOuvert = prochainEtat === 'ouvert';
+					if (prochainEtat === 'fermé') {
+						this.selectedMapStart = { slug, id, label };
+						this.showStartSelectors = false;
+						this.updateLigneSecoursOptionsBySelection();
+						this._coupureCauseEnCours = 'État réseau fermé (consignation / ABSENSOR)';
+						this.autoCoupureAbsensorKey = `${slug}:${this.normalizeId(id)}`;
+						this.runTrace('tous', 'coupure');
+					} else {
+						this.autoCoupureAbsensorKey = null;
+						this.effacerTrace();
+					}
+					this.fermerEtatReseauModal();
+				},
+				error: () => {
+					this.cdr.markForCheck();
+				}
+			});
+	}
+
+	private parseReseauOuvertFromProps(props: Record<string, unknown>): boolean {
+		const raw = this.readEtatReseauBrut(props);
+		return this.parseReseauOuvertFromString(raw);
+	}
+
+	private readEtatReseauBrut(row: Record<string, unknown>): string {
+		const keys = Object.keys(row);
+		const lowerMap = new Map(keys.map((k) => [k.toLowerCase(), k]));
+		const pick = (name: string): unknown => {
+			const real = lowerMap.get(name.toLowerCase());
+			return real !== undefined ? row[real] : undefined;
+		};
+		const v =
+			pick('etat_reseau') ??
+			pick('etat') ??
+			pick('statut') ??
+			pick('state');
+		return v !== null && v !== undefined ? String(v).trim() : '';
+	}
+
+	private parseReseauOuvertFromString(etatSource: string): boolean {
+		const s = etatSource
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase()
+			.trim();
+		if (!s) return true;
+		if (s.includes('ferme') || s.includes('closed') || s === '0' || s === 'false') return false;
+		if (s.includes('ouvert') || s.includes('open') || s === '1' || s === 'true') return true;
+		return true;
+	}
+
+	private rowEtatReseauBucket(row: Record<string, unknown>): 'ouvert' | 'fermé' {
+		const raw = this.readEtatReseauBrut(row);
+		if (!raw) return 'ouvert';
+		return this.parseReseauOuvertFromString(raw) ? 'ouvert' : 'fermé';
+	}
+
+	private labelForAbsensorPollRow(slug: string, row: Record<string, unknown>): string {
+		const fields = ['nom_poste', 'num_poste', 'name', 'nom', 'codification', 'subscribername', 'meternumber', 'subscribernumber'];
+		for (const f of fields) {
+			const v = row[f];
+			if (v != null && String(v).trim() !== '') return String(v).trim();
+		}
+		const id = row['gid'] ?? row['id'] ?? row['objectid'];
+		return id != null ? `${slug}:${id}` : slug;
+	}
+
+	private startEtatReseauAbsensorPolling(): void {
+		this.stopEtatReseauAbsensorPolling();
+		this.etatReseauPollTimer = setInterval(() => {
+			void this.pollEtatReseauFromAbsensor();
+		}, this.ABSENSOR_ETAT_POLL_MS);
+		void this.pollEtatReseauFromAbsensor();
+	}
+
+	private stopEtatReseauAbsensorPolling(): void {
+		if (this.etatReseauPollTimer != null) {
+			clearInterval(this.etatReseauPollTimer);
+			this.etatReseauPollTimer = null;
+		}
+	}
+
+	/**
+	 * Interroge l’API GIS (même base que les mises à jour ABSENSOR) et réagit aux transitions etat_reseau.
+	 */
+	private pollEtatReseauFromAbsensor(): void {
+		if (!this.gisApi || this.etatReseauPollBusy) return;
+		if (this.mapLoading) return;
+		this.etatReseauPollBusy = true;
+		this.gisApi
+			.getTables()
+			.pipe(
+				switchMap((tables) => {
+					const slugs = tables.map((t) => t.slug).filter((s) => this.isAbsensorEtatReseauSlug(s));
+					if (slugs.length === 0) {
+						return of([] as { slug: string; rows: Record<string, unknown>[] }[]);
+					}
+					return forkJoin(
+						slugs.map((slug) =>
+							this.gisApi.getList(slug, 4000, 0).pipe(
+								map((rows) => ({ slug, rows: rows ?? [] })),
+								catchError(() => of({ slug, rows: [] as Record<string, unknown>[] }))
+							)
+						)
+					);
+				}),
+				finalize(() => {
+					this.etatReseauPollBusy = false;
+					this.cdr.markForCheck();
+				})
+			)
+			.subscribe((bundles) => {
+				this.applyAbsensorEtatPollResult(bundles);
+			});
+	}
+
+	private applyAbsensorEtatPollResult(bundles: { slug: string; rows: Record<string, unknown>[] }[]): void {
+		const current = new Map<string, 'ouvert' | 'fermé'>();
+		for (const { slug, rows } of bundles) {
+			for (const row of rows) {
+				const idRaw = row['gid'] ?? row['id'] ?? row['objectid'];
+				if (idRaw == null || String(idRaw).trim() === '') continue;
+				const idForApi = String(idRaw).trim();
+				const key = `${slug}:${this.normalizeId(idForApi)}`;
+				current.set(key, this.rowEtatReseauBucket(row));
+			}
+		}
+		const prev = this.absensorEtatSnapshot;
+		for (const [key, neu] of current) {
+			const old = prev.get(key);
+			if (neu === 'fermé' && old !== 'fermé') {
+				const colon = key.indexOf(':');
+				const slug = colon >= 0 ? key.slice(0, colon) : '';
+				const idCanon = colon >= 0 ? key.slice(colon + 1) : '';
+				const row = bundles
+					.find((b) => b.slug === slug)
+					?.rows.find(
+						(r) => this.normalizeId(r['gid'] ?? r['id'] ?? r['objectid'] ?? '') === idCanon
+					);
+				const idForApi = row
+					? String(row['gid'] ?? row['id'] ?? row['objectid'] ?? idCanon).trim()
+					: idCanon;
+				const label = row ? this.labelForAbsensorPollRow(slug, row) : `${slug}:${idForApi}`;
+				this.triggerAutoCoupureForAbsensorEtat(key, slug, idForApi, label);
+			}
+			if (neu === 'ouvert' && old === 'fermé' && this.autoCoupureAbsensorKey === key) {
+				this.autoCoupureAbsensorKey = null;
+				this.effacerTrace();
+			}
+		}
+		const nextSnapshot = new Map(prev);
+		for (const [key, neu] of current) {
+			nextSnapshot.set(key, neu);
+		}
+		this.absensorEtatSnapshot = nextSnapshot;
+		this.cdr.markForCheck();
+	}
+
+	private triggerAutoCoupureForAbsensorEtat(snapshotKey: string, slug: string, idForApi: string, label: string): void {
+		this.selectedMapStart = { slug, id: idForApi, label };
+		this.showStartSelectors = false;
+		this.updateLigneSecoursOptionsBySelection();
+		this._coupureCauseEnCours = 'État réseau fermé (synchronisation ABSENSOR)';
+		this.autoCoupureAbsensorKey = snapshotKey;
+		this.runTrace('tous', 'coupure');
+		this.cdr.markForCheck();
+	}
+
+	/** Contexte ouvrage pour le chatbot (sessionStorage + modale conversation). */
+	openChatbotForOuvrage(slug: string, id: string, label: string): void {
+		const lbl = label || `${slug}:${id}`;
+		const ctx = {
+			slug,
+			id,
+			label: lbl,
+			source: 'trace-reseau',
+			ts: Date.now()
+		};
+		try {
+			sessionStorage.setItem('abun_chatbot_ouvrage_context', JSON.stringify(ctx));
+		} catch {
+			/* navigation privée ou quota */
+		}
+		this.chatbotOuvrageContext = { slug, id, label: lbl };
+		const kind = this.classifyChatbotOuvrageKind(slug);
+		this.chatbotActiveKind = kind;
+		this.chatbotIdentifiedKindLabel = CHATBOT_KIND_LABELS[kind] ?? CHATBOT_KIND_LABELS['default'];
+		this.chatbotActivePresets = CHATBOT_PRESETS_BY_KIND[kind] ?? CHATBOT_PRESETS_BY_KIND['default'];
+		this.chatbotMessages = [
+			{
+				role: 'assistant',
+				text:
+					`Bonjour. Ouvrage affiché : « ${lbl} » (couche ${slug}, id ${id}).\n\n` +
+					`Type d’ouvrage identifié : ${this.chatbotIdentifiedKindLabel}.\n\n` +
+					`La question métier qui caractérise ce type est proposée ci-dessous : appuyez sur le raccourci pour voir la réponse guidée.`
+			}
+		];
+		this.showChatbotModal = true;
+		this.cdr.markForCheck();
+		this.queueScrollChatbotToBottom();
+	}
+
+	get chatbotExternalUrl(): string {
+		return environment.chatbotUrl?.trim() ?? '';
+	}
+
+	appendChatbotPreset(preset: ChatbotPreset): void {
+		this.chatbotMessages.push({ role: 'user', text: preset.prompt });
+		this.chatbotMessages.push({ role: 'assistant', text: preset.reply });
+		this.cdr.markForCheck();
+		this.queueScrollChatbotToBottom();
+	}
+
+	openChatbotExternalInNewTab(): void {
+		const base = this.chatbotExternalUrl;
+		const c = this.chatbotOuvrageContext;
+		if (!base || !c) return;
+		try {
+			const u = new URL(base, window.location.origin);
+			u.searchParams.set('ouvrage', `${c.slug}:${c.id}`);
+			u.searchParams.set('label', c.label);
+			window.open(u.toString(), '_blank', 'noopener,noreferrer');
+		} catch {
+			window.open(base, '_blank', 'noopener,noreferrer');
+		}
+	}
+
+	closeChatbotModal(): void {
+		this.showChatbotModal = false;
+		this.cdr.markForCheck();
+	}
+
+	onChatbotDialogHide(): void {
+		this.chatbotOuvrageContext = null;
+		this.chatbotMessages = [];
+		this.chatbotActiveKind = '';
+		this.chatbotIdentifiedKindLabel = '';
+		this.chatbotActivePresets = [];
+	}
+
+	/**
+	 * Classe l’ouvrage pour le chatbot (priorité : client BT, poste source, tronçons, câbles, poste HTA, puis catégories coupure).
+	 */
+	private classifyChatbotOuvrageKind(slug: string): string {
+		const s = (slug || '').toLowerCase().replace(/-/g, '_');
+		if (s.startsWith('clients_bt')) return 'client_bt';
+		if (s.includes('poste_source') || s === 'poste_source') return 'poste_source';
+		if (s.includes('troncon')) return 'ligne_hta';
+		if (s.includes('ligne_hta') || (s.includes('ligne') && s.includes('hta'))) return 'ligne_hta';
+		if (s.includes('cable_bt')) return 'ligne_bt';
+		if (s.includes('ligne_brcht') || (s.includes('ligne') && s.includes('bt') && !s.includes('hta'))) return 'ligne_bt';
+		if ((s.includes('poste_hta') || /rx_hta.*poste/.test(s)) && !s.includes('poste_source')) return 'poste_hta';
+		const cat = this.getCoupureOuvrageCategory(slug);
+		switch (cat) {
+			case 'poste_cabine':
+				return 'poste_cabine';
+			case 'transformateur':
+				return 'transformateur';
+			case 'cellule':
+				return 'cellule';
+			case 'parafoudre':
+				return 'parafoudre';
+			case 'arrivee_depart':
+				return 'arrivee_depart';
+			case 'poteau':
+				return 'poteau';
+			case 'ligne_hta':
+				return 'ligne_hta';
+			case 'ligne_bt':
+				return 'ligne_bt';
+			case 'raccordement':
+				return 'raccordement';
+			case 'poste_source':
+				return 'poste_source';
+			default:
+				return 'default';
+		}
+	}
+
+	/** Après ouverture de la modale (contenu monté dans le DOM). */
+	onChatbotDialogShown(): void {
+		setTimeout(() => this.scrollChatbotThreadToBottom(), 80);
+	}
+
+	private scrollChatbotThreadToBottom(): void {
+		const el = this.chatbotThreadRef?.nativeElement;
+		if (el) el.scrollTop = el.scrollHeight;
+	}
+
+	private queueScrollChatbotToBottom(): void {
+		queueMicrotask(() => {
+			setTimeout(() => this.scrollChatbotThreadToBottom(), 0);
+		});
 	}
 
 	showSelectionDropdowns(): void {
@@ -1176,7 +1721,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	private getPotentialLigneSecoursCanonSet(): Set<string> {
 		const out = new Set<string>();
-		if (!this.reelimentationOpen && !this.reelimentationActive && !this.coupureActive) return out;
+		if (!this.reelimentationActive && !this.coupureActive) return out;
 		for (const o of this.ligneSecoursOptions) {
 			const decoded = this.decodeSelectionValue(o.value);
 			if (decoded?.slug && decoded?.id) out.add(this.normalizeOuvrageKey(`${decoded.slug}:${decoded.id}`));
@@ -1596,7 +2141,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.resumePoteaux = displayOuvrageIds.filter((o) => this.isPointSlug(o.slug)).length;
 		this.resumeLongueurKm = 0;
 		this.buildTraceInsights(displayOuvrageIds);
-		this.traceInsightsOpen = displayOuvrageIds.length > 0;
+		this.analysisSimulationPanelOpen = displayOuvrageIds.length > 0;
 		this.applyTraceStyleToMap();
 		this.updateTracePointClusters();
 		this.startFlowAnimation();
@@ -1725,6 +2270,109 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	getCurrentStartLabel(): string {
 		if (this.selectedMapStart) return this.selectedMapStart.label;
 		return this.getSelectedOptionLabel() || 'Aucun';
+	}
+
+	/** Slug et identifiant affichés dans le dashboard (sélection carte ou barre latérale). */
+	get dashboardTraceSlugId(): string {
+		if (this.selectedMapStart?.slug && this.selectedMapStart.id) {
+			return `${this.selectedMapStart.slug} · ${this.selectedMapStart.id}`;
+		}
+		const slug = this.getSlugForCurrentType();
+		const id = this.getSelectedRefId();
+		if (slug && id) return `${slug} · ${id}`;
+		return '';
+	}
+
+	/**
+	 * Zone géographique affichée dans le dashboard : mapping slug (Rxxx, RAZ, express…)
+	 * + attributs terrain (commune, quartier…) si présents sur la fiche GIS.
+	 */
+	get dashboardGeographicZoneLabel(): string {
+		const slug = (this.selectedMapStart?.slug ?? this.getSlugForCurrentType() ?? '').trim();
+		const id = (this.selectedMapStart?.id ?? this.getSelectedRefId() ?? '').trim();
+		if (!slug) return '';
+
+		const fromSlug = this.mapSlugTokensToZoneLabels(slug);
+		const row = id ? this.getRowBySlugAndId(slug, id) : null;
+		const fromRow = this.extractAdministrativeLabelsFromRow(row);
+
+		const pieces: string[] = [];
+		const seen = new Set<string>();
+		const add = (p: string): void => {
+			const k = p.trim();
+			if (!k) return;
+			const low = k.toLowerCase();
+			if (seen.has(low)) return;
+			seen.add(low);
+			pieces.push(k);
+		};
+		for (const p of fromSlug) add(p);
+		if (fromRow) add(fromRow);
+
+		return pieces.join(' · ');
+	}
+
+	/** Interprète le slug de couche (jeux de données RX) pour en déduire la zone métier. */
+	private mapSlugTokensToZoneLabels(slug: string): string[] {
+		const s = slug.toLowerCase();
+		const out: string[] = [];
+		const rm = s.match(/\b(r\d+)\b/i);
+		if (rm) {
+			const code = rm[1].toUpperCase();
+			out.push(GEO_ZONE_CODE_LABELS[code] ?? `Sous-réseau ${code}`);
+		}
+		const razm = s.match(/raz[_-]?(\d)/i);
+		if (razm) {
+			const n = razm[1];
+			const razLbl = RAZ_DIRECTEUR_LABELS[n];
+			out.push(razLbl ? `Schéma directeur ${razLbl}` : `RAZ ${n}`);
+		}
+		if (s.includes('express')) {
+			out.push('Réseau express');
+		}
+		if (s.includes('motobe')) {
+			out.push('Secteur Motobe');
+		}
+		if (s.includes('dori')) {
+			out.push('Jeu de données Dori');
+		}
+		if (s.includes('kaya')) {
+			out.push('Jeu de données Kaya');
+		}
+		return out;
+	}
+
+	/** Commune, quartier, exploitation… (clés attributaires fréquentes des SHP). */
+	private extractAdministrativeLabelsFromRow(row: Record<string, unknown> | null): string {
+		if (!row) return '';
+		const wanted = [
+			'commune',
+			'quartier',
+			's_quartier',
+			'secteur',
+			'ville',
+			'arrondissement',
+			'exploitation',
+			'exploitati',
+			'proximite',
+			'departement',
+			'region'
+		];
+		const lowerToReal = new Map<string, string>();
+		for (const k of Object.keys(row)) {
+			lowerToReal.set(k.toLowerCase(), k);
+		}
+		const parts: string[] = [];
+		for (const w of wanted) {
+			const real = lowerToReal.get(w);
+			if (!real) continue;
+			const v = row[real];
+			const t = v != null ? String(v).trim() : '';
+			if (t && t !== '-' && !parts.some((p) => p.toLowerCase() === t.toLowerCase())) {
+				parts.push(t);
+			}
+		}
+		return parts.length ? parts.join(', ') : '';
 	}
 
 	onTraceRowClick(item: { slug: string; id: string }): void {
@@ -2173,7 +2821,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			return;
 		}
 		// Éviter de restyler toute la carte en boucle si le panneau n'est pas utilisé.
-		if (!this.reelimentationOpen && !this.reelimentationActive) {
+		if (!this.reelimentationActive && !this.coupureActive) {
 			this.applyTraceStyleToMap();
 			return;
 		}
@@ -2214,7 +2862,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		this.resumePoteaux = 0;
 		this.resumeLongueurKm = 0;
 		this.lastTraceDirection = null;
-		this.traceInsightsOpen = false;
+		this.analysisSimulationPanelOpen = false;
 		this.traceDetails = [];
 		this.traceTypeCounts = [];
 		this.selectedTraceRowKey = null;
@@ -2505,6 +3153,25 @@ stop
 			document.execCommand('copy');
 			document.body.removeChild(ta);
 		}
+	}
+
+	/** Exporte le SVG déjà affiché (sans repasser par l’API PDF). */
+	exportUnifilaireSvgFile(): void {
+		const raw = this.unifilaireSvgContent?.trim();
+		if (!raw) {
+			this.unifilaireDiagramError = 'Aucun schéma à exporter. Attendez le chargement ou relancez le tracé.';
+			this.cdr.markForCheck();
+			return;
+		}
+		const xml = raw.startsWith('<?xml') ? raw : `<?xml version="1.0" encoding="UTF-8"?>\n${raw}`;
+		const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'schema-unifilaire.svg';
+		a.click();
+		URL.revokeObjectURL(url);
+		this.cdr.markForCheck();
 	}
 
 	/** Exporte le schéma unifilaire en PDF (téléchargement). */
@@ -2833,7 +3500,11 @@ stop
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-amont" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-up"></i> Tracé amont</button>`;
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-aval" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-arrow-down"></i> Tracé aval</button>`;
 			html += `<button type="button" class="map-popup-btn map-popup-btn--trace-all" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-sitemap"></i> Tous connectés</button>`;
+			if (this.isAbsensorEtatReseauSlug(slug)) {
+				html += `<button type="button" class="map-popup-btn map-popup-btn--etat-reseau" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-toggle-on"></i> État réseau (ABSENSOR)</button>`;
+			}
 			html += `<button type="button" class="map-popup-btn map-popup-btn--outage" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-id-key="${this.escapeHtml(idKey)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-power-off"></i> Simuler coupure</button>`;
+			html += `<button type="button" class="map-popup-btn map-popup-btn--chatbot" data-slug="${this.escapeHtml(slug)}" data-id="${this.escapeHtml(id)}" data-label="${this.escapeHtml(title || slug)}"><i class="fa fa-comments"></i> Chatbot</button>`;
 			html += '</div>';
 		}
 		html += '</div>';
@@ -2860,6 +3531,7 @@ stop
 	private orderPopupEntries(entries: { key: string; label: string; val: string }[]): { key: string; label: string; val: string }[] {
 		const priority = [
 			'nameofsubcriber', 'firstname', 'subscribername', 'subscribernumber', 'meternumber', 'customercode',
+			'etat_reseau',
 			'section', 'batch', 'plot', 'rank', 'id', 'objectid',
 			'customertype', 'use', 'amperage', 'codesticker', 'customernature', 'typeofframe',
 			'created_date', 'created_user', 'last_edited_date', 'last_edited_user', 'globalid', 'username'
@@ -2893,7 +3565,8 @@ stop
 			customernature: 'Nature client', customertype: 'Type client', use: 'Usage', typeofframe: 'Type de cadre',
 			exploitation: 'Exploitation', useofotherenergysource: 'Autre source d\'énergie', institutioncategory: 'Catégorie institution',
 			administrationcategory: 'Catégorie administration', activities: 'Activités', secondaryueofactivity: 'Activité secondaire',
-			qualityverified: 'Qualité vérifiée', transformationreport: 'Rapport transformation', connectiontype: 'Type de connexion'
+			qualityverified: 'Qualité vérifiée', transformationreport: 'Rapport transformation', connectiontype: 'Type de connexion',
+			etat_reseau: 'État réseau'
 		};
 		const lower = key.toLowerCase();
 		if (labels[lower]) return labels[lower];
@@ -2966,6 +3639,22 @@ stop
 					this.corrigerIssueTopologie(issue, undefined);
 					return;
 				}
+				const chatbotTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--chatbot');
+				if (chatbotTarget && chatbotTarget instanceof HTMLElement) {
+					const slug = chatbotTarget.getAttribute('data-slug') ?? '';
+					const id = chatbotTarget.getAttribute('data-id') ?? '';
+					const label = chatbotTarget.getAttribute('data-label') ?? '';
+					if (slug && id) this.openChatbotForOuvrage(slug, id, label);
+					return;
+				}
+				const etatTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--etat-reseau');
+				if (etatTarget && etatTarget instanceof HTMLElement) {
+					const slug = etatTarget.getAttribute('data-slug') ?? '';
+					const id = etatTarget.getAttribute('data-id') ?? '';
+					const label = etatTarget.getAttribute('data-label') ?? '';
+					if (slug && id) this.openEtatReseauFromMap(slug, id, label);
+					return;
+				}
 				const traceTarget = (e.target as HTMLElement).closest?.('.map-popup-btn--trace-amont, .map-popup-btn--trace-aval, .map-popup-btn--trace-all, .map-popup-btn--outage');
 				if (traceTarget && traceTarget instanceof HTMLElement) {
 					const slug = traceTarget.getAttribute('data-slug') ?? '';
@@ -2988,6 +3677,7 @@ stop
 			setTimeout(() => {
 				void this.loadGeometries();
 			}, 150);
+			this.startEtatReseauAbsensorPolling();
 		});
 	}
 

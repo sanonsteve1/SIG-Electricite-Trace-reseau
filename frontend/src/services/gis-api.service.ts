@@ -147,6 +147,21 @@ export class GisApiService {
 		return this.http.get<Record<string, unknown>>(url);
 	}
 
+	/**
+	 * Met à jour uniquement etat_reseau (ouvert | fermé).
+	 * PATCH /gis/{slug}/{id}/etat-reseau
+	 */
+	updateEtatReseau(
+		tableSlug: string,
+		pkValue: string,
+		etatReseau: 'ouvert' | 'fermé'
+	): Observable<{ updated?: boolean; etat_reseau?: string; row?: Record<string, unknown> }> {
+		const url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}/${encodeURIComponent(pkValue)}/etat-reseau`;
+		return this.http.patch<{ updated?: boolean; etat_reseau?: string; row?: Record<string, unknown> }>(url, {
+			etat_reseau: etatReseau
+		});
+	}
+
 	/** Création ou mise à jour : body avec les champs (geom en WKT/EWKT). Si pk présent et existant → update. */
 	createOrUpdate(tableSlug: string, body: Record<string, unknown>): Observable<Record<string, unknown>> {
 		const url = `${this.baseUrl}/gis/${encodeURIComponent(tableSlug)}`;

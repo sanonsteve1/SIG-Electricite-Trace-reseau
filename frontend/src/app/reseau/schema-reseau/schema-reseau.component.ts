@@ -705,4 +705,406 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		const yMid = (y1 + y2) / 2;
 		return { x: (x1 + x2) / 2, y: yMid };
 	}
+
+	private static readonly EXPORT_SVG_STYLES = `
+.schema-scada-svg { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+.schema-scada-node-card { fill: rgba(248, 250, 252, 0.95); stroke: #e2e8f0; stroke-width: 1; }
+.schema-reseau-edge--scada { filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.15)); }
+.schema-edge-label { font-size: 9px; font-family: Inter, "Segoe UI", sans-serif; font-weight: 500; letter-spacing: 0.02em; fill: #475569; opacity: 0.85; }
+.schema-edge-label--hta { fill: #0891b2; }
+.schema-edge-label--bt { fill: #16a34a; }
+.schema-reseau-edge--flux { animation: flux-march 1.4s linear infinite; }
+@keyframes flux-march { to { stroke-dashoffset: calc(-1 * var(--flux-cycle, 23)); } }
+.schema-flux-arrow { opacity: 0.88; }
+.export-legend-panel { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+.export-legend-kicker { font-family: Inter, "Segoe UI", sans-serif; font-size: 9px; font-weight: 600; fill: #64748b; letter-spacing: 0.04em; }
+.export-legend-title { font-family: Inter, "Segoe UI", sans-serif; font-size: 12px; font-weight: 700; fill: #0f172a; }
+.export-legend-ref { font-family: Inter, "Segoe UI", sans-serif; font-size: 9px; fill: #475569; }
+.export-legend-section { font-family: Inter, "Segoe UI", sans-serif; font-size: 9px; font-weight: 700; fill: #334155; }
+.export-legend-label { font-family: Inter, "Segoe UI", sans-serif; font-size: 9px; font-weight: 600; fill: #1e293b; }
+.export-legend-hint { font-family: Inter, "Segoe UI", sans-serif; font-size: 7.5px; fill: #64748b; }
+.export-legend-iec { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 7px; fill: #64748b; }
+.export-legend-swatch { stroke: #cbd5e1; stroke-width: 0.5; }
+`.trim();
+
+	private readonly EXPORT_LEGEND_WIDTH = 268;
+	private readonly EXPORT_LEGEND_GAP = 16;
+
+	/** Télécharge le schéma affiché (vue courante, options Flux / labels / layout) en fichier SVG autonome. */
+	exportSchemaDiagram(): void {
+		const svg = this.schemaSvgRef?.nativeElement;
+		if (!svg || this.nodes.length === 0) return;
+
+		const diagramClone = svg.cloneNode(true) as SVGSVGElement;
+		const stripClasses = [
+			'schema-reseau-edge--dimmed',
+			'schema-reseau-edge--active',
+			'schema-scada-node--dimmed',
+			'schema-scada-node--selected'
+		];
+		diagramClone.querySelectorAll('*').forEach((el) => {
+			for (const c of stripClasses) el.classList.remove(c);
+			for (const a of [...el.attributes]) {
+				const n = a.name;
+				if (n.startsWith('_ng') || n.startsWith('ng-') || n.startsWith('ng-reflect-')) {
+					el.removeAttribute(n);
+				}
+			}
+		});
+
+		const vb = this.activeViewBox;
+		const parts = vb.split(/\s+/).map(Number);
+		if (parts.length !== 4 || parts.some((x) => Number.isNaN(x))) return;
+		const [vx, vy, vw, vh] = parts;
+
+		const lx = vx - this.EXPORT_LEGEND_WIDTH - this.EXPORT_LEGEND_GAP;
+		const { group: legendGroup, height: legendHeight } = this.buildExportLegendGroup(lx, vy);
+		const outerW = this.EXPORT_LEGEND_WIDTH + this.EXPORT_LEGEND_GAP + vw;
+		const outerH = Math.max(vh, legendHeight);
+
+		const exportRoot = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+		const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+		styleEl.textContent = SchemaReseau.EXPORT_SVG_STYLES;
+		defs.appendChild(styleEl);
+		exportRoot.appendChild(defs);
+
+		const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+		bg.setAttribute('x', String(lx));
+		bg.setAttribute('y', String(vy));
+		bg.setAttribute('width', String(outerW));
+		bg.setAttribute('height', String(outerH));
+		bg.setAttribute('fill', '#ffffff');
+		exportRoot.appendChild(bg);
+
+		exportRoot.appendChild(legendGroup);
+
+		const diagramGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		diagramGroup.setAttribute('class', 'export-diagram-root');
+		while (diagramClone.firstChild) {
+			diagramGroup.appendChild(diagramClone.firstChild);
+		}
+		exportRoot.appendChild(diagramGroup);
+
+		exportRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+		exportRoot.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+		exportRoot.setAttribute('viewBox', `${lx} ${vy} ${outerW} ${outerH}`);
+		exportRoot.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+		exportRoot.setAttribute('width', String(outerW));
+		exportRoot.setAttribute('height', String(outerH));
+
+		let xml = new XMLSerializer().serializeToString(exportRoot);
+		if (!xml.startsWith('<?xml')) {
+			xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml;
+		}
+
+		const slug = this.sanitizeExportFilenamePart(this.refId.trim() || 'schema');
+		const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `schema-unifilaire-${slug}.svg`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	/** Panneau de légende (même contenu métier que la barre latérale) pour l’export SVG. */
+	private buildExportLegendGroup(lx: number, vy: number): { group: SVGGElement; height: number } {
+		const pad = 10;
+		const innerX = lx + pad;
+		const padY = 10;
+		let y = vy + padY;
+
+		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		g.setAttribute('class', 'export-legend');
+
+		const addText = (x: number, yy: number, cls: string, content: string): void => {
+			const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+			t.setAttribute('x', String(x));
+			t.setAttribute('y', String(yy));
+			t.setAttribute('class', cls);
+			t.textContent = content;
+			g.appendChild(t);
+		};
+
+		addText(innerX, y + 10, 'export-legend-kicker', 'SYNOPTIQUE SCADA');
+		y += 14;
+		addText(innerX, y + 12, 'export-legend-title', 'Légende');
+		y += 20;
+		const refLine = (this.refId || '').trim() || '—';
+		addText(innerX, y + 10, 'export-legend-ref', `Codification : ${refLine}`);
+		y += 22;
+
+		addText(innerX, y + 10, 'export-legend-section', 'Niveaux de tension');
+		y += 18;
+		const swatchW = 12;
+		for (const v of this.scadaVoltageLegend) {
+			const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+			r.setAttribute('x', String(innerX));
+			r.setAttribute('y', String(y));
+			r.setAttribute('width', String(swatchW));
+			r.setAttribute('height', String(swatchW));
+			r.setAttribute('rx', '2');
+			r.setAttribute('fill', v.color);
+			r.setAttribute('class', 'export-legend-swatch');
+			g.appendChild(r);
+			addText(innerX + 18, y + 10, 'export-legend-label', v.label);
+			addText(innerX + 18, y + 20, 'export-legend-hint', v.hint);
+			y += 30;
+		}
+
+		y += 4;
+		addText(innerX, y + 10, 'export-legend-section', 'Équipements (IEC 60617 · CEI 61850)');
+		y += 18;
+		const iconCx = innerX + 10;
+		for (const entry of this.legendEntries) {
+			this.appendExportLegendMiniSymbol(g, entry.symbol, iconCx, y + 10);
+			addText(innerX + 24, y + 8, 'export-legend-label', entry.label);
+			const iec = entry.iec61850
+				? `IEC 60617: ${entry.iec60617} · ${entry.iec61850}`
+				: `IEC 60617: ${entry.iec60617}`;
+			addText(innerX + 24, y + 18, 'export-legend-iec', iec);
+			y += 28;
+		}
+
+		y += 4;
+		addText(innerX, y + 10, 'export-legend-section', 'Types de liaisons');
+		y += 18;
+		for (const lineEntry of this.legendLineTypes) {
+			const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+			bar.setAttribute('x', String(innerX));
+			bar.setAttribute('y', String(y + 2));
+			bar.setAttribute('width', String(28));
+			bar.setAttribute('height', String(6));
+			bar.setAttribute('rx', '2');
+			bar.setAttribute('fill', lineEntry.color);
+			g.appendChild(bar);
+			addText(innerX + 34, y + 10, 'export-legend-label', lineEntry.label);
+			y += 22;
+		}
+
+		const totalH = y - vy + padY;
+		const panel = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+		panel.setAttribute('x', String(lx));
+		panel.setAttribute('y', String(vy));
+		panel.setAttribute('width', String(this.EXPORT_LEGEND_WIDTH));
+		panel.setAttribute('height', String(totalH));
+		panel.setAttribute('class', 'export-legend-panel');
+		g.insertBefore(panel, g.firstChild);
+
+		return { group: g, height: totalH };
+	}
+
+	/** Icône réduite alignée sur les symboles du synoptique (lisibilité export). */
+	private appendExportLegendMiniSymbol(parent: SVGGElement, symbol: string, cx: number, cy: number): void {
+		const col = this.getSymbolColor(symbol);
+		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		g.setAttribute('transform', `translate(${cx},${cy})`);
+		const ns = 'http://www.w3.org/2000/svg';
+		const line = (x1: number, y1: number, x2: number, y2: number, sw = 1.4, stroke = col) => {
+			const el = document.createElementNS(ns, 'line');
+			el.setAttribute('x1', String(x1));
+			el.setAttribute('y1', String(y1));
+			el.setAttribute('x2', String(x2));
+			el.setAttribute('y2', String(y2));
+			el.setAttribute('stroke', stroke);
+			el.setAttribute('stroke-width', String(sw));
+			el.setAttribute('stroke-linecap', 'round');
+			g.appendChild(el);
+		};
+		switch (symbol) {
+			case 'sym-poste-source': {
+				const r = document.createElementNS(ns, 'rect');
+				r.setAttribute('x', '-7');
+				r.setAttribute('y', '-8');
+				r.setAttribute('width', '14');
+				r.setAttribute('height', '16');
+				r.setAttribute('rx', '2');
+				r.setAttribute('fill', 'none');
+				r.setAttribute('stroke', col);
+				r.setAttribute('stroke-width', '1.3');
+				g.appendChild(r);
+				for (const yy of [-4, 4]) {
+					const c = document.createElementNS(ns, 'circle');
+					c.setAttribute('cx', '0');
+					c.setAttribute('cy', String(yy));
+					c.setAttribute('r', '4');
+					c.setAttribute('fill', 'none');
+					c.setAttribute('stroke', col);
+					c.setAttribute('stroke-width', '1.3');
+					g.appendChild(c);
+				}
+				break;
+			}
+			case 'sym-poste-cabine': {
+				const r = document.createElementNS(ns, 'rect');
+				r.setAttribute('x', '-7');
+				r.setAttribute('y', '-7');
+				r.setAttribute('width', '14');
+				r.setAttribute('height', '14');
+				r.setAttribute('rx', '2');
+				r.setAttribute('fill', 'none');
+				r.setAttribute('stroke', col);
+				r.setAttribute('stroke-width', '1.4');
+				g.appendChild(r);
+				line(-9, 0, -7, 0);
+				line(7, 0, 9, 0);
+				break;
+			}
+			case 'sym-transfo-bt': {
+				const c1 = document.createElementNS(ns, 'circle');
+				c1.setAttribute('cx', '-3.5');
+				c1.setAttribute('cy', '0');
+				c1.setAttribute('r', '4.5');
+				c1.setAttribute('fill', 'none');
+				c1.setAttribute('stroke', col);
+				c1.setAttribute('stroke-width', '1.4');
+				g.appendChild(c1);
+				const c2 = document.createElementNS(ns, 'circle');
+				c2.setAttribute('cx', '3.5');
+				c2.setAttribute('cy', '0');
+				c2.setAttribute('r', '4.5');
+				c2.setAttribute('fill', 'none');
+				c2.setAttribute('stroke', col);
+				c2.setAttribute('stroke-width', '1.4');
+				g.appendChild(c2);
+				line(-8, 0, -5.5, 0);
+				line(5.5, 0, 8, 0);
+				break;
+			}
+			case 'sym-depart-hta': {
+				const r = document.createElementNS(ns, 'rect');
+				r.setAttribute('x', '-6');
+				r.setAttribute('y', '-6');
+				r.setAttribute('width', '12');
+				r.setAttribute('height', '12');
+				r.setAttribute('rx', '1.5');
+				r.setAttribute('fill', '#dcfce7');
+				r.setAttribute('stroke', '#15803d');
+				r.setAttribute('stroke-width', '1.5');
+				g.appendChild(r);
+				line(-4, 3, 4, -3, 1.8, '#14532d');
+				line(-8, 0, -6, 0, 1.2);
+				line(6, 0, 8, 0, 1.2);
+				break;
+			}
+			case 'sym-depart-bt': {
+				const r = document.createElementNS(ns, 'rect');
+				r.setAttribute('x', '-5');
+				r.setAttribute('y', '-5');
+				r.setAttribute('width', '10');
+				r.setAttribute('height', '10');
+				r.setAttribute('rx', '1.5');
+				r.setAttribute('fill', '#ecfccb');
+				r.setAttribute('stroke', col);
+				r.setAttribute('stroke-width', '1.5');
+				g.appendChild(r);
+				line(-3, 3, 3, -3, 1.5);
+				break;
+			}
+			case 'sym-poteau-hta':
+				line(0, -8, 0, 8, 1.8);
+				line(-5, -5, 5, -5, 1.6);
+				break;
+			case 'sym-poteau-bt':
+				line(0, -7, 0, 7, 1.8);
+				line(-4, -4, 4, -4, 1.6);
+				break;
+			case 'sym-cellule': {
+				const r = document.createElementNS(ns, 'rect');
+				r.setAttribute('x', '-5');
+				r.setAttribute('y', '-7');
+				r.setAttribute('width', '10');
+				r.setAttribute('height', '14');
+				r.setAttribute('rx', '1.5');
+				r.setAttribute('fill', 'none');
+				r.setAttribute('stroke', col);
+				r.setAttribute('stroke-width', '1.5');
+				g.appendChild(r);
+				line(0, -7, 0, 7, 1.3);
+				break;
+			}
+			case 'sym-parafoudre': {
+				const p = document.createElementNS(ns, 'path');
+				p.setAttribute('d', 'M0,-9 L7,5 L-7,5 Z');
+				p.setAttribute('fill', 'none');
+				p.setAttribute('stroke', col);
+				p.setAttribute('stroke-width', '1.4');
+				p.setAttribute('stroke-linejoin', 'miter');
+				g.appendChild(p);
+				break;
+			}
+			case 'sym-point-raccordement': {
+				const c = document.createElementNS(ns, 'circle');
+				c.setAttribute('r', '6');
+				c.setAttribute('fill', '#fff');
+				c.setAttribute('stroke', col);
+				c.setAttribute('stroke-width', '1.5');
+				g.appendChild(c);
+				const d = document.createElementNS(ns, 'circle');
+				d.setAttribute('r', '2');
+				d.setAttribute('fill', col);
+				g.appendChild(d);
+				break;
+			}
+			case 'sym-abonne': {
+				const c = document.createElementNS(ns, 'circle');
+				c.setAttribute('r', '7');
+				c.setAttribute('fill', '#fff');
+				c.setAttribute('stroke', col);
+				c.setAttribute('stroke-width', '1.5');
+				g.appendChild(c);
+				const p = document.createElementNS(ns, 'path');
+				p.setAttribute('d', 'M-3,1 L0,-2 L3,1 V4 H-3 Z');
+				p.setAttribute('fill', 'none');
+				p.setAttribute('stroke', col);
+				p.setAttribute('stroke-width', '1.2');
+				g.appendChild(p);
+				break;
+			}
+			case 'sym-compteur': {
+				const c = document.createElementNS(ns, 'circle');
+				c.setAttribute('r', '7');
+				c.setAttribute('fill', '#fff');
+				c.setAttribute('stroke', col);
+				c.setAttribute('stroke-width', '1.5');
+				g.appendChild(c);
+				const t = document.createElementNS(ns, 'text');
+				t.setAttribute('x', '0');
+				t.setAttribute('y', '2.5');
+				t.setAttribute('text-anchor', 'middle');
+				t.setAttribute('font-size', '5');
+				t.setAttribute('font-weight', '700');
+				t.setAttribute('fill', col);
+				t.textContent = 'kWh';
+				g.appendChild(t);
+				break;
+			}
+			case 'sym-branchement': {
+				const p = document.createElementNS(ns, 'polygon');
+				p.setAttribute('points', '-6,0 -2.5,-5 2.5,-5 6,0 2.5,5 -2.5,5');
+				p.setAttribute('fill', 'none');
+				p.setAttribute('stroke', col);
+				p.setAttribute('stroke-width', '1.4');
+				g.appendChild(p);
+				break;
+			}
+			default: {
+				const c = document.createElementNS(ns, 'circle');
+				c.setAttribute('r', '7');
+				c.setAttribute('fill', 'none');
+				c.setAttribute('stroke', col);
+				c.setAttribute('stroke-width', '1.5');
+				g.appendChild(c);
+				line(-9, 0, -7, 0);
+				line(7, 0, 9, 0);
+			}
+		}
+		parent.appendChild(g);
+	}
+
+	private sanitizeExportFilenamePart(s: string): string {
+		const t = s.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+		return (t || 'schema').slice(0, 80);
+	}
 }

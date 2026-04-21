@@ -53,6 +53,7 @@ L’API n’expose **que les tables** listées dans `script_bd/database_structur
 | `GET`  | `/gis/form-defaults/export` | Export de toutes les valeurs par défaut par couche |
 | `GET`  | `/gis/{table_slug}?limit=100&offset=0` | Liste des enregistrements (pagination) |
 | `GET`  | `/gis/{table_slug}/{pk_value}` | Détail d’un enregistrement par clé primaire |
+| `PATCH` | `/gis/{table_slug}/{pk_value}/etat-reseau` | Met à jour uniquement `etat_reseau` (`ouvert` ou `fermé`) |
 | `POST` | `/gis/{table_slug}` | Création ou mise à jour (si clé primaire fournie et existante) |
 | `POST` | `/gis/webhooks/arcgis` | Réception de features Esri (Field Maps / ArcGIS) : body `{ "table_slug", "features", "apply_defaults" }` |
 | `DELETE` | `/gis/{table_slug}/{pk_value}` | Suppression par clé primaire |
@@ -68,6 +69,11 @@ curl "http://localhost:8000/gis/distributionpanel-branchement?limit=10"
 
 # Détail d’un enregistrement (id=1)
 curl http://localhost:8000/gis/distributionpanel-branchement/1
+
+# Mettre à jour etat_reseau (ouvert|fermé)
+curl -X PATCH http://localhost:8000/gis/distributionpanel-branchement/1/etat-reseau \
+  -H "Content-Type: application/json" \
+  -d '{"etat_reseau":"fermé"}'
 
 # Création
 curl -X POST http://localhost:8000/gis/distributionpanel-branchement \

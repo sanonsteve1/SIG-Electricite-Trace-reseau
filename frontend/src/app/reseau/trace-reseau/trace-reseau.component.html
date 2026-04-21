@@ -83,6 +83,7 @@
 					</button>
 			</div>
 		</section>
+				@if (showTopologyRulesUi) {
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-shield"></i> Contrôle des règles</h2>
 					<p class="trace-reseau-topology-desc">Vérifie les règles de connectivité/topologie et met en évidence en rouge les ouvrages non conformes sur la carte.</p>
@@ -104,6 +105,7 @@
 						</button>
 					</div>
 				</section>
+				}
 				<section class="trace-reseau-block">
 					<h2 class="trace-reseau-block-title"><i class="fa fa-power-off"></i> Simulation de coupure</h2>
 					<div class="trace-reseau-form">
@@ -117,21 +119,7 @@
 								Simuler la coupure
 							}
 						</button>
-						@if (coupureActive) {
-							<div class="trace-reseau-coupure-result">
-								<p><strong>Point de coupure :</strong> {{ coupureStartLabel }}</p>
-								<p><strong>Cause :</strong> {{ coupureCauseLabel }}</p>
-								<p><strong>Lignes impactées :</strong> {{ coupureImpactedLignes }}</p>
-								<p><strong>Points impactés :</strong> {{ coupureImpactedPoints }}</p>
-								<p><strong>Points de raccordement impactés :</strong> {{ coupureImpactedAbonnes }}</p>
-								<p><strong>Exécutée le :</strong> {{ coupureExecutedAt }}</p>
-								<p class="trace-reseau-coupure-supply-desc"><i class="fa fa-info-circle"></i> Les lignes pouvant alimenter la zone coupée (ligne de secours) sont mises en évidence en <strong>bleu</strong>. Ouvrez « Réalimentation » pour changer la ligne.</p>
-								<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationCoupure()">
-									<i class="fa fa-undo"></i>
-									Réinitialiser la simulation
-								</button>
-							</div>
-						}
+						<p class="trace-reseau-coupure-supply-desc trace-reseau-coupure-supply-desc--sidebar"><i class="fa fa-info-circle"></i> Après simulation, ouvrez <strong>Analyse &amp; simulation</strong> sur la carte pour le détail. Les lignes de secours possibles sont mises en évidence en <strong>bleu</strong>.</p>
 					</div>
 				</section>
 			}
@@ -141,52 +129,7 @@
 			@if (mapLoading) {
 				<div class="trace-reseau-map-loading">Chargement des ouvrages…</div>
 			}
-			<div class="trace-reseau-reelimentation-float">
-				<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="reelimentationOpen" (click)="toggleReelimentationPanel()" [attr.aria-expanded]="reelimentationOpen" title="Manœuvre de réalimentation">
-					<i class="fa fa-random"></i>
-					<span>Réalimentation</span>
-				</button>
-				@if (reelimentationOpen) {
-					<div class="trace-reseau-legend-panel trace-reseau-reelimentation-panel">
-						<div class="trace-reseau-form">
-							<p class="trace-reseau-topology-desc">Simule la réalimentation de la zone coupée depuis une ligne de secours.</p>
-							@if (ligneSecoursNetworkLabel) {
-								<p class="trace-reseau-topology-desc">{{ ligneSecoursNetworkLabel }}</p>
-							}
-							<label class="trace-reseau-label">{{ ligneSecoursFieldLabel }}</label>
-							<p-select [(ngModel)]="paramLigneSecours" [options]="ligneSecoursOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner une ligne de secours" styleClass="trace-reseau-select w-full" (ngModelChange)="onLigneSecoursChange()" />
-							<button type="button" class="trace-reseau-btn trace-reseau-btn--info trace-reseau-btn--block" (click)="simulerReelimentation()" [disabled]="!hasSelection() || !paramLigneSecours || mapLoading">
-								@if (mapLoading) {
-									<i class="fa fa-spinner fa-spin"></i>
-									Simulation en cours…
-								} @else {
-									<i class="fa fa-random"></i>
-									Simuler la réalimentation
-								}
-							</button>
-							@if (reelimentationActive) {
-								<div class="trace-reseau-reelimentation-result">
-									<!--
-									<p><strong>Ouvrages en zone coupée :</strong> {{ reelimentationImpacted }}</p>
-									<p><strong>Ouvrages réalimentés :</strong> {{ reelimentationBypass }}</p>
-									<p><strong>Ouvrages non réalimentables :</strong> {{ reelimentationImpossible }}</p>
-									-->
-									<p><strong>Exécutée le :</strong> {{ reelimentationExecutedAt }}</p>
-									<p class="trace-reseau-reelimentation-legend">
-										<span class="trace-reseau-legend-chip trace-reseau-legend-chip--green"></span> Zone réalimentée
-										<span class="trace-reseau-legend-chip trace-reseau-legend-chip--blue"></span> Réseau de secours
-									</p>
-									<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationReelimentation()">
-										<i class="fa fa-undo"></i>
-										Réinitialiser la manœuvre
-									</button>
-								</div>
-							}
-						</div>
-					</div>
-				}
-			</div>
-			<!-- Boutons flottants (Couches, Résumé, Légende) -->
+			<!-- Boutons flottants (colonne sous Home) -->
 			<div class="trace-reseau-map-floats">
 				<div class="trace-reseau-home-float">
 					<button type="button" class="trace-reseau-legend-toggle" (click)="resetMapView()" title="Revenir à l'état initial de la carte">
@@ -194,6 +137,141 @@
 						<span>Home</span>
 					</button>
 				</div>
+				<div class="trace-reseau-analysis-sim-float">
+					<button
+						type="button"
+						class="trace-reseau-legend-toggle"
+						[class.trace-reseau-legend-toggle--open]="analysisSimulationPanelOpen"
+						(click)="toggleAnalysisSimulationPanel()"
+						[disabled]="resumeOuvrages === 0 && !coupureActive"
+						[attr.aria-expanded]="analysisSimulationPanelOpen"
+						title="Analyse du tracé et résultat de la simulation de coupure"
+					>
+						<i class="fa fa-area-chart"></i>
+						<span>Analyse &amp; simulation</span>
+						@if (coupureActive) {
+							<span class="trace-reseau-validation-badge trace-reseau-validation-badge--sim" title="Simulation active">●</span>
+						}
+					</button>
+					@if (analysisSimulationPanelOpen) {
+						<div class="trace-reseau-legend-panel trace-reseau-analysis-sim-panel">
+							@if (coupureActive) {
+								<div class="trace-reseau-analysis-sim-section">
+									<h3 class="trace-reseau-analysis-sim-h3">Résultat de la simulation</h3>
+									<div class="trace-reseau-coupure-result trace-reseau-coupure-result--float">
+										<p><strong>Point de coupure :</strong> {{ coupureStartLabel }}</p>
+										<p><strong>Cause :</strong> {{ coupureCauseLabel }}</p>
+										<p><strong>Lignes impactées :</strong> {{ coupureImpactedLignes }}</p>
+										<p><strong>Points impactés :</strong> {{ coupureImpactedPoints }}</p>
+										<p><strong>Points de raccordement impactés :</strong> {{ coupureImpactedAbonnes }}</p>
+										<p><strong>Exécutée le :</strong> {{ coupureExecutedAt }}</p>
+										<p class="trace-reseau-coupure-supply-desc"><i class="fa fa-info-circle"></i> Les lignes pouvant alimenter la zone coupée (réseau de secours) sont en <strong>bleu</strong> sur la carte.</p>
+										<button type="button" class="trace-reseau-btn trace-reseau-btn--secondary trace-reseau-btn--block" (click)="resetSimulationCoupure()">
+											<i class="fa fa-undo"></i>
+											Réinitialiser la simulation
+										</button>
+									</div>
+								</div>
+							}
+							@if (resumeOuvrages > 0) {
+								<div class="trace-reseau-analysis-sim-section">
+									<h3 class="trace-reseau-analysis-sim-h3">Analyse du tracé</h3>
+									<div class="trace-reseau-stats trace-reseau-stats--inline">
+										<div class="trace-reseau-stat">
+											<span class="trace-reseau-stat-icon trace-reseau-stat-icon--blue"><i class="fa fa-arrows-h"></i></span>
+											<span class="trace-reseau-stat-value">{{ resumeLongueurKm }}</span>
+											<span class="trace-reseau-stat-label">km</span>
+										</div>
+										<div class="trace-reseau-stat">
+											<span class="trace-reseau-stat-icon trace-reseau-stat-icon--green"><i class="fa fa-bolt"></i></span>
+											<span class="trace-reseau-stat-value">{{ resumePoteaux }}</span>
+											<span class="trace-reseau-stat-label">Poteaux</span>
+										</div>
+										<div class="trace-reseau-stat">
+											<span class="trace-reseau-stat-icon trace-reseau-stat-icon--purple"><i class="fa fa-sitemap"></i></span>
+											<span class="trace-reseau-stat-value">{{ resumeOuvrages }}</span>
+											<span class="trace-reseau-stat-label">Ouvrages</span>
+										</div>
+									</div>
+									<div class="trace-reseau-insights-title trace-reseau-insights-title--compact">
+										<i class="fa fa-line-chart"></i>
+										<span>Répartition</span>
+									</div>
+									<div class="trace-reseau-insights-chart">
+										<div class="trace-reseau-insights-row">
+											<span>Lignes ({{ traceLinePercent }}%)</span>
+											<div class="trace-reseau-insights-bar">
+												<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--line" [style.width.%]="traceLinePercent"></div>
+											</div>
+										</div>
+										<div class="trace-reseau-insights-row">
+											<span>Points ({{ tracePointPercent }}%)</span>
+											<div class="trace-reseau-insights-bar">
+												<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--point" [style.width.%]="tracePointPercent"></div>
+											</div>
+										</div>
+										@if (traceOtherCount > 0) {
+											<div class="trace-reseau-insights-row">
+												<span>Autres ({{ traceOtherPercent }}%)</span>
+												<div class="trace-reseau-insights-bar">
+													<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--other" [style.width.%]="traceOtherPercent"></div>
+												</div>
+											</div>
+										}
+									</div>
+									<div class="trace-reseau-insights-type-chart">
+										@for (item of traceTypeCounts; track item.slug) {
+											<div class="trace-reseau-insights-type-row">
+												<span>{{ item.slug }}</span>
+												<div class="trace-reseau-insights-type-bar">
+													<div class="trace-reseau-insights-type-fill" [style.background]="item.color" [style.width.%]="getTypeBarPercent(item.count)"></div>
+												</div>
+												<strong>{{ item.count }}</strong>
+											</div>
+										}
+									</div>
+									<div class="trace-reseau-insights-analysis">
+										@for (line of traceAnalysisLines; track line) {
+											<p>{{ line }}</p>
+										}
+									</div>
+									<div class="trace-reseau-insights-table-wrap">
+										<table class="trace-reseau-insights-table">
+											<thead>
+												<tr>
+													<th>Couche</th>
+													<th>ID</th>
+													<th>Type</th>
+												</tr>
+											</thead>
+											<tbody>
+												@for (item of traceDetails; track item.slug + ':' + item.id) {
+													<tr class="trace-reseau-insights-row-clickable" [class.trace-reseau-insights-row-clickable--active]="isTraceRowSelected(item)" (click)="onTraceRowClick(item)">
+														<td><span class="trace-reseau-insights-dot" [style.background]="item.color"></span>{{ item.slug }}</td>
+														<td>{{ item.id }}</td>
+														<td>
+															<span
+																class="trace-reseau-insights-kind"
+																[class.trace-reseau-insights-kind--line]="item.kind === 'ligne'"
+																[class.trace-reseau-insights-kind--point]="item.kind === 'point'"
+																[class.trace-reseau-insights-kind--other]="item.kind === 'autre'"
+															>
+																{{ getTraceKindLabel(item.kind) }}
+															</span>
+														</td>
+													</tr>
+												}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							} @else if (!coupureActive) {
+								<p class="trace-reseau-topology-desc">Lancez un <strong>tracé</strong> ou une <strong>simulation de coupure</strong> pour afficher l’analyse.</p>
+							}
+						</div>
+					}
+				</div>
+				@if (showTopologyRulesUi) {
 				<div class="trace-reseau-validation-float">
 					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="topologyValidationFloatOpen" (click)="topologyValidationFloatOpen = !topologyValidationFloatOpen" [attr.aria-expanded]="topologyValidationFloatOpen" title="Résultat du contrôle des règles">
 						<i class="fa fa-shield"></i>
@@ -292,6 +370,7 @@
 						</div>
 					}
 				</div>
+				}
 				<div class="trace-reseau-layers-float">
 					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="layersOpen" (click)="layersOpen = !layersOpen" [attr.aria-expanded]="layersOpen" [title]="layersOpen ? 'Masquer les couches' : 'Afficher les couches'">
 						<i class="fa fa-layer-group"></i>
@@ -311,169 +390,30 @@
 						</div>
 					}
 				</div>
-				<div class="trace-reseau-resume-float">
-					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="resumeOpen" (click)="resumeOpen = !resumeOpen" [attr.aria-expanded]="resumeOpen" [title]="resumeOpen ? 'Masquer le résumé' : 'Afficher le résumé'">
-						<i class="fa fa-bar-chart"></i>
-						<span>Résumé du tracé</span>
+				<div class="trace-reseau-trace-fab-float" role="toolbar" aria-label="Schéma unifilaire">
+					<button
+						type="button"
+						class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--schema"
+						(click)="ouvrirSchemaUnifilaire()"
+						[disabled]="!hasSelection() || !lastTraceDirection"
+						title="Ouvre le schéma unifilaire correspondant au tracé actif"
+					>
+						<i class="fa fa-project-diagram"></i>
+						<span>Schéma unifilaire</span>
 					</button>
-					@if (resumeOpen) {
-						<div class="trace-reseau-legend-panel trace-reseau-resume-panel">
-							<div class="trace-reseau-stats">
-								<div class="trace-reseau-stat">
-									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--blue"><i class="fa fa-arrows-h"></i></span>
-									<span class="trace-reseau-stat-value">{{ resumeLongueurKm }}</span>
-									<span class="trace-reseau-stat-label">km</span>
-								</div>
-								<div class="trace-reseau-stat">
-									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--green"><i class="fa fa-bolt"></i></span>
-									<span class="trace-reseau-stat-value">{{ resumePoteaux }}</span>
-									<span class="trace-reseau-stat-label">Poteaux</span>
-								</div>
-								<div class="trace-reseau-stat">
-									<span class="trace-reseau-stat-icon trace-reseau-stat-icon--purple"><i class="fa fa-sitemap"></i></span>
-									<span class="trace-reseau-stat-value">{{ resumeOuvrages }}</span>
-									<span class="trace-reseau-stat-label">Ouvrages</span>
-								</div>
-							</div>
-						</div>
-					}
 				</div>
-				<div class="trace-reseau-insights-float">
-					<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="traceInsightsOpen" (click)="traceInsightsOpen = !traceInsightsOpen" [disabled]="resumeOuvrages === 0" [attr.aria-expanded]="traceInsightsOpen" [title]="traceInsightsOpen ? 'Masquer l’analyse' : 'Afficher l’analyse du tracé'">
-						<i class="fa fa-table"></i>
-						<span>Analyse du tracé</span>
+				<div class="trace-reseau-trace-fab-float" role="toolbar" aria-label="Dashboard du tracé">
+					<button
+						type="button"
+						class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--dashboard"
+						(click)="openDashboard()"
+						[disabled]="resumeOuvrages === 0"
+						title="Tableau de bord du tracé (puissance, lignes, abonnés, sous-réseaux)"
+					>
+						<i class="fa fa-chart-bar"></i>
+						<span>Dashboard</span>
 					</button>
-					@if (traceInsightsOpen) {
-						<div class="trace-reseau-legend-panel trace-reseau-insights-panel">
-							<div class="trace-reseau-insights-title">
-								<i class="fa fa-line-chart"></i>
-								<span>Ouvrages impliqués: {{ resumeOuvrages }}</span>
-							</div>
-							<div class="trace-reseau-insights-chart">
-								<div class="trace-reseau-insights-row">
-									<span>Lignes ({{ traceLinePercent }}%)</span>
-									<div class="trace-reseau-insights-bar">
-										<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--line" [style.width.%]="traceLinePercent"></div>
-									</div>
-								</div>
-								<div class="trace-reseau-insights-row">
-									<span>Points ({{ tracePointPercent }}%)</span>
-									<div class="trace-reseau-insights-bar">
-										<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--point" [style.width.%]="tracePointPercent"></div>
-									</div>
-								</div>
-								@if (traceOtherCount > 0) {
-									<div class="trace-reseau-insights-row">
-										<span>Autres ({{ traceOtherPercent }}%)</span>
-										<div class="trace-reseau-insights-bar">
-											<div class="trace-reseau-insights-bar-fill trace-reseau-insights-bar-fill--other" [style.width.%]="traceOtherPercent"></div>
-										</div>
-									</div>
-								}
-							</div>
-							<div class="trace-reseau-insights-type-chart">
-								@for (item of traceTypeCounts; track item.slug) {
-									<div class="trace-reseau-insights-type-row">
-										<span>{{ item.slug }}</span>
-										<div class="trace-reseau-insights-type-bar">
-											<div class="trace-reseau-insights-type-fill" [style.background]="item.color" [style.width.%]="getTypeBarPercent(item.count)"></div>
-										</div>
-										<strong>{{ item.count }}</strong>
-									</div>
-								}
-							</div>
-							<div class="trace-reseau-insights-analysis">
-								@for (line of traceAnalysisLines; track line) {
-									<p>{{ line }}</p>
-								}
-							</div>
-							<div class="trace-reseau-insights-table-wrap">
-								<table class="trace-reseau-insights-table">
-									<thead>
-										<tr>
-											<th>Couche</th>
-											<th>ID</th>
-											<th>Type</th>
-										</tr>
-									</thead>
-									<tbody>
-										@for (item of traceDetails; track item.slug + ':' + item.id) {
-											<tr class="trace-reseau-insights-row-clickable" [class.trace-reseau-insights-row-clickable--active]="isTraceRowSelected(item)" (click)="onTraceRowClick(item)">
-												<td><span class="trace-reseau-insights-dot" [style.background]="item.color"></span>{{ item.slug }}</td>
-												<td>{{ item.id }}</td>
-												<td>
-													<span
-														class="trace-reseau-insights-kind"
-														[class.trace-reseau-insights-kind--line]="item.kind === 'ligne'"
-														[class.trace-reseau-insights-kind--point]="item.kind === 'point'"
-														[class.trace-reseau-insights-kind--other]="item.kind === 'autre'"
-													>
-														{{ getTraceKindLabel(item.kind) }}
-													</span>
-												</td>
-											</tr>
-										}
-									</tbody>
-								</table>
-							</div>
-						</div>
-					}
 				</div>
-				<div class="trace-reseau-legend-float">
-				<button type="button" class="trace-reseau-legend-toggle" [class.trace-reseau-legend-toggle--open]="legendOpen" (click)="legendOpen = !legendOpen" [attr.aria-expanded]="legendOpen" [title]="legendOpen ? 'Masquer la légende' : 'Afficher la légende'">
-					<i class="fa fa-info-circle"></i>
-					<span>Légende</span>
-				</button>
-				@if (legendOpen) {
-					<div class="trace-reseau-legend-panel">
-						<ul class="trace-reseau-legend">
-							<li class="trace-reseau-legend-item">
-								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--hta"></span>
-								<span>Ligne HTA</span>
-							</li>
-							<li class="trace-reseau-legend-item">
-								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--bt"></span>
-								<span>Ligne BT</span>
-							</li>
-							<li class="trace-reseau-legend-item">
-								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--pole"><i class="fa fa-bolt"></i></span>
-								<span>Poteau</span>
-							</li>
-							<li class="trace-reseau-legend-item">
-								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--transfo"><i class="fa fa-cog"></i></span>
-								<span>Transformateur</span>
-							</li>
-							<li class="trace-reseau-legend-item">
-								<span class="trace-reseau-legend-symbol trace-reseau-legend-symbol--poste"><i class="fa fa-building"></i></span>
-								<span>Poste source</span>
-							</li>
-						</ul>
-					</div>
-				}
-				</div>
-			</div>
-			<!-- Schéma unifilaire + Dashboard : boutons flottants sur la carte -->
-			<div class="trace-reseau-trace-actions-float" role="toolbar" aria-label="Schéma unifilaire et dashboard du tracé">
-				<button
-					type="button"
-					class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--schema"
-					(click)="ouvrirSchemaUnifilaire()"
-					[disabled]="!hasSelection() || !lastTraceDirection"
-					title="Ouvre le schéma unifilaire correspondant au tracé actif"
-				>
-					<i class="fa fa-project-diagram"></i>
-					<span>Schéma unifilaire</span>
-				</button>
-				<button
-					type="button"
-					class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--dashboard"
-					(click)="openDashboard()"
-					[disabled]="resumeOuvrages === 0"
-					title="Tableau de bord du tracé (puissance, lignes, abonnés, sous-réseaux)"
-				>
-					<i class="fa fa-chart-bar"></i>
-					<span>Dashboard</span>
-				</button>
 			</div>
 		</div>
 	</div>
@@ -509,6 +449,117 @@
 		</ng-template>
 	</p-dialog>
 
+	<!-- État réseau ABSENSOR (abonné / compteur / branchement) : fermé → simulation de coupure -->
+	<p-dialog
+		[(visible)]="showEtatReseauModal"
+		[header]="'État réseau — ' + (etatReseauCtx?.label ?? '')"
+		[modal]="true"
+		[closable]="true"
+		[closeOnEscape]="true"
+		[draggable]="false"
+		styleClass="trace-reseau-etat-reseau-dialog"
+		[style]="{ width: 'min(90vw, 420px)' }"
+		(onHide)="fermerEtatReseauModal()"
+	>
+		@if (etatReseauDialogLoading) {
+			<p class="trace-reseau-etat-reseau-loading">Chargement de l’état…</p>
+		} @else {
+			<p class="trace-reseau-etat-reseau-intro">
+				Basculer l’état du réseau pour cet élément (ABSENSOR). <strong>Fermé</strong> lance la simulation de coupure sur la carte ;
+				<strong>Ouvert</strong> rétablit l’affichage normal.
+			</p>
+			<div
+				class="trace-reseau-etat-switch"
+				[class.trace-reseau-etat-switch--on]="etatReseauOuvert"
+				[class.trace-reseau-etat-switch--off]="!etatReseauOuvert"
+				[class.trace-reseau-etat-switch--disabled]="etatReseauUpdating"
+				(click)="basculerEtatReseauAbsensor()"
+				role="button"
+				tabindex="0"
+			>
+				<span class="trace-reseau-etat-switch-label">{{ etatReseauOuvert ? 'OPEN' : 'CLOSED' }}</span>
+				<span class="trace-reseau-etat-switch-knob"></span>
+			</div>
+			<p class="trace-reseau-etat-caption">
+				État courant : <strong>{{ etatReseauOuvert ? 'Ouvert' : 'Fermé' }}</strong>
+				@if (etatReseauUpdating) {
+					<span class="trace-reseau-etat-updating"> — Mise à jour…</span>
+				}
+			</p>
+		}
+		<ng-template pTemplate="footer">
+			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="fermerEtatReseauModal()"></button>
+		</ng-template>
+	</p-dialog>
+
+	<!-- Assistant métier (conversation) -->
+	<p-dialog
+		[(visible)]="showChatbotModal"
+		[modal]="true"
+		[closable]="true"
+		[closeOnEscape]="true"
+		[draggable]="false"
+		styleClass="trace-reseau-chatbot-dialog"
+		[style]="{ width: 'min(94vw, 420px)' }"
+		(onShow)="onChatbotDialogShown()"
+		(onHide)="onChatbotDialogHide()"
+	>
+		<ng-template pTemplate="header">
+			<div class="chatbot-dlg-header">
+				<div class="chatbot-dlg-avatar" aria-hidden="true">
+					<i class="fa fa-robot"></i>
+				</div>
+				<div class="chatbot-dlg-header-text">
+					<div class="chatbot-dlg-title">Assistant réseau</div>
+					@if (chatbotOuvrageContext) {
+						<div class="chatbot-dlg-sub">{{ chatbotOuvrageContext.label }}</div>
+					}
+					@if (chatbotIdentifiedKindLabel) {
+						<div class="chatbot-dlg-type"><span class="chatbot-dlg-type-label">Type identifié</span> {{ chatbotIdentifiedKindLabel }}</div>
+					}
+				</div>
+			</div>
+		</ng-template>
+		<div class="chatbot-dlg-body">
+			<div class="chatbot-thread" #chatbotThread role="log" aria-live="polite">
+				@for (msg of chatbotMessages; track $index) {
+					<div
+						class="chatbot-msg"
+						[class.chatbot-msg--user]="msg.role === 'user'"
+						[class.chatbot-msg--assistant]="msg.role === 'assistant'"
+					>
+						@if (msg.role === 'assistant') {
+							<div class="chatbot-msg-avatar" aria-hidden="true"><i class="fa fa-robot"></i></div>
+						}
+						<div class="chatbot-msg-bubble">{{ msg.text }}</div>
+					</div>
+				}
+			</div>
+			<div class="chatbot-presets">
+				<div class="chatbot-presets-title">{{ chatbotActivePresets.length <= 1 ? 'Question métier' : 'Questions métier' }}</div>
+				<div class="chatbot-presets-chips">
+					@for (p of chatbotActivePresets; track p.id) {
+						<button type="button" class="chatbot-preset-chip" (click)="appendChatbotPreset(p)">
+							{{ p.shortLabel }}
+						</button>
+					}
+				</div>
+			</div>
+		</div>
+		<ng-template pTemplate="footer">
+			@if (chatbotExternalUrl) {
+				<button
+					pButton
+					label="Ouvrir l’assistant externe"
+					icon="pi pi-external-link"
+					class="p-button-outlined p-button-sm"
+					(click)="openChatbotExternalInNewTab()"
+				></button>
+			}
+			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="closeChatbotModal()"></button>
+		</ng-template>
+	</p-dialog>
+
 	<!-- Modale schéma unifilaire (flux d’énergie) -->
 	<p-dialog
 		[(visible)]="showUnifilaireModal"
@@ -536,6 +587,7 @@
 			</div>
 		</section>
 		<ng-template pTemplate="footer">
+			<button pButton label="Exporter en SVG" icon="pi pi-download" class="p-button-outlined" (click)="exportUnifilaireSvgFile()" [disabled]="!safeUnifilaireSvgContent"></button>
 			<button pButton label="Exporter en PDF" icon="pi pi-file-pdf" class="p-button-outlined" (click)="exportUnifilairePdf()" [disabled]="!safeUnifilaireSvgContent"></button>
 			<button pButton label="Fermer" icon="pi pi-times" class="p-button-secondary" (click)="closeUnifilaireModal()"></button>
 		</ng-template>
@@ -553,9 +605,14 @@
 				<div>
 					<div class="dash-header-title">Dashboard du tracé</div>
 					<div class="dash-header-sub">
-						{{ selectedMapStart?.label || 'Ouvrage sélectionné' }}
-						&nbsp;·&nbsp;
-						Direction : {{ lastTraceDirection === 'amont' ? 'Amont' : lastTraceDirection === 'aval' ? 'Aval' : 'Tous connectés' }}
+						<span><strong>Origine du tracé :</strong> {{ getCurrentStartLabel() }}</span>
+						@if (dashboardTraceSlugId) {
+							<span class="dash-header-sub-tech" [title]="dashboardTraceSlugId"> · {{ dashboardTraceSlugId }}</span>
+						}
+						<span>
+							&nbsp;·&nbsp; Direction :
+							{{ lastTraceDirection === 'amont' ? 'Amont' : lastTraceDirection === 'aval' ? 'Aval' : lastTraceDirection === 'tous' ? 'Tous connectés' : '—' }}
+						</span>
 					</div>
 				</div>
 			</div>
@@ -564,42 +621,62 @@
 			</button>
 		</div>
 
-		<!-- KPI cards -->
+		<div class="dash-header-zone">
+			<i class="fa fa-map-marker-alt" aria-hidden="true"></i>
+			<strong>Zone géographique :</strong>
+			<span class="dash-header-zone-text">{{ dashboardGeographicZoneLabel || '—' }}</span>
+		</div>
+
+		<!-- KPI cards (modèle horizontal : icône à gauche, libellé + valeur à droite) -->
 		<div class="dash-kpis">
 			<div class="dash-kpi dash-kpi--hta">
-				<div class="dash-kpi-icon"><i class="fa fa-minus"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.htaLines }}</div>
-				<div class="dash-kpi-label">Tronçons HTA</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-arrows-h"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Tronçons HTA</div>
+					<div class="dash-kpi-value">{{ dashStats.htaLines }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--bt">
-				<div class="dash-kpi-icon"><i class="fa fa-minus"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.btCables }}</div>
-				<div class="dash-kpi-label">Câbles BT</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-minus"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Câbles BT</div>
+					<div class="dash-kpi-value">{{ dashStats.btCables }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--abonne">
-				<div class="dash-kpi-icon"><i class="fa fa-users"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.clients | number }}</div>
-				<div class="dash-kpi-label">Abonnés</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-users"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Abonnés</div>
+					<div class="dash-kpi-value">{{ dashStats.clients | number }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--poste-hta">
-				<div class="dash-kpi-icon"><i class="fa fa-building"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.htaPostes }}</div>
-				<div class="dash-kpi-label">Postes HTA</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-building"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Postes HTA</div>
+					<div class="dash-kpi-value">{{ dashStats.htaPostes }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--poste-bt">
-				<div class="dash-kpi-icon"><i class="fa fa-home"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.btPostes }}</div>
-				<div class="dash-kpi-label">Postes BT</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-home"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Postes BT</div>
+					<div class="dash-kpi-value">{{ dashStats.btPostes }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--network">
-				<div class="dash-kpi-icon"><i class="fa fa-sitemap"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.subNetworks }}</div>
-				<div class="dash-kpi-label">Sous-réseaux</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-sitemap"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Sous-réseaux</div>
+					<div class="dash-kpi-value">{{ dashStats.subNetworks }}</div>
+				</div>
 			</div>
 			<div class="dash-kpi dash-kpi--power">
-				<div class="dash-kpi-icon"><i class="fa fa-bolt"></i></div>
-				<div class="dash-kpi-value">{{ dashStats.puissanceKw | number }} <span class="dash-kpi-unit">kW</span></div>
-				<div class="dash-kpi-label">Puissance de charge est.</div>
+				<div class="dash-kpi-icon" aria-hidden="true"><i class="fa fa-bolt"></i></div>
+				<div class="dash-kpi-body">
+					<div class="dash-kpi-label">Puissance de charge est.</div>
+					<div class="dash-kpi-value">{{ dashStats.puissanceKw | number }}<span class="dash-kpi-unit"> kW</span></div>
+				</div>
 			</div>
 		</div>
 

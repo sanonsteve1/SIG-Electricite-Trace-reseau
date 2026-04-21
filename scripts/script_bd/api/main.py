@@ -5264,6 +5264,86 @@ def _do_create_or_update_row(table_slug: str, body: dict) -> dict:
             return row_to_json(row)
 
 
+@app.patch("/gis/{table_slug}/{pk_value}/etat-reseau")
+def update_etat_reseau(
+    table_slug: str = Path(..., description="Slug de la table"),
+    pk_value: str = Path(..., description="Valeur de la clé primaire (ou objectid, etc.)"),
+    body: dict = Body(default=None, description="Body: { etat_reseau: 'ouvert' | 'fermé' }"),
+):
+    """
+    Met à jour uniquement la colonne etat_reseau pour un enregistrement.
+    Valeurs autorisées: ouvert | fermé (accents/casse tolérés en entrée).
+    """
+    if body is None:
+        body = {}
+    raw_value = body.get("etat_reseau")
+    if raw_value is None:
+        raise HTTPException(status_code=400, detail="Champ etat_reseau requis.")
+
+    raw_norm = str(raw_value).strip().lower()
+    raw_norm = raw_norm.translate(str.maketrans("éèêë", "eeee"))
+    if raw_norm in {"ouvert", "ouverte", "open"}:
+        etat_value = "ouvert"
+    elif raw_norm in {"ferme", "fermee", "closed"}:
+        etat_value = "fermé"
+    else:
+        raise HTTPException(status_code=400, detail="Valeur invalide pour etat_reseau. Utiliser: ouvert | fermé.")
+
+    table_name, meta = get_table_meta(table_slug)
+    if not _table_has_column(meta, "etat_reseau"):
+        raise HTTPException(status_code=400, detail=f"La table '{table_slug}' ne contient pas la colonne etat_reseau.")
+
+    pk = get_primary_key(meta)
+    quoted_table = quote_ident(table_name)
+    quoted_pk = quote_ident(pk)
+    canon = _canon_id(pk_value)
+    target_pk = None
+
+    search_cols = [pk, *get_alternate_key_columns(meta, pk)]
+    for c in ("gid", "codification", "numero_ouvrage", "numero_poste", "numero_depart", "numero", "code", "name", "nom"):
+        if _table_has_column(meta, c) and c not in search_cols:
+            search_cols.append(c)
+
+    with get_connection() as conn:
+        with get_cursor(conn) as cur:
+            for col in search_cols:
+                cur.execute(
+                    f"SELECT {quoted_pk} AS pk_value FROM {quoted_table} WHERE {_canon_sql_expr(col)} = %s LIMIT 1",
+                    (canon,),
+                )
+                row = cur.fetchone()
+                if row is not None:
+                    target_pk = row.get("pk_value")
+                    break
+
+    if target_pk is None:
+        raise HTTPException(status_code=404, detail="Non trouvé")
+
+    try:
+        out = _do_create_or_update_row(table_slug, {pk: target_pk, "etat_reseau": etat_value})
+    except psycopg2.errors.ObjectNotInPrerequisiteState as e:
+        sql_fix = f"ALTER TABLE {table_name} REPLICA IDENTITY FULL;"
+        if _try_set_replica_identity_full(table_name):
+            out = _do_create_or_update_row(table_slug, {pk: target_pk, "etat_reseau": etat_value})
+        else:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "replica_identity_required",
+                    "message": "Mise à jour impossible : la table est utilisée en réplication logique sans REPLICA IDENTITY.",
+                    "sql": sql_fix,
+                    "hint": "Exécuter en base (avec droits suffisants) : " + sql_fix,
+                    "pg_message": str(e),
+                },
+            ) from e
+
+    return {
+        "updated": True,
+        "etat_reseau": etat_value,
+        "row": out,
+    }
+
+
 @app.post("/gis/{table_slug}")
 def create_or_update(
     table_slug: str = Path(..., description="Slug de la table"),

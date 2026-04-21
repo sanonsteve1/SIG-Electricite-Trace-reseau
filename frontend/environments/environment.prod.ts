@@ -5,5 +5,6 @@ export const environment = {
 	/** API GIS (script_bd FastAPI) - tableau de bord */
 	gisApiUrl: 'https://ab-un.eburtis-dev.ci/gis-api',
 	/** API OCR (adapter selon déploiement) */
-	ocrApiUrl: 'https://ab-un.eburtis-dev.ci/ocr-api'
+	ocrApiUrl: 'https://ab-un.eburtis-dev.ci/ocr-api',
+	chatbotUrl: ''
 };
