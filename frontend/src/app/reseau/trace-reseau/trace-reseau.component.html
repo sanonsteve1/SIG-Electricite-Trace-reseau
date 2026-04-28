@@ -382,7 +382,12 @@
 								@for (layer of couchesReseau; track layer.id) {
 									<label class="trace-reseau-layer-item">
 										<input type="checkbox" [(ngModel)]="layer.visible" (ngModelChange)="toggleCouche(layer)" />
-										<span class="trace-reseau-layer-symbol" [style.--layer-color]="layer.color"></span>
+										<span
+											class="trace-reseau-layer-symbol"
+											[class.trace-reseau-layer-symbol--line-cable]="isLegendCableLine(layer.id)"
+											[class.trace-reseau-layer-symbol--line-underground]="isLegendUndergroundLine(layer.id)"
+											[style.--layer-color]="layer.color"
+										></span>
 										<span class="trace-reseau-layer-label">{{ layer.label }}</span>
 									</label>
 								}
@@ -400,6 +405,18 @@
 					>
 						<i class="fa fa-project-diagram"></i>
 						<span>Schéma unifilaire</span>
+					</button>
+				</div>
+				<div class="trace-reseau-trace-fab-float" role="toolbar" aria-label="Diagramme du réseau">
+					<button
+						type="button"
+						class="trace-reseau-legend-toggle trace-reseau-trace-fab trace-reseau-trace-fab--diagramme"
+						(click)="ouvrirDiagrammeReseau()"
+						[disabled]="!hasSelection() || !lastTraceDirection"
+						title="Ouvre la représentation logique et simplifiée du tracé actif"
+					>
+						<i class="fa fa-project-diagram"></i>
+						<span>Diagramme du réseau</span>
 					</button>
 				</div>
 				<div class="trace-reseau-trace-fab-float" role="toolbar" aria-label="Dashboard du tracé">
@@ -763,7 +780,7 @@
 
 		<!-- Tableau récapitulatif -->
 		@if (dashSubNetworks.length > 0) {
-		<div class="dash-table-section">
+		<div class="dash-table-section dash-subnetwork-table">
 			<div class="dash-chart-title">Détail par sous-réseau</div>
 			<table class="dash-table">
 				<thead>
@@ -777,128 +794,109 @@
 					</tr>
 				</thead>
 				<tbody>
-					@for (net of dashSubNetworks; track net.name) {
+					@for (net of dashSubNetworkPagedRows; track net.name) {
 						<tr>
 							<td><span class="dash-table-badge">{{ net.name }}</span></td>
 							<td class="dash-table-num">{{ net.clients | number }}</td>
 							<td class="dash-table-num">{{ net.cables }}</td>
 							<td class="dash-table-num">{{ net.postes }}</td>
 							<td class="dash-table-num dash-table-num--bold">{{ net.total | number }}</td>
-							<td class="dash-table-num">{{ net.clients * 1.5 | number:'1.0-0' }}</td>
+							<td class="dash-table-num">{{ net.puissanceKw | number:'1.0-1' }}</td>
 						</tr>
 					}
 				</tbody>
 			</table>
+			@if (dashSubNetworkTotalPages > 1) {
+			<div class="dash-pagination">
+				<button class="dash-page-btn" (click)="dashSetSubNetworkPage(dashSubNetworkPage - 1)" [disabled]="dashSubNetworkPage === 1" title="Page précédente">
+					<i class="fa fa-angle-left"></i>
+				</button>
+				<span class="dash-page-info">
+					Page {{ dashSubNetworkPage }} / {{ dashSubNetworkTotalPages }}
+					&nbsp;·&nbsp; {{ dashSubNetworkPageSize }} par page
+				</span>
+				<button class="dash-page-btn" (click)="dashSetSubNetworkPage(dashSubNetworkPage + 1)" [disabled]="dashSubNetworkPage === dashSubNetworkTotalPages" title="Page suivante">
+					<i class="fa fa-angle-right"></i>
+				</button>
+			</div>
+			}
 		</div>
 		}
 
-		<!-- Liste paginée des ouvrages -->
-		<div class="dash-list-section">
-			<div class="dash-list-header">
-				<div class="dash-chart-title" style="margin-bottom:0">
-					Liste des ouvrages
-					<span class="dash-list-total">({{ dashFilteredItems.length | number }} / {{ resumeOuvrages | number }})</span>
-				</div>
-				<div class="dash-list-controls">
-					<!-- Filtre type -->
-					<div class="dash-filter-group">
-						@for (f of dashKindOptions; track f.v) {
-							<button
-								type="button"
-								class="dash-filter-btn"
-								[class.dash-filter-btn--active]="dashKindFilter === f.v"
-								(click)="setDashKindFilter(f.v)"
-							>{{ f.label }}</button>
-						}
-					</div>
-					<!-- Recherche -->
-					<div class="dash-search-wrap">
-						<i class="fa fa-search dash-search-icon"></i>
-						<input
-							class="dash-search-input"
-							type="text"
-							placeholder="Rechercher slug, ID…"
-							[(ngModel)]="dashSearch"
-							(ngModelChange)="dashOnSearch()"
-						/>
-					</div>
-				</div>
-			</div>
-
-			<!-- Tableau -->
-			<div class="dash-list-table-wrap">
-				<table class="dash-list-table">
-					<thead>
-						<tr>
-							<th class="dash-list-th--num">#</th>
-							<th>Type</th>
-							<th>Couche (slug)</th>
-							<th class="dash-list-th--id">ID</th>
-							<th>Catégorie</th>
+		@if (dashPosteClientRows.length > 0) {
+		<div class="dash-table-section dash-poste-by-station">
+			<div class="dash-chart-title">Abonnés et puissance par poste (BT et HTA)</div>
+			<table class="dash-table">
+				<thead>
+					<tr>
+						<th>Réseau</th>
+						<th>Poste</th>
+						<th>Abonnés</th>
+						<th>Puissance de charge (kW)</th>
+					</tr>
+				</thead>
+				<tbody>
+					@for (row of dashPostePagedRows; track row.posteKey) {
+						<tr [class.dash-table-row--muted]="row.posteKey === '_unassigned'">
+							<td class="dash-table-reseau">
+								@if (row.reseau === 'HTA') {
+									<span class="dash-reseau-badge dash-reseau-badge--hta">HTA</span>
+								} @else if (row.reseau === 'BT') {
+									<span class="dash-reseau-badge dash-reseau-badge--bt">BT</span>
+								} @else {
+									<span class="dash-table-note">—</span>
+								}
+							</td>
+							<td>
+								@if (row.slug) {
+									<span class="dash-table-badge">{{ row.label }}</span>
+								} @else {
+									<span class="dash-table-note">{{ row.label }}</span>
+								}
+							</td>
+							<td class="dash-table-num">{{ row.clients | number }}</td>
+							<td class="dash-table-num">{{ row.puissanceKw | number:'1.0-1' }}</td>
 						</tr>
-					</thead>
-					<tbody>
-						@if (dashPagedItems.length === 0) {
-							<tr>
-								<td colspan="5" class="dash-list-empty">Aucun ouvrage trouvé.</td>
-							</tr>
-						}
-						@for (item of dashPagedItems; track item.slug + ':' + item.id; let i = $index) {
-							<tr class="dash-list-row">
-								<td class="dash-list-td--num">{{ (dashPage - 1) * dashPageSize + i + 1 }}</td>
-								<td>
-									<span class="dash-list-swatch" [style.background]="item.color"></span>
-								</td>
-								<td class="dash-list-td--slug" [title]="item.slug">{{ dashSlugLabel(item.slug) }}</td>
-								<td class="dash-list-td--id">{{ item.id }}</td>
-								<td>
-									<span class="dash-list-badge dash-list-badge--{{ item.kind }}">
-										<i [class]="'fa ' + dashKindIcon(item.kind)"></i>
-										{{ item.kind }}
-									</span>
-								</td>
-							</tr>
-						}
-					</tbody>
-				</table>
-			</div>
-
-			<!-- Pagination -->
-			@if (dashTotalPages > 1) {
+					}
+				</tbody>
+			</table>
+			@if (dashPosteTotalPages > 1) {
 			<div class="dash-pagination">
-				<button class="dash-page-btn" (click)="dashSetPage(1)" [disabled]="dashPage === 1" title="Première page">
+				<button class="dash-page-btn" (click)="dashSetPostePage(1)" [disabled]="dashPostePage === 1" title="Première page">
 					<i class="fa fa-angle-double-left"></i>
 				</button>
-				<button class="dash-page-btn" (click)="dashSetPage(dashPage - 1)" [disabled]="dashPage === 1" title="Page précédente">
+				<button class="dash-page-btn" (click)="dashSetPostePage(dashPostePage - 1)" [disabled]="dashPostePage === 1" title="Page précédente">
 					<i class="fa fa-angle-left"></i>
 				</button>
-				@if (dashPageNumbers[0] > 1) {
+				@if (dashPostePageNumbers[0] > 1) {
 					<span class="dash-page-ellipsis">…</span>
 				}
-				@for (p of dashPageNumbers; track p) {
+				@for (p of dashPostePageNumbers; track p) {
 					<button
 						class="dash-page-btn"
-						[class.dash-page-btn--active]="p === dashPage"
-						(click)="dashSetPage(p)"
+						[class.dash-page-btn--active]="p === dashPostePage"
+						(click)="dashSetPostePage(p)"
 					>{{ p }}</button>
 				}
-				@if (dashPageNumbers[dashPageNumbers.length - 1] < dashTotalPages) {
+				@if (dashPostePageNumbers[dashPostePageNumbers.length - 1] < dashPosteTotalPages) {
 					<span class="dash-page-ellipsis">…</span>
 				}
-				<button class="dash-page-btn" (click)="dashSetPage(dashPage + 1)" [disabled]="dashPage === dashTotalPages" title="Page suivante">
+				<button class="dash-page-btn" (click)="dashSetPostePage(dashPostePage + 1)" [disabled]="dashPostePage === dashPosteTotalPages" title="Page suivante">
 					<i class="fa fa-angle-right"></i>
 				</button>
-				<button class="dash-page-btn" (click)="dashSetPage(dashTotalPages)" [disabled]="dashPage === dashTotalPages" title="Dernière page">
+				<button class="dash-page-btn" (click)="dashSetPostePage(dashPosteTotalPages)" [disabled]="dashPostePage === dashPosteTotalPages" title="Dernière page">
 					<i class="fa fa-angle-double-right"></i>
 				</button>
 				<span class="dash-page-info">
-					Page {{ dashPage }} / {{ dashTotalPages }}
-					&nbsp;·&nbsp; {{ dashPageSize }} par page
+					Page {{ dashPostePage }} / {{ dashPosteTotalPages }}
+					&nbsp;·&nbsp; {{ dashPostePageSize }} par page
 				</span>
 			</div>
 			}
+		</div>
+		}
 
-		</div><!-- /dash-list-section -->
+		<!-- Liste des ouvrages masquée à la demande -->
 
 	</div><!-- /dash-modal -->
 </div><!-- /dash-overlay -->

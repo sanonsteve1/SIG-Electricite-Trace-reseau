@@ -55,25 +55,30 @@ export class AppMenu {
 					routerLink: ['/reseau/schema-reseau']
 				},
 				{
+					label: 'Diagramme du réseau',
+					icon: 'fa fa-share-alt',
+					routerLink: ['/reseau/diagramme-reseau']
+				},
+				{
 					label: 'Modélisation',
 					icon: 'fa fa-cube',
 					routerLink: ['/reseau/modelisation']
+				}
+			]
+		},
+		{
+			label: 'Règles',
+			icon: 'fa fa-list-alt',
+			items: [
+				{
+					label: 'Connectivité',
+					icon: 'fa fa-link',
+					routerLink: ['/reseau/regles/connectivite']
 				},
 				{
-					label: 'Règles',
-					icon: 'fa fa-list-alt',
-					items: [
-						{
-							label: 'Connectivité',
-							icon: 'fa fa-link',
-							routerLink: ['/reseau/regles/connectivite']
-						},
-						{
-							label: 'Topologie',
-							icon: 'fa fa-sitemap',
-							routerLink: ['/reseau/regles/topologie']
-						}
-					]
+					label: 'Topologie',
+					icon: 'fa fa-sitemap',
+					routerLink: ['/reseau/regles/topologie']
 				}
 			]
 		}

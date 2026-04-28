@@ -657,7 +657,7 @@ $header-height: 56px;
 }
 
 .schema-scada-node {
-	cursor: pointer;
+	cursor: move;
 	transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
@@ -674,6 +674,35 @@ $header-height: 56px;
 	fill: rgba(248, 250, 252, 0.95);
 	stroke: #e2e8f0;
 	stroke-width: 1;
+}
+
+.schema-scada-node-halo {
+	stroke: rgba(15, 23, 42, 0.08);
+	stroke-width: 0.6;
+}
+
+.schema-node-inline-label-main {
+	font-family: 'Inter', 'Segoe UI', sans-serif;
+	font-size: 8.5px;
+	font-weight: 700;
+	fill: #0f172a;
+	paint-order: stroke;
+	stroke: #ffffff;
+	stroke-width: 2px;
+	stroke-linejoin: round;
+	pointer-events: none;
+}
+
+.schema-node-inline-label-sub {
+	font-family: 'Inter', 'Segoe UI', sans-serif;
+	font-size: 7px;
+	font-weight: 500;
+	fill: #64748b;
+	paint-order: stroke;
+	stroke: #ffffff;
+	stroke-width: 1.8px;
+	stroke-linejoin: round;
+	pointer-events: none;
 }
 
 .schema-scada-node-label {
@@ -699,6 +728,15 @@ $header-height: 56px;
 
 .schema-reseau-edge--scada {
 	filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.15));
+}
+
+.schema-reseau-edge--underground {
+	opacity: 0.95;
+}
+
+.schema-edge-label--underground {
+	font-style: italic;
+	text-decoration: underline dotted;
 }
 
 /* Label tronçon / câble positionné au milieu de l'arête */

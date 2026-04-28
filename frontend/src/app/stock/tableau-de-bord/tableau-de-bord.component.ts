@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
 import { Select } from 'primeng/select';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../services/auth.service';
 import { GisApiService } from '../../../services/gis-api.service';
 import { environment } from '@environments/environment';
@@ -121,8 +122,16 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	// Graphique Nature Client
 	natureClientData: any;
 	natureClientOptions: any;
+	natureClientChartType: 'bar' | 'doughnut' = 'bar';
+	natureClientTab: 'repartition' | 'regroupement' | 'analyse' = 'repartition';
 	/** Total affiché sous le titre (somme des valeurs du graphique) */
 	natureClientTotal: number | null = null;
+	natureClientStats = {
+		abonnes: 0,
+		compteurs: 0,
+		branchements: 0,
+		clientsBtReseau: 0
+	};
 
 	loading = false;
 	errorApi: string | null = null;
@@ -152,12 +161,61 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	private mapViewportListenersBound = false;
 	private kpiRefreshTimer: ReturnType<typeof setInterval> | null = null;
 	private readonly debugKpi = true;
+	private readonly iconCache = new Map<string, SafeHtml>();
 	private readonly onMapViewportChanged = () => this.zone.run(() => {
 		this.logDebug('event: map viewport changed');
 		this.updateVisibleIndicators();
 	});
 
-	constructor(private gisApi: GisApiService, private cdr: ChangeDetectorRef, private zone: NgZone) {}
+	constructor(
+		private gisApi: GisApiService,
+		private cdr: ChangeDetectorRef,
+		private zone: NgZone,
+		private sanitizer: DomSanitizer
+	) {}
+
+	getInlineIcon(iconKey: string): SafeHtml {
+		const key = (iconKey || '').trim().toLowerCase();
+		const cached = this.iconCache.get(key);
+		if (cached) return cached;
+
+		const svgByKey: Record<string, string> = {
+			'fa fa-bolt': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
+			'fa fa-crosshairs': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+			'fa fa-link': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 1 0-7l1.5-1.5a5 5 0 0 1 7 7L17 13"/><path d="M14 11a5 5 0 0 1 0 7L12.5 19.5a5 5 0 0 1-7-7L7 11"/></svg>',
+			'fa fa-square': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+			'fa fa-anchor': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8"/><circle cx="12" cy="3" r="2"/><path d="M7 11h10"/><path d="M5 13a7 7 0 0 0 14 0"/><path d="M7 18l-3 2M17 18l3 2"/></svg>',
+			'fa fa-shield': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-2.8 8.6-7 10-4.2-1.4-7-5.5-7-10V6l7-3z"/></svg>',
+			'fa fa-minus': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>',
+			'fa fa-cog': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a2 2 0 1 1-4 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a2 2 0 1 1 0-4h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a2 2 0 1 1 4 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6H20a2 2 0 1 1 0 4h-.2a1 1 0 0 0-.4 1z"/></svg>',
+			'fa fa-square-o': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14"/></svg>',
+			'fa fa-level-up': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18h8a4 4 0 0 0 4-4V6"/><path d="M12 10l6-6 6 6"/></svg>',
+			'fa fa-circle-o': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>',
+			'fa fa-arrows-v': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16"/><path d="M8 8l4-4 4 4M8 16l4 4 4-4"/></svg>',
+			'fa fa-th-large': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg>',
+			'fa fa-th': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="4" height="4"/><rect x="10" y="4" width="4" height="4"/><rect x="16" y="4" width="4" height="4"/><rect x="4" y="10" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="4" y="16" width="4" height="4"/><rect x="10" y="16" width="4" height="4"/><rect x="16" y="16" width="4" height="4"/></svg>',
+			'fa fa-plus': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+			'fa fa-user': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>',
+			'fa fa-tachometer': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/><circle cx="12" cy="14" r="1.5"/></svg>',
+			'fa fa-home': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M6 10v10h12V10"/></svg>',
+			'fa fa-sliders': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6M14 6h6M10 6a2 2 0 1 1 0 .1zM4 12h10M18 12h2M16 12a2 2 0 1 1 0 .1zM4 18h2M10 18h10M8 18a2 2 0 1 1 0 .1z"/></svg>',
+			'fa fa-chevron-down': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+			'fa fa-chevron-up': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
+			'fa fa-calendar': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+			'fa fa-crosshairs reset': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+			'fa fa-eye': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>',
+			'fa fa-eye-slash': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/><path d="M3 3l18 18"/></svg>',
+			'fa fa-users': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M14 19a5 5 0 0 1 7 0"/></svg>'
+		};
+
+		const fallback = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>';
+		const body = svgByKey[key] ?? fallback;
+		const html = this.sanitizer.bypassSecurityTrustHtml(
+			`<span class="inline-svg-icon__svg">${body}</span>`
+		);
+		this.iconCache.set(key, html);
+		return html;
+	}
 
 	ngOnInit(): void {
 		this.initNatureClientChart();
@@ -166,6 +224,50 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 
 	private getAllCards(): StatCard[] {
 		return [...this.cardsRow1, ...this.cardsRow2, ...this.cardsRow3, ...this.extraCards];
+	}
+
+	get overviewCards(): StatCard[] {
+		return this.getAllCards();
+	}
+
+	overviewTab: 'tous' | 'hta' | 'bt' | 'clients' | 'postes' | 'autres' = 'tous';
+
+	private getCardTab(card: StatCard): 'hta' | 'bt' | 'clients' | 'postes' | 'autres' {
+		const text = `${card.label} ${card.subtitle} ${card.apiSlug ?? ''}`.toLowerCase();
+		if (/abonn|compteur|branchement|client/.test(text)) return 'clients';
+		if (/poste|transfo|transformateur|cabine|source/.test(text)) return 'postes';
+		if (/\bhta\b|moyenne tension/.test(text)) return 'hta';
+		if (/\bbt\b|basse tension/.test(text)) return 'bt';
+		return 'autres';
+	}
+
+	get overviewTabs(): { key: 'tous' | 'hta' | 'bt' | 'clients' | 'postes' | 'autres'; label: string; count: number }[] {
+		const cards = this.overviewCards;
+		const count = (tab: 'hta' | 'bt' | 'clients' | 'postes' | 'autres') => cards.filter((c) => this.getCardTab(c) === tab).length;
+		return [
+			{ key: 'tous', label: 'Tous', count: cards.length },
+			{ key: 'hta', label: 'HTA', count: count('hta') },
+			{ key: 'bt', label: 'BT', count: count('bt') },
+			{ key: 'clients', label: 'Clients', count: count('clients') },
+			{ key: 'postes', label: 'Postes', count: count('postes') },
+			{ key: 'autres', label: 'Autres', count: count('autres') }
+		];
+	}
+
+	get overviewCardsByTab(): StatCard[] {
+		if (this.overviewTab === 'tous') return this.overviewCards;
+		return this.overviewCards.filter((c) => this.getCardTab(c) === this.overviewTab);
+	}
+
+	get topOverviewCards(): StatCard[] {
+		return [...this.getAllCards()]
+			.filter((c) => c.value > 0)
+			.sort((a, b) => b.value - a.value)
+			.slice(0, 10);
+	}
+
+	setOverviewTab(tab: 'tous' | 'hta' | 'bt' | 'clients' | 'postes' | 'autres'): void {
+		this.overviewTab = tab;
 	}
 
 	private getResolvedSlug(slug: string | undefined): string | undefined {
@@ -781,95 +883,147 @@ export class TableauDeBord implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	initNatureClientChart(): void {
-		const totalAbonnes = 0;
+		this.natureClientStats = { abonnes: 0, compteurs: 0, branchements: 0, clientsBtReseau: 0 };
+		this.applyNatureClientTab();
+	}
+
+	private updateNatureClientChartFromCounts(counts: Map<string, number>): void {
+		let clientsBtReseau = 0;
+		counts.forEach((value, slug) => {
+			if ((slug || '').toLowerCase().startsWith('clients-bt-')) {
+				clientsBtReseau += value ?? 0;
+			}
+		});
+		this.natureClientStats = {
+			abonnes: counts.get('subscriberform-abonne') ?? 0,
+			compteurs: counts.get('meters-compteur') ?? 0,
+			branchements: counts.get('distributionpanel-branchement') ?? 0,
+			clientsBtReseau
+		};
+		this.applyNatureClientTab();
+	}
+
+	setNatureClientTab(tab: 'repartition' | 'regroupement' | 'analyse'): void {
+		this.natureClientTab = tab;
+		this.applyNatureClientTab();
+	}
+
+	get natureClientTabs(): { key: 'repartition' | 'regroupement' | 'analyse'; label: string }[] {
+		return [
+			{ key: 'repartition', label: 'Répartition' },
+			{ key: 'regroupement', label: 'Regroupement' },
+			{ key: 'analyse', label: 'Analyse' }
+		];
+	}
+
+	get natureClientAnalysisRows(): { label: string; value: string }[] {
+		const a = this.natureClientStats.abonnes;
+		const c = this.natureClientStats.compteurs;
+		const b = this.natureClientStats.branchements;
+		const r = this.natureClientStats.clientsBtReseau;
+		const txCompteur = a > 0 ? Math.round((c / a) * 100) : 0;
+		const txBranchement = a > 0 ? Math.round((b / a) * 100) : 0;
+		const totalClient = a + r;
+		const partClientsBt = totalClient > 0 ? Math.round((r / totalClient) * 100) : 0;
+		return [
+			{ label: 'Abonnés total', value: `${a}` },
+			{ label: 'Clients BT (tables réseau)', value: `${r}` },
+			{ label: 'Taux de comptage', value: `${txCompteur}%` },
+			{ label: 'Taux de branchement', value: `${txBranchement}%` },
+			{ label: 'Part clients BT', value: `${partClientsBt}%` }
+		];
+	}
+
+	private applyNatureClientTab(): void {
+		const a = this.natureClientStats.abonnes;
+		const c = this.natureClientStats.compteurs;
+		const b = this.natureClientStats.branchements;
+		const r = this.natureClientStats.clientsBtReseau;
+
+		if (this.natureClientTab === 'regroupement') {
+			this.natureClientChartType = 'doughnut';
+			this.natureClientData = {
+				labels: ['Abonnés', 'Clients BT', 'Compteurs', 'Branchements'],
+				datasets: [
+					{
+						label: 'Regroupement clients',
+						backgroundColor: ['#22c55e', '#a855f7', '#38bdf8', '#f59e0b'],
+						borderColor: ['#16a34a', '#7e22ce', '#0ea5e9', '#d97706'],
+						borderWidth: 1,
+						data: [a, r, c, b]
+					}
+				]
+			};
+			this.natureClientTotal = a + r + c + b;
+			this.natureClientOptions = {
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { position: 'bottom', labels: { color: '#cbd5e1', boxWidth: 10 } }
+				}
+			};
+			return;
+		}
+
+		if (this.natureClientTab === 'analyse') {
+			const txCompteur = a > 0 ? Math.round((c / a) * 100) : 0;
+			const txBranchement = a > 0 ? Math.round((b / a) * 100) : 0;
+			this.natureClientChartType = 'bar';
+			this.natureClientData = {
+				labels: ['Comptage', 'Branchement'],
+				datasets: [
+					{
+						label: 'Taux (%)',
+						backgroundColor: ['#38bdf8', '#f59e0b'],
+						borderColor: ['#0ea5e9', '#d97706'],
+						borderWidth: 1,
+						borderRadius: 6,
+						data: [txCompteur, txBranchement]
+					}
+				]
+			};
+			this.natureClientTotal = a;
+			this.natureClientOptions = {
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: {
+					x: { min: 0, max: 100, ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+					y: { ticks: { color: '#e2e8f0' }, grid: { display: false } }
+				},
+				indexAxis: 'y'
+			};
+			return;
+		}
+
+		// Répartition (par défaut)
+		this.natureClientChartType = 'bar';
 		this.natureClientData = {
-			labels: ['Abonnés'],
+			labels: ['Abonnés', 'Clients BT'],
 			datasets: [
 				{
 					label: 'Nombre de clients',
-					backgroundColor: ['#22c55e'],
-					borderColor: ['#16a34a'],
+					backgroundColor: ['#22c55e', '#a855f7'],
+					borderColor: ['#16a34a', '#7e22ce'],
 					borderWidth: 1,
 					borderRadius: 6,
-					data: [totalAbonnes]
+					data: [a, r]
 				}
 			]
 		};
-		this.natureClientTotal = totalAbonnes;
-
+		this.natureClientTotal = a + r;
+		const maxAxis = Math.max(10, Math.ceil(Math.max(a, r) * 1.15));
 		this.natureClientOptions = {
 			indexAxis: 'y',
 			maintainAspectRatio: false,
 			layout: { padding: { top: 8, right: 12, bottom: 8, left: 4 } },
-			plugins: {
-				legend: { display: false },
-				tooltip: {
-					backgroundColor: 'rgba(15, 23, 42, 0.95)',
-					titleColor: '#facc15',
-					bodyColor: '#e2e8f0',
-					borderColor: 'rgba(255, 255, 255, 0.1)',
-					borderWidth: 1,
-					padding: 10,
-					cornerRadius: 8
-				}
-			},
+			plugins: { legend: { display: false } },
 			scales: {
 				x: {
-					title: {
-						display: true,
-						text: 'Nombre de clients',
-						color: '#94a3b8',
-						font: { size: 11, weight: '500' }
-					},
 					min: 0,
-					max: 10,
-					ticks: {
-						stepSize: 1,
-						color: '#64748b',
-						font: { size: 10 }
-					},
+					max: maxAxis,
+					ticks: { stepSize: Math.max(1, Math.ceil(maxAxis / 10)), color: '#64748b' },
 					grid: { color: 'rgba(255, 255, 255, 0.06)' }
 				},
-				y: {
-					ticks: {
-						color: '#e2e8f0',
-						font: { size: 11 }
-					},
-					grid: { display: false }
-				}
-			}
-		};
-	}
-
-	private updateNatureClientChartFromCounts(counts: Map<string, number>): void {
-		const totalAbonnes = counts.get('subscriberform-abonne') ?? 0;
-		this.natureClientData = {
-			labels: ['Abonnés'],
-			datasets: [
-				{
-					label: 'Nombre de clients',
-					backgroundColor: ['#22c55e'],
-					borderColor: ['#16a34a'],
-					borderWidth: 1,
-					borderRadius: 6,
-					data: [totalAbonnes]
-				}
-			]
-		};
-		this.natureClientTotal = totalAbonnes;
-		const maxAxis = Math.max(10, Math.ceil(totalAbonnes * 1.15));
-		this.natureClientOptions = {
-			...this.natureClientOptions,
-			scales: {
-				...this.natureClientOptions?.scales,
-				x: {
-					...this.natureClientOptions?.scales?.x,
-					max: maxAxis,
-					ticks: {
-						...this.natureClientOptions?.scales?.x?.ticks,
-						stepSize: Math.max(1, Math.ceil(maxAxis / 10))
-					}
-				}
+				y: { ticks: { color: '#e2e8f0' }, grid: { display: false } }
 			}
 		};
 	}

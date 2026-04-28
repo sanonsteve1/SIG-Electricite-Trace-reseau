@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+	<title>Parafoudre (élément non linéaire)  principe unifilaire</title>
+	<line x1="2" y1="32" x2="22" y2="32" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+	<line x1="22" y1="10" x2="42" y2="54" stroke="#0f172a" stroke-width="1.6"/>
+	<line x1="42" y1="10" x2="22" y2="54" stroke="#0f172a" stroke-width="1.6"/>
+	<line x1="42" y1="32" x2="62" y2="32" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+	<polygon points="32,4 30,8 34,8" fill="#0f172a" opacity="0.9"/>
+</svg>

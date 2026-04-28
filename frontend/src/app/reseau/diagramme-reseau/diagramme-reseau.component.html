@@ -1,0 +1,226 @@
+<div class="diagramme-reseau-page">
+	<header class="diagramme-reseau-header">
+		<div class="diagramme-reseau-title">
+			<i class="fa fa-project-diagram"></i>
+			<span>Diagramme du réseau</span>
+		</div>
+		<div class="diagramme-reseau-view-modes" role="group" aria-label="Mode d'affichage">
+			<button type="button" class="mode-btn" [class.is-active]="viewMode === 'carte'" (click)="setViewMode('carte')">
+				Carte
+			</button>
+			<button type="button" class="mode-btn" [class.is-active]="viewMode === 'partage'" (click)="setViewMode('partage')">
+				Carte + Diagramme
+			</button>
+			<button type="button" class="mode-btn" [class.is-active]="viewMode === 'diagramme'" (click)="setViewMode('diagramme')">
+				Transformer en diagramme
+			</button>
+		</div>
+		@if (contextRef) {
+			<button type="button" class="diagramme-reseau-reload" (click)="reload()" [disabled]="loading">
+				<i class="fa" [class.fa-spinner]="loading" [class.fa-spin]="loading" [class.fa-refresh]="!loading"></i>
+				Actualiser
+			</button>
+		}
+	</header>
+
+	<div class="diagramme-reseau-body">
+		@if (error) {
+			<div class="diagramme-reseau-message diagramme-reseau-message--error">
+				<i class="fa fa-exclamation-triangle"></i>
+				<span>{{ error }}</span>
+			</div>
+		}
+
+		@if (info && !error) {
+			<div class="diagramme-reseau-message diagramme-reseau-message--info">
+				<i class="fa fa-info-circle"></i>
+				<span>{{ info }}</span>
+			</div>
+		}
+
+		@if (traceTotal > 0) {
+			<div class="diagramme-reseau-kpis">
+				<span class="diagramme-kpi">{{ traceTotal }} éléments tracés</span>
+				<span
+					class="diagramme-kpi"
+					title="Tronçons : segments linéaires (lignes, câbles…) qui interconnectent les nœuds du réseau"
+					>{{ traceSummary.troncons }} tronçons</span
+				>
+				<span
+					class="diagramme-kpi"
+					title="Points : ouvrages ponctuels (postes, poteaux, abonnés, etc.) reliés par les tronçons"
+					>{{ traceSummary.points }} points</span
+				>
+				<span class="diagramme-kpi">Direction: {{ direction }}</span>
+				@if (traceSummary.autres > 0) {
+					<span class="diagramme-kpi">{{ traceSummary.autres }} autres</span>
+				}
+			</div>
+		}
+
+		<div class="diagramme-reseau-main">
+			@if (showMapPane()) {
+				<div class="diagramme-reseau-carte" [class.diagramme-reseau-pane--full]="viewMode === 'carte'">
+					<div class="diagramme-reseau-carte-inner">
+						@if (loading) {
+							<div class="diagramme-reseau-loading">
+								<i class="fa fa-spinner fa-spin"></i>
+								<span>Chargement de la forme du tracé...</span>
+							</div>
+						}
+						<div #mapContainer class="diagramme-reseau-map"></div>
+					</div>
+				</div>
+			}
+			@if (showDiagramPane()) {
+				<div class="diagramme-reseau-graphe" [class.diagramme-reseau-pane--full]="viewMode === 'diagramme'" aria-label="Schéma unifilaire du tracé">
+					<div class="diagramme-reseau-graphe-inner">
+						@if (unifilarItems.length > 0) {
+							@if (isDiagramOnlyMode()) {
+								<div class="diagramme-sld-pure" role="group" aria-label="Diagramme réseau">
+									<div #d3DiagramHost class="diagramme-sld-pure-d3"></div>
+								</div>
+							} @else {
+								<div class="diagramme-sld" role="group" aria-label="Schéma unifilaire">
+									<div class="diagramme-sld-workspace">
+										<div class="diagramme-sld-config">
+											<div class="diagramme-sld-items" role="listbox" aria-label="Ouvrages du tracé">
+												@for (group of unifilarGroupedItems(); track group.key) {
+													<div class="diagramme-sld-group">
+														<button
+															type="button"
+															class="diagramme-sld-group-hd"
+															[class.is-open]="isUnifilarGroupExpanded(group.key)"
+															(click)="toggleUnifilarGroup(group.key)"
+														>
+															<span class="gname">{{ group.label }}</span>
+															<span class="gcount">{{ group.items.length }}</span>
+														</button>
+														@if (isUnifilarGroupExpanded(group.key)) {
+															<div class="diagramme-sld-group-list">
+																@for (entry of group.items; track entry.index) {
+																	<button
+																		type="button"
+																		class="diagramme-sld-item"
+																		role="option"
+																		[attr.aria-selected]="unifilarItemIsSelected(entry.index)"
+																		[class.is-selected]="unifilarItemIsSelected(entry.index)"
+																		(click)="selectUnifilarItem(entry.index)"
+																	>
+																		<div class="diagramme-sld-item-ico">
+																			<svg class="diagramme-sld-item-svg" [attr.viewBox]="unifilarSvgViewBoxFor(entry.index, entry.step)" aria-hidden="true">
+																				@for (part of unifilarSvgPathPartsFor(entry.index, entry.step); track $index) {
+																					<path [attr.d]="part.d" [attr.opacity]="part.opacity ?? null"></path>
+																				}
+																			</svg>
+																		</div>
+																		<div class="diagramme-sld-item-txt">
+																			<span class="iname">{{ sldShortText(entry.step.label, 24) }}</span>
+																			<span class="isub">{{ sldShortText(entry.step.slug, 24) }}</span>
+																		</div>
+																	</button>
+																}
+															</div>
+														}
+													</div>
+												}
+											</div>
+											<div class="diagramme-sld-editor">
+												@if (selectedUnifilarItem(); as active) {
+													<p class="diagramme-sld-editor-title">Icône de l’ouvrage sélectionné</p>
+													<p class="diagramme-sld-editor-name">{{ active.label }}</p>
+													<p class="diagramme-sld-editor-sub">{{ active.slug }}</p>
+
+													<div class="diagramme-sld-preview">
+														<svg class="diagramme-sld-preview-svg" [attr.viewBox]="unifilarSvgViewBoxFor(selectedUnifilarIndex, active)">
+															@for (part of unifilarSvgPathPartsFor(selectedUnifilarIndex, active); track $index) {
+																<path [attr.d]="part.d" [attr.opacity]="part.opacity ?? null"></path>
+															}
+														</svg>
+													</div>
+
+													<label class="diagramme-sld-editor-label" for="ouvrage-icon-select">Bibliothèque ArcGIS</label>
+													<div class="diagramme-sld-editor-actions">
+														<input
+															type="search"
+															class="diagramme-sld-editor-search"
+															placeholder="Rechercher une icône..."
+															[value]="iconCatalogQuery"
+															(input)="iconCatalogSetQuery($any($event.target).value, active)"
+														/>
+														<select
+															class="diagramme-sld-editor-pagesize"
+															[value]="iconCatalogPageSize"
+															(change)="iconCatalogSetPageSize($any($event.target).value, active)"
+															title="Taille de page"
+														>
+															@for (sz of iconCatalogPageSizeOptions; track sz) {
+																<option [value]="sz">{{ sz }} / page</option>
+															}
+														</select>
+														<button
+															type="button"
+															class="diagramme-sld-editor-apply"
+															(click)="applyUnifilarSymbolToGroup(selectedUnifilarGroupKey(), unifilarSelectedOptionId(selectedUnifilarIndex, active))"
+														>
+															Appliquer au groupe
+														</button>
+													</div>
+
+													<div class="diagramme-sld-icon-catalog" role="listbox" aria-label="Galerie d'icônes ArcGIS">
+														@for (opt of iconCatalogPagedOptions(active); track opt.id) {
+															<button
+																type="button"
+																class="diagramme-sld-icon-card"
+																role="option"
+																[attr.aria-selected]="iconOptionIsSelectedForCurrent(opt.id, active)"
+																[class.is-selected]="iconOptionIsSelectedForCurrent(opt.id, active)"
+																(click)="setUnifilarSymbolOverrideById(selectedUnifilarIndex, opt.id)"
+															>
+																<svg class="diagramme-sld-icon-card-svg" [attr.viewBox]="'0 0 ' + opt.size + ' ' + opt.size" aria-hidden="true">
+																	@for (part of iconPartsForOption(opt); track $index) {
+																		<path [attr.d]="part.d" [attr.opacity]="part.opacity ?? null"></path>
+																	}
+																</svg>
+																<span class="diagramme-sld-icon-card-label">{{ opt.label }}</span>
+															</button>
+														}
+													</div>
+
+													<div class="diagramme-sld-icon-pager">
+														<button type="button" class="pager-btn" [disabled]="!iconCatalogCanPrev(active)" (click)="iconCatalogPrev(active)">
+															Précédent
+														</button>
+														<span class="pager-meta">
+															Page {{ iconCatalogClampedPage(active) }} / {{ iconCatalogPageCount(active) }} · {{ iconCatalogResultCount(active) }} icônes
+														</span>
+														<button type="button" class="pager-btn" [disabled]="!iconCatalogCanNext(active)" (click)="iconCatalogNext(active)">
+															Suivant
+														</button>
+													</div>
+
+													<p class="diagramme-sld-editor-note">
+														L’icône choisie s’applique à l’ouvrage sélectionné. Tu peux aussi l’appliquer à tout le groupe
+														<b>{{ selectedUnifilarGroupLabel() }}</b>.
+													</p>
+												}
+											</div>
+										</div>
+									</div>
+								</div>
+							}
+						} @else {
+							<div class="diagramme-reseau-graphe-placeholder">
+								<i class="fa fa-area-chart" aria-hidden="true"></i>
+								<p class="diagramme-reseau-graphe-title">Schéma unifilaire</p>
+								<p class="diagramme-reseau-graphe-hint">
+									Aucun élément de tracé à afficher. Lancez un tracé depuis la carte du réseau, puis ouvrez ce diagramme.
+								</p>
+							</div>
+						}
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+</div>

@@ -10,12 +10,11 @@ import {FormsModule} from '@angular/forms';
 import {MegaMenuModule} from 'primeng/megamenu';
 import {BadgeModule} from 'primeng/badge';
 import {OverlayBadge} from 'primeng/overlaybadge';
-import {Image} from "primeng/image";
 
 @Component({
     selector: '[app-topbar]',
     standalone: true,
-	imports: [RouterModule, CommonModule, StyleClassModule, FormsModule, Ripple, ButtonModule, MegaMenuModule, BadgeModule, OverlayBadge, Image],
+	imports: [RouterModule, CommonModule, StyleClassModule, FormsModule, Ripple, ButtonModule, MegaMenuModule, BadgeModule, OverlayBadge],
     templateUrl: './app.topbar.html',
     host: {
         class: 'layout-topbar'

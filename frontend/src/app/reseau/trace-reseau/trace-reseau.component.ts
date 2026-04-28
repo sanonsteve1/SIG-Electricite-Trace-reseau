@@ -351,6 +351,10 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 	/** Panneau carte : analyse du tracé + résultat de simulation de coupure. */
 	analysisSimulationPanelOpen = false;
 	lastTraceDirection: 'amont' | 'aval' | 'tous' | null = null;
+	private readonly TRACE_RESEAU_STATE_KEY = 'abun_trace_reseau_state_v1';
+	private restoredTraceDirection: 'amont' | 'aval' | 'tous' | null = null;
+	private restoredMapViewport: { lat: number; lng: number; zoom: number } | null = null;
+	private hasAppliedRestoredMapViewport = false;
 	traceDetails: { slug: string; id: string; kind: 'ligne' | 'point' | 'autre'; color: string }[] = [];
 	traceTypeCounts: { slug: string; count: number; color: string }[] = [];
 	coupureActive = false;
@@ -509,13 +513,16 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 
 	ngOnInit(): void {
 		this.loadOptionsForTrace();
+		this.restoreTraceState();
 	}
 
 	ngAfterViewInit(): void {
 		this.initMap();
+		this.tryRestoreTraceIfReady();
 	}
 
 	ngOnDestroy(): void {
+		this.persistTraceState();
 		this.stopBlink();
 		this.stopFlowAnimation();
 		this.stopSecoursAnimation();
@@ -529,6 +536,88 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			this.map = null;
 		}
 		this.stopEtatReseauAbsensorPolling();
+	}
+
+	private persistTraceState(): void {
+		try {
+			const payload = {
+				paramTypePoint: this.paramTypePoint,
+				paramPosteSource: this.paramPosteSource,
+				paramPosteTransfo: this.paramPosteTransfo,
+				paramAbonne: this.paramAbonne,
+				selectedMapStart: this.selectedMapStart,
+				lastTraceDirection: this.lastTraceDirection,
+				analysisSimulationPanelOpen: this.analysisSimulationPanelOpen,
+				mapViewport: this.getCurrentMapViewport()
+			};
+			sessionStorage.setItem(this.TRACE_RESEAU_STATE_KEY, JSON.stringify(payload));
+		} catch {
+			// Ignore storage failures (quota, private mode, etc.)
+		}
+	}
+
+	private restoreTraceState(): void {
+		try {
+			const raw = sessionStorage.getItem(this.TRACE_RESEAU_STATE_KEY);
+			if (!raw) return;
+			const state = JSON.parse(raw) as {
+				paramTypePoint?: string;
+				paramPosteSource?: string | null;
+				paramPosteTransfo?: string | null;
+				paramAbonne?: string | null;
+				selectedMapStart?: { slug: string; id: string; label: string } | null;
+				lastTraceDirection?: 'amont' | 'aval' | 'tous' | null;
+				analysisSimulationPanelOpen?: boolean;
+				mapViewport?: { lat?: number; lng?: number; zoom?: number };
+			};
+			if (state.paramTypePoint === 'poste_source' || state.paramTypePoint === 'poste_transformation' || state.paramTypePoint === 'abonne') {
+				this.paramTypePoint = state.paramTypePoint;
+			}
+			this.paramPosteSource = state.paramPosteSource ?? null;
+			this.paramPosteTransfo = state.paramPosteTransfo ?? null;
+			this.paramAbonne = state.paramAbonne ?? null;
+			if (state.selectedMapStart?.slug && state.selectedMapStart?.id) {
+				this.selectedMapStart = state.selectedMapStart;
+				this.showStartSelectors = false;
+				this.updateLigneSecoursOptionsBySelection();
+			} else {
+				this.selectedMapStart = null;
+				this.showStartSelectors = !this.hasSelection();
+			}
+			if (state.lastTraceDirection === 'amont' || state.lastTraceDirection === 'aval' || state.lastTraceDirection === 'tous') {
+				this.lastTraceDirection = state.lastTraceDirection;
+				this.restoredTraceDirection = state.lastTraceDirection;
+			}
+			const lat = state.mapViewport?.lat;
+			const lng = state.mapViewport?.lng;
+			const zoom = state.mapViewport?.zoom;
+			if (typeof lat === 'number' && typeof lng === 'number' && typeof zoom === 'number') {
+				this.restoredMapViewport = { lat, lng, zoom };
+			}
+			this.analysisSimulationPanelOpen = !!state.analysisSimulationPanelOpen;
+		} catch {
+			// Ignore malformed state and keep defaults.
+		}
+	}
+
+	private getCurrentMapViewport(): { lat: number; lng: number; zoom: number } | null {
+		const m = this.map as { getCenter?: () => { lat: number; lng: number }; getZoom?: () => number } | null;
+		if (!m?.getCenter || !m?.getZoom) return null;
+		const center = m.getCenter();
+		const zoom = m.getZoom();
+		if (!center || typeof center.lat !== 'number' || typeof center.lng !== 'number' || typeof zoom !== 'number') return null;
+		return { lat: center.lat, lng: center.lng, zoom };
+	}
+
+	private tryRestoreTraceIfReady(): void {
+		if (!this.restoredTraceDirection) return;
+		const selectedRefId = this.getSelectedRefId();
+		if (!selectedRefId) return;
+		// Si le point de départ vient de la liste, il faut attendre le slug chargé via getTables().
+		if (!this.selectedMapStart && !this.getSlugForCurrentType()) return;
+		const direction = this.restoredTraceDirection;
+		this.restoredTraceDirection = null;
+		this.runTrace(direction);
 	}
 
 	/** Charge les listes poste source, poste transfo, point de raccordement depuis les tables API. */
@@ -640,6 +729,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					this.cdr.markForCheck();
 				});
 			}
+			this.tryRestoreTraceIfReady();
 			this.cdr.markForCheck();
 		});
 	}
@@ -2178,6 +2268,35 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 		return /ligne|electricline|troncon|cable-bt/.test(s) || s === 'rx-topology-edges';
 	}
 
+	private isUndergroundLineSlug(slug: string): boolean {
+		const s = (slug || '').toLowerCase();
+		return this.isLineSlug(s) && /souter|underground|sous-sol|sous_sol/.test(s);
+	}
+
+	private isCableLineSlug(slug: string): boolean {
+		const s = (slug || '').toLowerCase();
+		return this.isLineSlug(s) && /cable|câble/.test(s);
+	}
+
+	private getLineDashArrayBySlug(slug: string): string | null {
+		if (this.isUndergroundLineSlug(slug)) return '10 6';
+		return null;
+	}
+
+	private getLineWeightBySlug(slug: string): number {
+		if (this.isUndergroundLineSlug(slug)) return 6;
+		if (this.isCableLineSlug(slug)) return 6;
+		return 5;
+	}
+
+	isLegendUndergroundLine(slug: string): boolean {
+		return this.isUndergroundLineSlug(slug);
+	}
+
+	isLegendCableLine(slug: string): boolean {
+		return this.isCableLineSlug(slug);
+	}
+
 	private isAbonneSlug(slug: string): boolean {
 		return /point-raccord|point_raccord/.test((slug || '').toLowerCase());
 	}
@@ -2616,6 +2735,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 			const isLine = this.isLineSlug(slug);
 			const isPoint = this.isPointSlug(slug);
 			const baseColor = this.getColorForSlug(slug);
+			const baseLineDash = isLine ? this.getLineDashArrayBySlug(slug) : null;
+			const baseLineWeight = isLine ? this.getLineWeightBySlug(slug) : 3;
 			const isLigneSecours = layerHasCanon(layer, ligneSecoursCanon);
 			const isLigneSecoursPotentiel = layerInCanonSet(layer, potentielSecoursCanon);
 			const isTopologyViolation = layerInCanonSet(layer, this.topologyViolationCanon);
@@ -2626,8 +2747,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				fillColor: baseColor,
 				opacity: 0.95,
 				fillOpacity: 0.5,
-				weight: isLine ? 5 : 3,
-				dashArray: null,
+				weight: isLine ? baseLineWeight : 3,
+				dashArray: baseLineDash,
 				dashOffset: null
 			};
 			const dimmed: Record<string, unknown> = {
@@ -2635,8 +2756,8 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				fillColor: '#9ca3af',
 				opacity: 0.28,
 				fillOpacity: 0.12,
-				weight: isLine ? 3 : 2,
-				dashArray: null,
+				weight: isLine ? Math.max(3, baseLineWeight - 2) : 2,
+				dashArray: baseLineDash,
 				dashOffset: null
 			};
 			if (isTopologyViolation) {
@@ -2671,7 +2792,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						opacity: 1,
 						fillOpacity: this.secoursPulsePhase ? 0.95 : 0.5,
 						weight: isLine ? (this.secoursPulsePhase ? 9 : 6) : (this.secoursPulsePhase ? 8 : 5),
-						dashArray: isLine ? (this.secoursPulsePhase ? '18 8' : '10 8') : null,
+						dashArray: isLine ? (this.secoursPulsePhase ? '18 8' : (baseLineDash ?? '10 8')) : null,
 						dashOffset: null
 					});
 					return;
@@ -2683,7 +2804,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						opacity: 0.95,
 						fillOpacity: 0.55,
 						weight: isLine ? 7 : 5,
-						dashArray: isLine ? '8 8' : null,
+						dashArray: isLine ? (baseLineDash ?? '8 8') : null,
 						dashOffset: null
 					});
 					return;
@@ -2701,7 +2822,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						opacity: 1,
 						fillOpacity: 0.9,
 						weight: isLine ? 8 : 6,
-						dashArray: null,
+						dashArray: isLine ? baseLineDash : null,
 						dashOffset: null
 					});
 					return;
@@ -2714,7 +2835,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 						opacity: 1,
 						fillOpacity: 0.85,
 						weight: isLine ? 7 : 5,
-						dashArray: null,
+						dashArray: isLine ? baseLineDash : null,
 						dashOffset: null
 					});
 					return;
@@ -2729,7 +2850,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 					opacity: 1,
 					fillOpacity: 0.85,
 					weight: isLine ? 7 : 5,
-					dashArray: null,
+					dashArray: isLine ? baseLineDash : null,
 					dashOffset: null
 				};
 				setStyle.call(layer, coupureStyle);
@@ -2740,7 +2861,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				highlight['color'] = '#fde047';
 				highlight['fillColor'] = '#fde047';
 				highlight['weight'] = 7;
-				highlight['dashArray'] = '14 10';
+				highlight['dashArray'] = baseLineDash ?? '14 10';
 				highlight['dashOffset'] = String(this.flowDashOffset);
 			} else if (isPoint) {
 				// Pulsation des points impactés pour visualiser les nœuds du tracé.
@@ -2755,7 +2876,7 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				highlight['fillColor'] = baseColor;
 				highlight['weight'] = 5;
 				highlight['fillOpacity'] = 0.3;
-				highlight['dashArray'] = this.lastTraceDirection ? '10 8' : null;
+				highlight['dashArray'] = this.lastTraceDirection ? (baseLineDash ?? '10 8') : baseLineDash;
 				highlight['dashOffset'] = this.lastTraceDirection ? String(this.flowDashOffset) : null;
 			}
 			setStyle.call(layer, highlight);
@@ -2894,6 +3015,39 @@ export class TraceReseau implements AfterViewInit, OnDestroy {
 				type: 'ouvrage',
 			},
 		});
+	}
+
+	/**
+	 * Ouvre la page "Diagramme du réseau" en conservant le contexte
+	 * du tracé actif (ouvrage de départ + direction).
+	 */
+	ouvrirDiagrammeReseau(): void {
+		if (!this.selectedMapStart || !this.lastTraceDirection) return;
+		const { slug, id } = this.selectedMapStart;
+		const ref = slug ? `${slug}:${id}` : id;
+		this.persistDiagrammeTraceContext(ref, this.lastTraceDirection);
+		void this.router.navigate(['/reseau/diagramme-reseau'], {
+			queryParams: {
+				ref,
+				direction: this.lastTraceDirection,
+				type: 'ouvrage',
+			},
+		});
+	}
+
+	private persistDiagrammeTraceContext(ref: string, direction: 'amont' | 'aval' | 'tous'): void {
+		try {
+			const ouvrageIds = this.traceDetails.map((d) => ({ slug: d.slug, id: d.id }));
+			if (!ouvrageIds.length) return;
+			sessionStorage.setItem('abun_diagramme_trace_context', JSON.stringify({
+				ref,
+				direction,
+				ouvrage_ids: ouvrageIds,
+				saved_at: Date.now()
+			}));
+		} catch {
+			// Ignore session storage errors
+		}
 	}
 
 	/** Charge le tracé du départ de secours sélectionné pour mettre en évidence les lignes pouvant alimenter la zone coupée. */
@@ -3262,6 +3416,366 @@ stop
 		return true;
 	}
 
+	/** Poste BT tel que compté dans les KPI (aligné sur le comptage « Postes BT »). */
+	private isDashDetailBtPosteSlug(slug: string): boolean {
+		if (this.isDashPosteBtSlug(slug)) return true;
+		if (this.isDashPosteHtaSlug(slug)) return false;
+		if (!this.isDashGenericPosteSlug(slug)) return false;
+		const s = (slug || '').toLowerCase().replace(/_/g, '-');
+		return s.includes('rx-bt') || s.includes('poste-h59') || s.includes('poste-bt');
+	}
+
+	/** Poste HTA / source (même logique que le comptage « Postes HTA » dans dashStats). */
+	private isDashDetailHtaPosteSlug(slug: string): boolean {
+		if (this.isDashPosteBtSlug(slug)) return false;
+		if (this.isDashPosteHtaSlug(slug)) return true;
+		if (!this.isDashGenericPosteSlug(slug)) return false;
+		const s = (slug || '').toLowerCase().replace(/_/g, '-');
+		if (s.includes('rx-bt') || s.includes('poste-h59') || s.includes('poste-bt')) return false;
+		return true;
+	}
+
+	private buildDashPosteDisplayLabel(slug: string, id: string): string {
+		const row = this.getRowBySlugAndId(slug, id);
+		const nom = row ? String(row['nom_poste'] ?? row['label'] ?? row['libelle'] ?? '').trim() : '';
+		const num = row ? String(row['num_poste'] ?? '').trim() : '';
+		const parts: string[] = [];
+		if (num) parts.push(`Poste ${num}`);
+		if (nom) parts.push(nom);
+		if (parts.length) return parts.join(' — ');
+		return `${this.dashSlugLabel(slug)} · ${id}`;
+	}
+
+	/** Puissance souscrite / de charge (kW) à partir de la fiche client ; repli 1,5 kW comme l’ancien agrégat global. */
+	private extractClientSubscribedPowerKw(row: Record<string, unknown> | null): number {
+		if (!row) return 1.5;
+		const tryNum = (keys: string[]): number => {
+			for (const k of keys) {
+				const v = row[k];
+				if (v == null || v === '') continue;
+				const n = Number(v);
+				if (!Number.isFinite(n) || n <= 0) continue;
+				if (n > 500) return Math.round(n / 1000);
+				return Math.round(n);
+			}
+			return 0;
+		};
+		const p = tryNum(['subscribedpower', 'SubscribedPower', 'puissance_souscrite', 'puissance', 'puissance_abonne']);
+		if (p > 0) return p;
+		const amp = Number(row['amperage'] ?? row['Amperage']);
+		if (Number.isFinite(amp) && amp > 0) return Math.round(0.66 * amp);
+		return 1.5;
+	}
+
+	private findPosteCandidateKeyByRef(
+		postes: { slug: string; id: string }[],
+		ref: unknown
+	): string | null {
+		const want = this.valueToCanon(ref);
+		if (!want) return null;
+		for (const p of postes) {
+			const row = this.getRowBySlugAndId(p.slug, p.id);
+			if (!row) continue;
+			const gid = this.valueToCanon(row['gid'] ?? row['objectid'] ?? row['objectid_1']);
+			if (gid === want) return this.normalizeOuvrageKey(`${p.slug}:${p.id}`);
+		}
+		return null;
+	}
+
+	private findPosteCandidateKeyByNumNom(
+		postes: { slug: string; id: string }[],
+		numPoste: unknown,
+		nomPoste: unknown
+	): string | null {
+		const n = this.normalizeTraceContextValue(numPoste);
+		const nm = this.normalizeTraceContextValue(nomPoste);
+		if (!n && !nm) return null;
+		for (const p of postes) {
+			const row = this.getRowBySlugAndId(p.slug, p.id);
+			if (!row) continue;
+			const rp = this.normalizeTraceContextValue(row['num_poste']);
+			const rn = this.normalizeTraceContextValue(row['nom_poste']);
+			const rl = this.normalizeTraceContextValue(row['label']);
+			if (n && (n === rp || n === rl)) return this.normalizeOuvrageKey(`${p.slug}:${p.id}`);
+			if (nm && nm === rn) return this.normalizeOuvrageKey(`${p.slug}:${p.id}`);
+		}
+		return null;
+	}
+
+	private findNearestPosteKey(
+		clientRow: Record<string, unknown> | null,
+		postes: { slug: string; id: string }[]
+	): string | null {
+		if (postes.length === 0) return null;
+		if (postes.length === 1) return this.normalizeOuvrageKey(`${postes[0].slug}:${postes[0].id}`);
+		const c = clientRow ? this.getTracePointCoord(clientRow) : null;
+		if (!c) return null;
+		let best: { slug: string; id: string } | null = null;
+		let bestD = Infinity;
+		for (const p of postes) {
+			const row = this.getRowBySlugAndId(p.slug, p.id);
+			const pc = row ? this.getTracePointCoord(row) : null;
+			if (!pc) continue;
+			const dist = this.getTraceDistanceMeters(c, pc);
+			if (dist < bestD) {
+				bestD = dist;
+				best = p;
+			}
+		}
+		return best ? this.normalizeOuvrageKey(`${best.slug}:${best.id}`) : null;
+	}
+
+	private resolveClientToBtPosteKey(
+		clientSlug: string,
+		clientId: string,
+		postes: { slug: string; id: string }[]
+	): string | null {
+		if (postes.length === 0) return null;
+		if (postes.length === 1) return this.normalizeOuvrageKey(`${postes[0].slug}:${postes[0].id}`);
+		const row = this.getRowBySlugAndId(clientSlug, clientId);
+		if (!row) return null;
+
+		const fkCols = ['poste_gid', 'id_poste_cabine', 'id_poste_sur_poteau', 'id_transfo_poteau', 'id_transfo_ht_bt'] as const;
+		for (const k of fkCols) {
+			const hit = this.findPosteCandidateKeyByRef(postes, row[k]);
+			if (hit) return hit;
+		}
+
+		const ligneBt = this.valueToCanon(row['id_ligne_bt']);
+		if (ligneBt) {
+			const cableSlugs = this.getTraceSlugsByTerms(['cable-bt'], []);
+			let lineRow: Record<string, unknown> | null = null;
+			for (const sl of cableSlugs) {
+				if (!this.isTraceFamilyCompatible(clientSlug, sl)) continue;
+				lineRow = this.getRowBySlugAndCanonicalId(sl, ligneBt);
+				if (lineRow) break;
+			}
+			if (lineRow) {
+				for (const k of fkCols) {
+					const hit = this.findPosteCandidateKeyByRef(postes, lineRow[k]);
+					if (hit) return hit;
+				}
+				const hit = this.findPosteCandidateKeyByNumNom(postes, lineRow['num_poste'], lineRow['nom_du_dep']);
+				if (hit) return hit;
+			}
+		}
+
+		const br = this.valueToCanon(row['id_ligne_brcht']);
+		if (br) {
+			const brSlugs = this.getTraceSlugsByTerms(['branchement'], []).concat(this.getTraceSlugsByTerms(['ligne-brcht'], []));
+			for (const sl of brSlugs) {
+				if (!this.isTraceFamilyCompatible(clientSlug, sl)) continue;
+				const lineRow = this.getRowBySlugAndCanonicalId(sl, br);
+				if (!lineRow) continue;
+				for (const k of fkCols) {
+					const hit = this.findPosteCandidateKeyByRef(postes, lineRow[k]);
+					if (hit) return hit;
+				}
+			}
+		}
+
+		const depCanon = this.valueToCanon(row['id_depart_bt']);
+		if (depCanon) {
+			if (this.slugDepartBt) {
+				const dRow = this.getRowBySlugAndCanonicalId(this.slugDepartBt, depCanon);
+				if (dRow) {
+					for (const k of fkCols) {
+						const hit = this.findPosteCandidateKeyByRef(postes, dRow[k]);
+						if (hit) return hit;
+					}
+				}
+			}
+			const depSlugs = this.getTraceSlugsByTerms(['depart'], ['hta']);
+			for (const sl of depSlugs) {
+				if (!sl.toLowerCase().includes('bt')) continue;
+				if (!this.isTraceFamilyCompatible(clientSlug, sl)) continue;
+				const dRow = this.getRowBySlugAndCanonicalId(sl, depCanon);
+				if (!dRow) continue;
+				for (const k of fkCols) {
+					const hit = this.findPosteCandidateKeyByRef(postes, dRow[k]);
+					if (hit) return hit;
+				}
+			}
+		}
+
+		let hit = this.findPosteCandidateKeyByNumNom(postes, row['num_poste'], row['nom_poste']);
+		if (hit) return hit;
+
+		return this.findNearestPosteKey(row, postes);
+	}
+
+	/** Rattache un client à un poste HTA / source du tracé (clés métier + proximité). */
+	private resolveClientToHtaPosteKey(
+		clientSlug: string,
+		clientId: string,
+		postes: { slug: string; id: string }[]
+	): string | null {
+		if (postes.length === 0) return null;
+		if (postes.length === 1) return this.normalizeOuvrageKey(`${postes[0].slug}:${postes[0].id}`);
+		const row = this.getRowBySlugAndId(clientSlug, clientId);
+		if (!row) return null;
+
+		const fkHta = ['poste_gid', 'id_poste_source', 'id_poteau_hta', 'id_poste_cabine', 'id_poste_sur_poteau'] as const;
+		for (const k of fkHta) {
+			const hit = this.findPosteCandidateKeyByRef(postes, row[k]);
+			if (hit) return hit;
+		}
+
+		const ligneHta = this.valueToCanon(row['id_ligne_hta']);
+		if (ligneHta) {
+			const lineSlugs = this.getTraceSlugsByTerms(['troncon'], []).concat(
+				this.getTraceSlugsByTerms(['ligne-hta'], []),
+				this.getTraceSlugsByTerms(['ligne_hta'], [])
+			);
+			for (const sl of lineSlugs) {
+				if (!this.isTraceFamilyCompatible(clientSlug, sl)) continue;
+				const lineRow = this.getRowBySlugAndCanonicalId(sl, ligneHta);
+				if (!lineRow) continue;
+				for (const k of fkHta) {
+					const hit = this.findPosteCandidateKeyByRef(postes, lineRow[k]);
+					if (hit) return hit;
+				}
+				const hit = this.findPosteCandidateKeyByNumNom(
+					postes,
+					lineRow['num_poste'],
+					lineRow['nom_poste'] ?? lineRow['nom_du_dep']
+				);
+				if (hit) return hit;
+			}
+		}
+
+		const depHta = this.valueToCanon(row['id_depart_hta']);
+		if (depHta) {
+			if (this.slugDepartHta) {
+				const dRow = this.getRowBySlugAndCanonicalId(this.slugDepartHta, depHta);
+				if (dRow) {
+					for (const k of fkHta) {
+						const hit = this.findPosteCandidateKeyByRef(postes, dRow[k]);
+						if (hit) return hit;
+					}
+				}
+			}
+			const depSlugs = this.getTraceSlugsByTerms(['depart'], ['bt']);
+			for (const sl of depSlugs) {
+				if (!sl.toLowerCase().includes('hta')) continue;
+				if (!this.isTraceFamilyCompatible(clientSlug, sl)) continue;
+				const dRow = this.getRowBySlugAndCanonicalId(sl, depHta);
+				if (!dRow) continue;
+				for (const k of fkHta) {
+					const hit = this.findPosteCandidateKeyByRef(postes, dRow[k]);
+					if (hit) return hit;
+				}
+			}
+		}
+
+		let hit = this.findPosteCandidateKeyByNumNom(postes, row['num_poste'], row['nom_poste']);
+		if (hit) return hit;
+
+		return this.findNearestPosteKey(row, postes);
+	}
+
+	/** Abonnés et puissance de charge agrégés par poste BT et HTA du tracé. */
+	get dashPosteClientRows(): {
+		posteKey: string;
+		label: string;
+		slug: string;
+		id: string;
+		reseau: 'BT' | 'HTA' | '';
+		clients: number;
+		puissanceKw: number;
+	}[] {
+		const uniq = new Map<string, { slug: string; id: string; label: string; reseau: 'BT' | 'HTA' }>();
+		for (const d of this.traceDetails) {
+			let reseau: 'BT' | 'HTA' | null = null;
+			if (this.isDashDetailBtPosteSlug(d.slug)) reseau = 'BT';
+			else if (this.isDashDetailHtaPosteSlug(d.slug)) reseau = 'HTA';
+			if (!reseau) continue;
+			const k = this.normalizeOuvrageKey(`${d.slug}:${d.id}`);
+			if (uniq.has(k)) continue;
+			uniq.set(k, {
+				slug: d.slug,
+				id: d.id,
+				label: this.buildDashPosteDisplayLabel(d.slug, d.id),
+				reseau,
+			});
+		}
+		const list = Array.from(uniq.values());
+		const posteBtKeys = list.filter((p) => p.reseau === 'BT').map((p) => ({ slug: p.slug, id: p.id }));
+		const posteHtaKeys = list.filter((p) => p.reseau === 'HTA').map((p) => ({ slug: p.slug, id: p.id }));
+
+		const agg = new Map<string, { clients: number; power: number }>();
+		for (const p of list) {
+			agg.set(this.normalizeOuvrageKey(`${p.slug}:${p.id}`), { clients: 0, power: 0 });
+		}
+
+		const clientsInTrace = this.traceDetails.filter((d) => /clients-bt/.test(d.slug));
+		let unClients = 0;
+		let unPower = 0;
+
+		for (const c of clientsInTrace) {
+			const pKw = this.extractClientSubscribedPowerKw(this.getRowBySlugAndId(c.slug, c.id));
+			let key: string | null = null;
+			const kBt = this.resolveClientToBtPosteKey(c.slug, c.id, posteBtKeys);
+			if (kBt && agg.has(kBt)) key = kBt;
+			else {
+				const kHta = this.resolveClientToHtaPosteKey(c.slug, c.id, posteHtaKeys);
+				if (kHta && agg.has(kHta)) key = kHta;
+			}
+			if (key) {
+				const v = agg.get(key)!;
+				v.clients += 1;
+				v.power += pKw;
+			} else {
+				unClients += 1;
+				unPower += pKw;
+			}
+		}
+
+		type DashPosteRow = {
+			posteKey: string;
+			label: string;
+			slug: string;
+			id: string;
+			reseau: 'BT' | 'HTA' | '';
+			clients: number;
+			puissanceKw: number;
+		};
+		const rows: DashPosteRow[] = list
+			.map((p) => {
+				const k = this.normalizeOuvrageKey(`${p.slug}:${p.id}`);
+				const v = agg.get(k) ?? { clients: 0, power: 0 };
+				return {
+					posteKey: k,
+					label: p.label,
+					slug: p.slug,
+					id: p.id,
+					reseau: p.reseau,
+					clients: v.clients,
+					puissanceKw: Math.round(v.power * 10) / 10,
+				};
+			})
+			.sort((a, b) => {
+				const byClients = b.clients - a.clients;
+				if (byClients !== 0) return byClients;
+				const byPower = b.puissanceKw - a.puissanceKw;
+				if (byPower !== 0) return byPower;
+				return a.label.localeCompare(b.label, 'fr');
+			});
+
+		if (unClients > 0) {
+			rows.push({
+				posteKey: '_unassigned',
+				label: 'Non rattaché à un poste identifié',
+				slug: '',
+				id: '',
+				reseau: '',
+				clients: unClients,
+				puissanceKw: Math.round(unPower * 10) / 10,
+			});
+		}
+		return rows;
+	}
+
 	/** KPI globaux calculés depuis traceDetails. */
 	get dashStats(): {
 		htaLines: number; btCables: number; clients: number;
@@ -3286,10 +3800,15 @@ stop
 			const m = item.slug.match(/\b(r\d+)\b/i);
 			if (m) tokens.add(m[1].toUpperCase());
 		}
+		let puissanceKw = 0;
+		for (const item of d) {
+			if (!/clients-bt/.test(item.slug)) continue;
+			puissanceKw += this.extractClientSubscribedPowerKw(this.getRowBySlugAndId(item.slug, item.id));
+		}
 		return {
 			htaLines, btCables, clients, htaPostes, btPostes,
 			subNetworks: tokens.size, total: d.length,
-			puissanceKw: Math.round(clients * 1.5),
+			puissanceKw: Math.round(puissanceKw),
 		};
 	}
 
@@ -3313,15 +3832,17 @@ stop
 	}
 
 	/** Données par sous-réseau (r227, r333, r380…). */
-	get dashSubNetworks(): { name: string; clients: number; cables: number; postes: number; total: number }[] {
-		const nets = new Map<string, { clients: number; cables: number; postes: number }>();
+	get dashSubNetworks(): { name: string; clients: number; cables: number; postes: number; total: number; puissanceKw: number }[] {
+		const nets = new Map<string, { clients: number; cables: number; postes: number; puissanceKw: number }>();
 		for (const item of this.traceDetails) {
 			const m = item.slug.match(/\b(r\d+)\b/i);
 			if (!m) continue;
 			const tok = m[1].toUpperCase();
-			const net = nets.get(tok) ?? { clients: 0, cables: 0, postes: 0 };
-			if (/clients-bt/.test(item.slug)) net.clients++;
-			else if (/cable-bt/.test(item.slug)) net.cables++;
+			const net = nets.get(tok) ?? { clients: 0, cables: 0, postes: 0, puissanceKw: 0 };
+			if (/clients-bt/.test(item.slug)) {
+				net.clients++;
+				net.puissanceKw += this.extractClientSubscribedPowerKw(this.getRowBySlugAndId(item.slug, item.id));
+			} else if (/cable-bt/.test(item.slug)) net.cables++;
 			else if (
 				this.isDashPosteHtaSlug(item.slug) ||
 				this.isDashPosteBtSlug(item.slug) ||
@@ -3330,7 +3851,12 @@ stop
 			nets.set(tok, net);
 		}
 		return Array.from(nets.entries())
-			.map(([name, v]) => ({ name, ...v, total: v.clients + v.cables + v.postes }))
+			.map(([name, v]) => ({
+				name,
+				...v,
+				total: v.clients + v.cables + v.postes,
+				puissanceKw: Math.round(v.puissanceKw * 10) / 10,
+			}))
 			.filter(x => x.total > 0)
 			.sort((a, b) => b.clients - a.clients);
 	}
@@ -3363,6 +3889,10 @@ stop
 	}
 
 	// — Liste paginée des ouvrages —
+	dashSubNetworkPage = 1;
+	readonly dashSubNetworkPageSize = 1;
+	dashPostePage = 1;
+	readonly dashPostePageSize = 2;
 	dashPage     = 1;
 	dashPageSize = 5;
 	dashSearch   = '';
@@ -3377,9 +3907,58 @@ stop
 	/** Ouvre le dashboard et réinitialise la pagination. */
 	openDashboard(): void {
 		this.showDashboard  = true;
+		this.dashSubNetworkPage = 1;
+		this.dashPostePage  = 1;
 		this.dashPage       = 1;
 		this.dashSearch     = '';
 		this.dashKindFilter = 'tous';
+	}
+
+	get dashSubNetworkTotalPages(): number {
+		return Math.max(1, Math.ceil(this.dashSubNetworks.length / this.dashSubNetworkPageSize));
+	}
+
+	get dashSubNetworkPagedRows(): { name: string; clients: number; cables: number; postes: number; total: number; puissanceKw: number }[] {
+		const cur = Math.min(Math.max(1, this.dashSubNetworkPage), this.dashSubNetworkTotalPages);
+		if (cur !== this.dashSubNetworkPage) this.dashSubNetworkPage = cur;
+		const start = (cur - 1) * this.dashSubNetworkPageSize;
+		return this.dashSubNetworks.slice(start, start + this.dashSubNetworkPageSize);
+	}
+
+	dashSetSubNetworkPage(p: number): void {
+		this.dashSubNetworkPage = Math.min(Math.max(1, p), this.dashSubNetworkTotalPages);
+	}
+
+	get dashPosteTotalPages(): number {
+		return Math.max(1, Math.ceil(this.dashPosteClientRows.length / this.dashPostePageSize));
+	}
+
+	get dashPostePagedRows(): {
+		posteKey: string;
+		label: string;
+		slug: string;
+		id: string;
+		reseau: 'BT' | 'HTA' | '';
+		clients: number;
+		puissanceKw: number;
+	}[] {
+		const cur = Math.min(Math.max(1, this.dashPostePage), this.dashPosteTotalPages);
+		if (cur !== this.dashPostePage) this.dashPostePage = cur;
+		const start = (cur - 1) * this.dashPostePageSize;
+		return this.dashPosteClientRows.slice(start, start + this.dashPostePageSize);
+	}
+
+	get dashPostePageNumbers(): number[] {
+		const total = this.dashPosteTotalPages;
+		const cur = this.dashPostePage;
+		const delta = 2;
+		const pages: number[] = [];
+		for (let i = Math.max(1, cur - delta); i <= Math.min(total, cur + delta); i++) pages.push(i);
+		return pages;
+	}
+
+	dashSetPostePage(p: number): void {
+		this.dashPostePage = Math.min(Math.max(1, p), this.dashPosteTotalPages);
 	}
 
 	/** Liste filtrée + recherche textuelle. */
@@ -3585,7 +4164,14 @@ stop
 			const Lx = L.default as {
 				map: (el: HTMLElement, opts: object) => { invalidateSize?: () => void; fitBounds?: (b: unknown, o?: object) => void };
 				tileLayer: (url: string, opts: object) => { addTo: (m: unknown) => unknown };
-				control: { zoom: (opts: object) => { addTo: (m: unknown) => unknown } };
+				control: {
+					zoom: (opts: object) => { addTo: (m: unknown) => unknown };
+					layers?: (
+						baseLayers: Record<string, unknown>,
+						overlays?: Record<string, unknown>,
+						opts?: object
+					) => { addTo: (m: unknown) => unknown };
+				};
 				layerGroup: () => { addTo: (m: unknown) => unknown; addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void };
 			};
 			this.map = Lx.map(this.mapContainer.nativeElement, {
@@ -3594,6 +4180,11 @@ stop
 				zoomControl: false,
 				maxZoom: 22
 			});
+			if (this.restoredMapViewport) {
+				const m = this.map as { setView?: (center: [number, number], zoom: number, opts?: object) => void };
+				m.setView?.([this.restoredMapViewport.lat, this.restoredMapViewport.lng], this.restoredMapViewport.zoom, { animate: false });
+				this.hasAppliedRestoredMapViewport = true;
+			}
 			const mapWithPanes = this.map as {
 				createPane?: (name: string) => { style?: { zIndex?: string } };
 				getPane?: (name: string) => { style?: { zIndex?: string } } | undefined;
@@ -3614,9 +4205,22 @@ stop
 			if (linePane?.style) {
 				linePane.style.zIndex = '560';
 			}
-			Lx.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			const osm = Lx.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '© OpenStreetMap contributors'
-			}).addTo(this.map);
+			});
+			const googleSatellite = Lx.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+				attribution: '© Google',
+				maxZoom: 22
+			});
+			osm.addTo(this.map);
+			Lx.control.layers?.(
+				{
+					'OSM Plan': osm,
+					'Google Satellite': googleSatellite
+				},
+				{},
+				{ position: 'topleft' }
+			).addTo(this.map);
 			Lx.control.zoom({ position: 'topleft' }).addTo(this.map);
 			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void };
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
@@ -3767,7 +4371,9 @@ stop
 						const isLine = isLineTable(slug);
 						const geometryRank = detectGeometryRank(rows);
 						const paneName = geometryRank === 0 ? 'trace-polygons' : geometryRank === 2 ? 'trace-lines' : 'trace-points';
-						const style = { color, weight: isLine ? 8 : 2, opacity: 0.9, fillColor: color, fillOpacity: 0.5 };
+						const lineDash = isLine ? this.getLineDashArrayBySlug(slug) : null;
+						const lineWeight = isLine ? this.getLineWeightBySlug(slug) + 1 : 2;
+						const style = { color, weight: lineWeight, opacity: 0.9, fillColor: color, fillOpacity: 0.5, dashArray: lineDash };
 						const styleWithPane = { ...style, pane: paneName };
 						const slugGroup = (leaflet as { layerGroup?: () => { addLayer: (l: unknown) => void } }).layerGroup?.();
 						if (!slugGroup) continue;
@@ -3867,7 +4473,11 @@ stop
 				this.initialBounds = bounds ?? this.initialBounds;
 				const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
 				if (m?.invalidateSize) m.invalidateSize();
-				if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
+				if (bounds && m?.fitBounds && !this.hasAppliedRestoredMapViewport) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 22 });
+				// Quand on revient sur la page, le tracé peut avoir déjà été restauré avant
+				// que les couches Leaflet ne soient recréées : on réapplique le style ici.
+				this.applyTraceStyleToMap();
+				this.updateTracePointClusters();
 				this.mapLoading = false;
 				this.cdr.markForCheck();
 				this.updateLigneSecoursOptionsBySelection();

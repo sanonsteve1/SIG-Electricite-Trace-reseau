@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+	<title>Point de livraison / charge</title>
+	<line x1="2" y1="32" x2="16" y2="32" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+	<rect x="16" y="16" width="32" height="32" stroke="#0f172a" stroke-width="1.6" fill="#f8fafc" rx="2" ry="2"/>
+	<line x1="22" y1="24" x2="42" y2="24" stroke="#0f172a" stroke-width="0.8" opacity="0.5"/>
+	<line x1="22" y1="32" x2="42" y2="32" stroke="#0f172a" stroke-width="0.8" opacity="0.5"/>
+	<line x1="22" y1="40" x2="42" y2="40" stroke="#0f172a" stroke-width="0.8" opacity="0.5"/>
+	<line x1="48" y1="32" x2="60" y2="32" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+	<path d="M 52 40 L 58 34 L 58 46 Z" fill="#0f172a" opacity="0.85"/>
+</svg>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+	<title>Poste / poste de livraison type cabine (symbole unifilaire simplifié)</title>
+	<rect x="14" y="12" width="36" height="40" stroke="#0f172a" stroke-width="2" fill="#ffffff"/>
+	<line x1="18" y1="24" x2="46" y2="24" stroke="#0f172a" stroke-width="1.4"/>
+	<line x1="18" y1="32" x2="46" y2="32" stroke="#0f172a" stroke-width="1.4"/>
+	<line x1="18" y1="40" x2="46" y2="40" stroke="#0f172a" stroke-width="1.4"/>
+	<line x1="32" y1="2" x2="32" y2="12" stroke="#0f172a" stroke-width="2"/>
+	<line x1="32" y1="52" x2="32" y2="62" stroke="#0f172a" stroke-width="2"/>
+</svg>

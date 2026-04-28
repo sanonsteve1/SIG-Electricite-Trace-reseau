@@ -42,6 +42,8 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	layoutMode: 'hierarchical' | 'geographic' = 'hierarchical';
 	/** Positions calculées par l'algorithme de disposition en arbre (Reingold-Tilford simplifié) */
 	private layoutPositions = new Map<string, { x: number; y: number }>();
+	/** Décalages manuels appliqués après glisser-déposer d'un nœud */
+	private nodeOffsets = new Map<string, { x: number; y: number }>();
 	/** Facteur d'échelle pixel/unité SVG (non utilisé en pan+zoom — gardé pour compatibilité) */
 	readonly layoutScale = 1;
 
@@ -51,6 +53,11 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	protected isPanning = false;
 	private panStartNorm = { x: 0, y: 0 };
 	private panStartOrigin = { x: 0, y: 0 };
+	private isDraggingNode = false;
+	private draggedNodeId: string | null = null;
+	private dragStartSvg = { x: 0, y: 0 };
+	private dragStartNodePos = { x: 0, y: 0 };
+	private dragMoved = false;
 	/** Listener wheel non-passif (doit être enregistré hors Angular) */
 	private wheelListenerAdded = false;
 
@@ -62,7 +69,7 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	 * quel que soit le niveau de zoom. Aucun plafond/plancher.
 	 */
 	get fluxArrowPointsScaled(): string {
-		const s = this.hierVB.w > 0 ? this.hierVB.w / 100 : 8;
+		const s = this.hierVB.w > 0 ? this.hierVB.w / 470 : 4.8;
 		return `${s},0 ${-s * 0.45},${-s * 0.45} ${-s * 0.45},${s * 0.45}`;
 	}
 
@@ -100,6 +107,22 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		'sym-branchement': '#d97706',
 		'sym-ouvrage': '#64748b'
 	};
+	readonly symbolLabels: Record<string, string> = {
+		'sym-poste-source': 'Poste source',
+		'sym-poste-cabine': 'Poste cabine',
+		'sym-transfo-bt': 'Transformateur',
+		'sym-depart-hta': 'Depart HTA',
+		'sym-depart-bt': 'Depart BT',
+		'sym-poteau-hta': 'Poteau HTA',
+		'sym-poteau-bt': 'Poteau BT',
+		'sym-cellule': 'Cellule',
+		'sym-parafoudre': 'Parafoudre',
+		'sym-point-raccordement': 'Raccordement',
+		'sym-abonne': 'Abonne',
+		'sym-compteur': 'Compteur',
+		'sym-branchement': 'Branchement',
+		'sym-ouvrage': 'Ouvrage'
+	};
 
 	/** Couleurs des liaisons par type de ligne (niveau de tension métier) */
 	readonly lineTypeColors: Record<string, string> = {
@@ -123,6 +146,35 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		return this.symbolColors[symbol ?? ''] ?? '#64748b';
 	}
 
+	getNodePrimaryLabel(node: SchemaUnifilaireNode): string {
+		const raw = String(node.label ?? '').trim();
+		if (raw) return raw;
+		const [slug] = String(node.id ?? '').split(':');
+		return slug || node.id || 'Ouvrage';
+	}
+
+	getNodeSecondaryLabel(node: SchemaUnifilaireNode): string {
+		const idPart = String(node.id ?? '').split(':').slice(1).join(':').trim() || String(node.id ?? '').trim();
+		const type = (this.symbolLabels[node.symbol ?? ''] ?? this.getPanelNodeType(node)) || 'Ouvrage';
+		if (!idPart) return type;
+		const shortId = idPart.length > 22 ? `${idPart.slice(0, 22)}...` : idPart;
+		return `${type} - ${shortId}`;
+	}
+
+	getNodeAccentFill(symbol: string): string {
+		return this.hexToRgba(this.getSymbolColor(symbol), 0.12);
+	}
+
+	private hexToRgba(hex: string, alpha: number): string {
+		const v = String(hex || '').trim().replace('#', '');
+		const s = v.length === 3 ? v.split('').map((c) => c + c).join('') : v;
+		if (!/^[0-9a-fA-F]{6}$/.test(s)) return `rgba(100, 116, 139, ${alpha})`;
+		const r = parseInt(s.slice(0, 2), 16);
+		const g = parseInt(s.slice(2, 4), 16);
+		const b = parseInt(s.slice(4, 6), 16);
+		return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+	}
+
 	/** Couleur d'une arête selon son type de ligne (HTA / BT / branchement) */
 	getEdgeColor(edge: SchemaUnifilaireEdge): string {
 		const t = (edge?.line_type ?? '').toLowerCase();
@@ -137,6 +189,22 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		if (t === 'ligne-bt') return 3.5;
 		if (t === 'ligne-brcht') return 3;
 		return 2.5;
+	}
+
+	/** Détection liaison souterraine via métadonnées (slug/label/type). */
+	isUndergroundEdge(edge: SchemaUnifilaireEdge): boolean {
+		const text = `${edge?.line_type ?? ''} ${edge?.source_slug ?? ''} ${edge?.label ?? ''}`.toLowerCase();
+		return (
+			text.includes('souter') ||
+			text.includes('underground') ||
+			text.includes('sous-sol') ||
+			text.includes('sous_sol')
+		);
+	}
+
+	/** Motif de trait : souterrain pointillé, aérien plein. */
+	getEdgeDashArray(edge: SchemaUnifilaireEdge): string | null {
+		return this.isUndergroundEdge(edge) ? '5 4' : null;
 	}
 
 	/** Départs / organes de coupure (sym-depart) pour panneau type SCADA */
@@ -247,15 +315,27 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 			return;
 		}
 		const parsedRef = this.parseSchemaRefInput(this.refId.trim());
+		// Si la codification indique explicitement un poste source, éviter un mismatch
+		// avec le select "Type" resté sur "ouvrage".
+		if (
+			this.typeOuvrage === 'ouvrage' &&
+			parsedRef.refSlug &&
+			(parsedRef.refSlug.includes('poste-source') || parsedRef.refSlug.includes('ps-poste-source'))
+		) {
+			this.typeOuvrage = 'poste_source';
+		}
 		this.loading = true;
 		this.error = null;
+		// Exigence métier: schéma unifilaire = source d'alimentation + tous les éléments connectés.
+		const schemaDirection: 'tous' = 'tous';
 		this.gisApi.getSchemaUnifilaire(parsedRef.refId, {
 			type: this.typeOuvrage,
-			direction: this.direction,
+			direction: schemaDirection,
 			refSlug: parsedRef.refSlug
 		}).subscribe({
 			next: (res) => {
 				this.data = res;
+				this.nodeOffsets.clear();
 				this.computeLayout();
 				this.selectedNodeId = res.nodes?.[0]?.id ?? null;
 				this.popupNode = null;
@@ -266,6 +346,7 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 			error: (err) => {
 				this.error = err?.error?.detail || err?.message || 'Erreur lors du chargement du schéma.';
 				this.data = null;
+				this.nodeOffsets.clear();
 				this.selectedNodeId = null;
 				this.popupNode = null;
 				this.popupDetailsEntries = [];
@@ -313,17 +394,23 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 
 	/** Coordonnées d'affichage d'un nœud — layout hiérarchique ou SIG selon le mode */
 	nodeX(node: SchemaUnifilaireNode): number {
-		if (this.layoutMode === 'hierarchical') {
-			return this.layoutPositions.get(node.id)?.x ?? node.x;
-		}
-		return node.x;
+		const base = this.getBaseNodePosition(node);
+		const offset = this.nodeOffsets.get(node.id);
+		return base.x + (offset?.x ?? 0);
 	}
 
 	nodeY(node: SchemaUnifilaireNode): number {
+		const base = this.getBaseNodePosition(node);
+		const offset = this.nodeOffsets.get(node.id);
+		return base.y + (offset?.y ?? 0);
+	}
+
+	private getBaseNodePosition(node: SchemaUnifilaireNode): { x: number; y: number } {
 		if (this.layoutMode === 'hierarchical') {
-			return this.layoutPositions.get(node.id)?.y ?? node.y;
+			const p = this.layoutPositions.get(node.id);
+			if (p) return p;
 		}
-		return node.y;
+		return { x: node.x, y: node.y };
 	}
 
 	toggleLayout(): void {
@@ -337,10 +424,16 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	getNodeTransform(node: SchemaUnifilaireNode): string {
 		const t = `translate(${this.nodeX(node)},${this.nodeY(node)})`;
 		if (this.layoutMode !== 'hierarchical') return t;
-		// Les nœuds résumé abonné ont une géométrie plus grande (rect 44×44)
-		// → scale réduit pour rester proportionnel aux autres symboles (scale 3)
-		const s = (node.symbol === 'sym-abonne' && !!this.getNodeClientCount(node)) ? 2 : 3;
+		const s = this.getNodeScale(node);
 		return `${t} scale(${s})`;
+	}
+
+	private getNodeScale(node: SchemaUnifilaireNode): number {
+		if (node.symbol === 'sym-poste-source') return 3.3;
+		if (node.symbol === 'sym-poste-cabine' || node.symbol === 'sym-transfo-bt') return 3.1;
+		if (node.symbol === 'sym-depart-hta' || node.symbol === 'sym-depart-bt') return 3.05;
+		if (node.symbol === 'sym-abonne' && !!this.getNodeClientCount(node)) return 2;
+		return 2.9;
 	}
 
 	/** ViewBox réel affiché : hierVB (zoom/pan) en mode hiérarchique, base en mode géo */
@@ -394,6 +487,7 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 
 	onSvgMouseDown(e: MouseEvent): void {
 		if (this.layoutMode !== 'hierarchical' || e.button !== 0) return;
+		if (this.isDraggingNode) return;
 		e.preventDefault();
 		const svg = this.schemaSvgRef?.nativeElement;
 		if (!svg) return;
@@ -404,6 +498,18 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	}
 
 	onPanMove(e: MouseEvent): void {
+		if (this.isDraggingNode && this.draggedNodeId) {
+			const node = this.nodeById(this.draggedNodeId);
+			const p = this.mouseEventToSvgPoint(e);
+			if (!node || !p) return;
+			const nx = this.dragStartNodePos.x + (p.x - this.dragStartSvg.x);
+			const ny = this.dragStartNodePos.y + (p.y - this.dragStartSvg.y);
+			this.setManualNodePosition(node, nx, ny);
+			if (Math.abs(p.x - this.dragStartSvg.x) > 1 || Math.abs(p.y - this.dragStartSvg.y) > 1) {
+				this.dragMoved = true;
+			}
+			return;
+		}
 		if (!this.isPanning || this.layoutMode !== 'hierarchical') return;
 		const svg = this.schemaSvgRef?.nativeElement;
 		if (!svg) return;
@@ -417,7 +523,52 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		};
 	}
 
-	onPanEnd(): void { this.isPanning = false; }
+	onPanEnd(): void {
+		this.isPanning = false;
+		this.isDraggingNode = false;
+		this.draggedNodeId = null;
+	}
+
+	onNodeMouseDown(node: SchemaUnifilaireNode, e: MouseEvent): void {
+		if (e.button !== 0) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const p = this.mouseEventToSvgPoint(e);
+		if (!p) return;
+		this.isDraggingNode = true;
+		this.draggedNodeId = node.id;
+		this.dragStartSvg = p;
+		this.dragStartNodePos = { x: this.nodeX(node), y: this.nodeY(node) };
+		this.dragMoved = false;
+	}
+
+	onNodeClick(node: SchemaUnifilaireNode, e: MouseEvent): void {
+		if (this.dragMoved) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.dragMoved = false;
+			return;
+		}
+		this.selectNode(node);
+	}
+
+	private mouseEventToSvgPoint(e: MouseEvent): { x: number; y: number } | null {
+		const svg = this.schemaSvgRef?.nativeElement;
+		if (!svg) return null;
+		const vb = (svg.getAttribute('viewBox') || '').trim().split(/\s+/).map(Number);
+		if (vb.length !== 4 || vb.some((x) => Number.isNaN(x))) return null;
+		const [vx, vy, vw, vh] = vb;
+		const rect = svg.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return null;
+		const nx = (e.clientX - rect.left) / rect.width;
+		const ny = (e.clientY - rect.top) / rect.height;
+		return { x: vx + nx * vw, y: vy + ny * vh };
+	}
+
+	private setManualNodePosition(node: SchemaUnifilaireNode, x: number, y: number): void {
+		const base = this.getBaseNodePosition(node);
+		this.nodeOffsets.set(node.id, { x: x - base.x, y: y - base.y });
+	}
 
 	/**
 	 * Algorithme de disposition hiérarchique (Reingold-Tilford simplifié).
@@ -672,11 +823,33 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		const maybeSlug = value.slice(0, idx).trim().toLowerCase();
 		const maybeId = value.slice(idx + 1).trim();
 		if (!maybeSlug || !maybeId) return { refId: value };
-		// Accepter les slugs RX et les slugs de tables clients
-		if (!maybeSlug.startsWith('rx-') && !maybeSlug.startsWith('clients-bt-')) {
+
+		// Accepter :
+		// - slugs RX (rx-*)
+		// - slugs clients BT (clients-bt-*)
+		// - slugs métier "poste source / poste transfo / ouvrage" saisis manuellement
+		let normalizedSlug = maybeSlug.replace(/_/g, '-');
+		const slugAliases: Record<string, string> = {
+			'poste_source': 'poste-source',
+			'ps-poste-source': 'poste-source',
+			'ps-poste-source.shp': 'poste-source',
+			'ps-poste-source-layer': 'poste-source'
+		};
+		normalizedSlug = slugAliases[normalizedSlug] ?? normalizedSlug;
+		const acceptedBusinessSlugPrefixes = [
+			'poste-source',
+			'poste-transformation',
+			'poste-cabine',
+			'poste-hta',
+			'transfo',
+			'ouvrage'
+		];
+		const isAcceptedBusinessSlug = acceptedBusinessSlugPrefixes.some((prefix) => normalizedSlug.startsWith(prefix));
+
+		if (!maybeSlug.startsWith('rx-') && !maybeSlug.startsWith('clients-bt-') && !isAcceptedBusinessSlug) {
 			return { refId: value };
 		}
-		return { refId: maybeId, refSlug: maybeSlug };
+		return { refId: maybeId, refSlug: normalizedSlug };
 	}
 
 	/**
@@ -709,10 +882,13 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 	private static readonly EXPORT_SVG_STYLES = `
 .schema-scada-svg { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
 .schema-scada-node-card { fill: rgba(248, 250, 252, 0.95); stroke: #e2e8f0; stroke-width: 1; }
+.schema-scada-node-halo { stroke: rgba(15, 23, 42, 0.08); stroke-width: 0.6; }
 .schema-reseau-edge--scada { filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.15)); }
 .schema-edge-label { font-size: 9px; font-family: Inter, "Segoe UI", sans-serif; font-weight: 500; letter-spacing: 0.02em; fill: #475569; opacity: 0.85; }
 .schema-edge-label--hta { fill: #0891b2; }
 .schema-edge-label--bt { fill: #16a34a; }
+.schema-node-inline-label-main { font-family: Inter, "Segoe UI", sans-serif; font-size: 8.5px; font-weight: 700; fill: #0f172a; }
+.schema-node-inline-label-sub { font-family: Inter, "Segoe UI", sans-serif; font-size: 7px; font-weight: 500; fill: #64748b; }
 .schema-reseau-edge--flux { animation: flux-march 1.4s linear infinite; }
 @keyframes flux-march { to { stroke-dashoffset: calc(-1 * var(--flux-cycle, 23)); } }
 .schema-flux-arrow { opacity: 0.88; }
@@ -732,8 +908,46 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 
 	/** Télécharge le schéma affiché (vue courante, options Flux / labels / layout) en fichier SVG autonome. */
 	exportSchemaDiagram(): void {
+		const payload = this.buildExportSvgPayload();
+		if (!payload) return;
+		const blob = new Blob([payload.xml], { type: 'image/svg+xml;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `schema-unifilaire-${payload.filenameBase}.svg`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	/** Ouvre une version imprimable du schéma pour export PDF via le dialogue navigateur. */
+	exportSchemaDiagramPdf(): void {
+		const payload = this.buildExportSvgPayload();
+		if (!payload) return;
+		const blob = new Blob([payload.xml], { type: 'image/svg+xml;charset=utf-8' });
+		const blobUrl = URL.createObjectURL(blob);
+		const w = window.open('', '_blank');
+		if (!w) return;
+		w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Schema unifilaire</title><style>@page{size:auto;margin:10mm}html,body{margin:0;padding:0;background:#fff}body{display:flex;justify-content:center;align-items:flex-start}img{max-width:100%;height:auto;display:block}</style></head><body><img id="schema-export-img" alt="Schema unifilaire" /></body></html>`);
+		w.document.close();
+		const img = w.document.getElementById('schema-export-img') as HTMLImageElement | null;
+		if (!img) {
+			URL.revokeObjectURL(blobUrl);
+			return;
+		}
+		img.onload = () => {
+			w.focus();
+			w.print();
+			setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+		};
+		img.onerror = () => {
+			URL.revokeObjectURL(blobUrl);
+		};
+		img.src = blobUrl;
+	}
+
+	private buildExportSvgPayload(): { xml: string; filenameBase: string } | null {
 		const svg = this.schemaSvgRef?.nativeElement;
-		if (!svg || this.nodes.length === 0) return;
+		if (!svg || this.nodes.length === 0) return null;
 
 		const diagramClone = svg.cloneNode(true) as SVGSVGElement;
 		const stripClasses = [
@@ -754,7 +968,7 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 
 		const vb = this.activeViewBox;
 		const parts = vb.split(/\s+/).map(Number);
-		if (parts.length !== 4 || parts.some((x) => Number.isNaN(x))) return;
+		if (parts.length !== 4 || parts.some((x) => Number.isNaN(x))) return null;
 		const [vx, vy, vw, vh] = parts;
 
 		const lx = vx - this.EXPORT_LEGEND_WIDTH - this.EXPORT_LEGEND_GAP;
@@ -799,13 +1013,7 @@ export class SchemaReseau implements OnInit, AfterViewInit, AfterViewChecked {
 		}
 
 		const slug = this.sanitizeExportFilenamePart(this.refId.trim() || 'schema');
-		const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `schema-unifilaire-${slug}.svg`;
-		a.click();
-		URL.revokeObjectURL(url);
+		return { xml, filenameBase: slug };
 	}
 
 	/** Panneau de légende (même contenu métier que la barre latérale) pour l’export SVG. */

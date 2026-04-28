@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+	<title>Disjoncteur (ouverture en trait)</title>
+	<line x1="2" y1="32" x2="20" y2="32" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+	<rect x="20" y="10" width="24" height="44" stroke="#0f172a" stroke-width="1.8" fill="#ffffff" rx="2"/>
+	<line x1="26" y1="46" x2="38" y2="18" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round"/>
+	<line x1="44" y1="32" x2="62" y2="32" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

@@ -126,6 +126,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	private crudOverlayTimeout: ReturnType<typeof setTimeout> | null = null;
 	/** Slugs du dernier modèle affiché sur la carte (pour rafraîchir après CRUD) */
 	private lastLoadedModelSlugs: string[] = [];
+	/** Évite le rechargement/fitBounds inutile si les mêmes couches sont déjà affichées. */
+	private loadedModelSlugsKey = '';
 
 	private map: unknown = null;
 	/** Groupe Leaflet pour les couches du modèle (lignes, points) */
@@ -428,15 +430,14 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				// Afficher toutes les couches sur la carte (ligne, point, polygone, etc.)
 				const allSlugs = this.couchesModele.map((c) => c.id);
 				this.lastLoadedModelSlugs = allSlugs.length > 0 ? allSlugs : [slug];
-				this.loadModelOnMap(this.lastLoadedModelSlugs);
+				this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 			} else {
-				this.lastLoadedModelSlugs = [slug];
-				if (this.map && this.layerGroup) {
-					if (list.length > 0) {
-						this.drawOuvragesOnMap(slug, list);
-					} else {
-						this.layerGroup.clearLayers();
-					}
+				// En mode "charger la liste", ne pas remplacer l'affichage carte par une couche unique.
+				// Si rien n'est encore affiché, charger toutes les couches une fois.
+				if (this.map && this.layerGroup && !this.loadedModelSlugsKey) {
+					const allSlugs = this.couchesModele.map((c) => c.id);
+					this.lastLoadedModelSlugs = allSlugs.length > 0 ? allSlugs : [slug];
+					this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 				}
 			}
 			this.cdr.markForCheck();
@@ -559,7 +560,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		if (this.map && this.layerGroup && this.couchesModele.length > 0) {
 			const allSlugs = this.couchesModele.map((c) => c.id);
 			this.lastLoadedModelSlugs = allSlugs;
-			this.loadModelOnMap(allSlugs);
+			this.loadModelOnMap(allSlugs, false);
 		}
 		this.cdr.markForCheck();
 	}
@@ -986,7 +987,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.selectedMapPanelAction = null;
 		this.clearDrawLayer();
 		this.loadOuvragesForLayer();
-		if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+		if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 		this.cdr.markForCheck();
 	}
 
@@ -997,7 +998,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 		this.editTargetSlug = null;
 		this.editTargetPk = '';
 		this.loadOuvragesForLayer();
-		if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+		if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 		this.cdr.markForCheck();
 	}
 
@@ -1760,7 +1761,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				} else {
 					this.closeOuvrageModal();
 					this.loadOuvragesForLayer();
-					if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+					if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 				}
 			}
 			this.cdr.markForCheck();
@@ -1806,7 +1807,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				this.modelResult = { success: true, message: 'Ouvrage supprimé.' };
 				this.showCrudSuccessOverlay('Ouvrage supprimé.');
 				this.loadOuvragesForLayer();
-				if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+				if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 			}
 			this.cdr.markForCheck();
 		});
@@ -1890,7 +1891,7 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				this.showCrudFailureOverlay(this.modelResult.message);
 			}
 			this.loadOuvragesForLayer();
-			if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs);
+			if (this.lastLoadedModelSlugs.length > 0) this.loadModelOnMap(this.lastLoadedModelSlugs, false);
 			this.cdr.markForCheck();
 		});
 	}
@@ -1939,17 +1940,39 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 			const Lx = L.default as {
 				map: (el: HTMLElement, opts: object) => { invalidateSize?: () => void };
 				tileLayer: (url: string, opts: object) => { addTo: (m: unknown) => unknown };
-				control: { zoom: (opts: object) => { addTo: (m: unknown) => unknown } };
+				control: {
+					zoom: (opts: object) => { addTo: (m: unknown) => unknown };
+					layers?: (
+						baseLayers: Record<string, unknown>,
+						overlays?: Record<string, unknown>,
+						opts?: object
+					) => { addTo: (m: unknown) => unknown };
+				};
 				layerGroup: () => { addTo: (m: unknown) => unknown; addLayer: (l: unknown) => void; clearLayers: () => void };
 			};
 			this.map = Lx.map(this.mapContainer.nativeElement, {
 				center: [12.3715, -1.5197],
-				zoom: 13,
-				zoomControl: false
+				zoom: 14,
+				zoomControl: false,
+				maxZoom: 22
 			});
-			Lx.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			const osm = Lx.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 22,
 				attribution: '© OpenStreetMap contributors'
-			}).addTo(this.map);
+			});
+			const googleSatellite = Lx.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+				maxZoom: 22,
+				attribution: '© Google'
+			});
+			osm.addTo(this.map);
+			Lx.control.layers?.(
+				{
+					'OSM Plan': osm,
+					'Google Satellite': googleSatellite
+				},
+				{},
+				{ position: 'topleft' }
+			).addTo(this.map);
 			Lx.control.zoom({ position: 'topleft' }).addTo(this.map);
 			this.layerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; removeLayer: (l: unknown) => void; clearLayers: () => void };
 			this.highlightLayerGroup = Lx.layerGroup().addTo(this.map) as { addLayer: (l: unknown) => void; clearLayers: () => void };
@@ -2233,8 +2256,15 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 	/**
 	 * Charge les géométries des couches du modèle (slugs) et les affiche sur la carte.
 	 */
-	private loadModelOnMap(slugs: string[]): void {
+	private loadModelOnMap(slugs: string[], recenter = true): void {
 		if (!this.map || !this.layerGroup || !this.gisApi || slugs.length === 0) return;
+		const normalized = [...new Set(slugs.map((s) => String(s).trim()).filter((s) => !!s))].sort();
+		const newKey = normalized.join('|');
+		if (!recenter && this.loadedModelSlugsKey === newKey) {
+			this.layersMapLoading = false;
+			this.cdr.markForCheck();
+			return;
+		}
 		this.layersMapLoading = true;
 		this.cdr.markForCheck();
 		this.layerGroup.clearLayers();
@@ -2345,7 +2375,8 @@ export class Modelisation implements AfterViewInit, OnDestroy {
 				}
 				const m = this.map as { fitBounds?: (b: unknown, o?: object) => void; invalidateSize?: () => void };
 				if (m?.invalidateSize) m.invalidateSize();
-				if (bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+				if (recenter && bounds && m?.fitBounds) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+				self.loadedModelSlugsKey = newKey;
 				self.layersMapLoading = false;
 				self.cdr.markForCheck();
 			}).catch(() => {

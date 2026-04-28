@@ -8,97 +8,113 @@
 		<div class="col-span-12 text-slate-400 text-sm">Chargement des données GIS…</div>
 	}
 
-	<!-- Première ligne de cartes (12) -->
-	@for (card of cardsRow1; track card.label) {
-		<div class="col-span-6 sm:col-span-4 lg:col-span-2">
-			<div class="stat-card h-full flex flex-col">
+	<div class="col-span-12 dashboard-metrics-tabs">
+		@for (tab of overviewTabs; track tab.key) {
+			<button
+				type="button"
+				class="dashboard-tab-btn"
+				[class.dashboard-tab-btn--active]="overviewTab === tab.key"
+				[attr.aria-pressed]="overviewTab === tab.key"
+				(click)="setOverviewTab(tab.key)"
+			>
+				<span>{{ tab.label }}</span>
+				<span class="dashboard-tab-count">{{ tab.count }}</span>
+			</button>
+		}
+	</div>
+
+	<div class="col-span-12 dashboard-metrics-grid">
+		@for (card of overviewCardsByTab; track card.apiSlug ?? card.label) {
+			<div class="stat-card">
 				<div class="stat-label flex items-center gap-2">
-					<i [class]="card.icon" [style.color]="card.color"></i>
+					<span class="inline-svg-icon" [style.color]="card.color" [innerHTML]="getInlineIcon(card.icon)"></span>
 					<span>{{ card.label }}</span>
 				</div>
-				<div class="stat-value">{{ card.value }}</div>
+				<div class="stat-value" [style.color]="card.color">{{ card.value }}</div>
 				<div class="stat-subtitle">{{ card.subtitle }}</div>
 			</div>
-		</div>
-	}
+		}
+	</div>
 
-	<!-- Deuxième ligne de cartes (12) -->
-	@for (card of cardsRow2; track card.label) {
-		<div class="col-span-6 sm:col-span-4 lg:col-span-2">
-			<div class="stat-card h-full flex flex-col">
-				<div class="stat-label flex items-center gap-2">
-					<i [class]="card.icon" [style.color]="card.color"></i>
-					<span>{{ card.label }}</span>
-				</div>
-				<div class="stat-value">{{ card.value }}</div>
-				<div class="stat-subtitle">{{ card.subtitle }}</div>
-			</div>
-		</div>
-	}
-
-	@for (card of extraCards; track card.apiSlug ?? card.label) {
-		<div class="col-span-6 sm:col-span-4 lg:col-span-2">
-			<div class="stat-card h-full flex flex-col">
-				<div class="stat-label flex items-center gap-2">
-					<i [class]="card.icon" [style.color]="card.color"></i>
-					<span>{{ card.label }}</span>
-				</div>
-				<div class="stat-value">{{ card.value }}</div>
-				<div class="stat-subtitle">{{ card.subtitle }}</div>
-			</div>
-		</div>
-	}
-
-	<!-- Une seule row : colonne gauche (3 cartes + graphique) + carte à droite -->
-	<div class="dashboard-map-row col-span-12 flex flex-col lg:flex-row gap-4 items-stretch">
-		<!-- Colonne gauche : 3 cartes + chart-card -->
-		<div class="dashboard-left-col flex flex-col gap-4 lg:w-[320px] lg:min-w-[280px] lg:shrink-0">
-			@for (card of cardsRow3; track card.label) {
-				<div class="stat-card flex flex-col">
-					<div class="stat-label flex items-center gap-2">
-						<i [class]="card.icon" [style.color]="card.color"></i>
-						<span>{{ card.label }}</span>
-					</div>
-				<div class="stat-value">{{ card.value }}</div>
-					<div class="stat-subtitle">{{ card.subtitle }}</div>
-				</div>
-			}
-			<div class="chart-card chart-card--nature flex-1">
-				<div class="chart-card-header">
-					<div class="chart-card-header-icon">
-						<i class="fa fa-users"></i>
-					</div>
-					<div class="chart-card-header-text">
-						<h3 class="chart-card-title">Nature client</h3>
-						<p class="chart-card-subtitle">Répartition des clients</p>
-					</div>
-				</div>
-				@if (natureClientTotal !== null) {
-					<div class="chart-card-summary">
-						<span class="chart-card-total">{{ natureClientTotal }}</span>
-						<span class="chart-card-total-label">clients au total</span>
+	<!-- Bandeau inférieur : liste + chart + carte -->
+	<div class="dashboard-map-row col-span-12">
+		<div class="dashboard-side-panel">
+			<div class="dash-panel-title">Détail équipements</div>
+			<div class="dash-panel-list">
+				@for (card of topOverviewCards; track card.apiSlug ?? card.label) {
+					<div class="dash-panel-row">
+						<div class="dash-panel-row-label">
+							<span class="inline-svg-icon" [style.color]="card.color" [innerHTML]="getInlineIcon(card.icon)"></span>
+							<span>{{ card.label }}</span>
+						</div>
+						<span class="dash-panel-row-value">{{ card.value }}</span>
 					</div>
 				}
-				<div class="chart-card-canvas">
-					<p-chart type="bar" [data]="natureClientData" [options]="natureClientOptions" height="240" />
-				</div>
+				@if (topOverviewCards.length === 0) {
+					<div class="dash-panel-empty">Aucune donnée disponible</div>
+				}
 			</div>
 		</div>
-		<!-- Carte Leaflet : données géométriques de l'API GIS -->
-		<div class="map-container map-fill-space flex-1 min-w-0">
+
+		<div class="chart-card chart-card--nature">
+			<div class="chart-card-header">
+				<div class="chart-card-header-icon">
+					<span class="inline-svg-icon" [innerHTML]="getInlineIcon('fa fa-users')"></span>
+				</div>
+				<div class="chart-card-header-text">
+					<h3 class="chart-card-title">Nature client</h3>
+					<p class="chart-card-subtitle">Répartition des clients</p>
+				</div>
+			</div>
+			<div class="chart-tabs">
+				@for (tab of natureClientTabs; track tab.key) {
+					<button
+						type="button"
+						class="chart-tab-btn"
+						[class.chart-tab-btn--active]="natureClientTab === tab.key"
+						(click)="setNatureClientTab(tab.key)"
+					>
+						{{ tab.label }}
+					</button>
+				}
+			</div>
+			@if (natureClientTotal !== null) {
+				<div class="chart-card-summary">
+					<span class="chart-card-total">{{ natureClientTotal }}</span>
+					<span class="chart-card-total-label">
+						{{ natureClientTab === 'analyse' ? 'base abonnés' : 'clients au total' }}
+					</span>
+				</div>
+			}
+			<div class="chart-card-canvas">
+				<p-chart [type]="natureClientChartType" [data]="natureClientData" [options]="natureClientOptions" height="220" />
+			</div>
+			@if (natureClientTab === 'analyse') {
+				<div class="chart-analysis-list">
+					@for (row of natureClientAnalysisRows; track row.label) {
+						<div class="chart-analysis-row">
+							<span>{{ row.label }}</span>
+							<span>{{ row.value }}</span>
+						</div>
+					}
+				</div>
+			}
+		</div>
+
+		<div class="map-container map-fill-space">
 			<div #mapLeaflet class="map-leaflet"></div>
 			<div class="map-filters-floating" aria-label="Filtres de la carte">
 				<button type="button" class="map-filter-toggle" (click)="toggleFiltersPanel()" [attr.aria-expanded]="!filtersCollapsed">
-					<i class="fa fa-sliders"></i>
+					<span class="inline-svg-icon" [innerHTML]="getInlineIcon('fa fa-sliders')"></span>
 					<span>Filtres</span>
-					<i class="fa" [class.fa-chevron-down]="filtersCollapsed" [class.fa-chevron-up]="!filtersCollapsed"></i>
+					<span class="inline-svg-icon" [innerHTML]="getInlineIcon(filtersCollapsed ? 'fa fa-chevron-down' : 'fa fa-chevron-up')"></span>
 				</button>
 				@if (!filtersCollapsed) {
 					<div class="map-filters-panel">
 						<button type="button" class="map-filter-section-btn" (click)="toggleDateFilter()" [attr.aria-expanded]="dateFilterOpen">
-							<i class="fa fa-calendar"></i>
+							<span class="inline-svg-icon" [innerHTML]="getInlineIcon('fa fa-calendar')"></span>
 							<span>Date</span>
-							<i class="fa" [class.fa-chevron-down]="!dateFilterOpen" [class.fa-chevron-up]="dateFilterOpen"></i>
+							<span class="inline-svg-icon" [innerHTML]="getInlineIcon(!dateFilterOpen ? 'fa fa-chevron-down' : 'fa fa-chevron-up')"></span>
 						</button>
 						@if (dateFilterOpen) {
 							<div class="map-filter-card">
@@ -108,9 +124,9 @@
 						}
 
 						<button type="button" class="map-filter-section-btn" (click)="toggleUserFilter()" [attr.aria-expanded]="userFilterOpen">
-							<i class="fa fa-user"></i>
+							<span class="inline-svg-icon" [innerHTML]="getInlineIcon('fa fa-user')"></span>
 							<span>Utilisateur</span>
-							<i class="fa" [class.fa-chevron-down]="!userFilterOpen" [class.fa-chevron-up]="userFilterOpen"></i>
+							<span class="inline-svg-icon" [innerHTML]="getInlineIcon(!userFilterOpen ? 'fa fa-chevron-down' : 'fa fa-chevron-up')"></span>
 						</button>
 						@if (userFilterOpen) {
 							<div class="map-filter-card">
@@ -122,21 +138,21 @@
 				}
 			</div>
 			<button type="button" class="map-reset-btn" (click)="resetMapToDefault()" title="Ramener la carte à l'état par défaut">
-				<i class="fa fa-crosshairs"></i>
+				<span class="inline-svg-icon" [innerHTML]="getInlineIcon('fa fa-crosshairs')"></span>
 				<span>Vue par défaut</span>
 			</button>
 			@if (mapLegendItems.length) {
 				<div class="map-legend" [class.map-legend--collapsed]="legendCollapsed" aria-label="Légende des ouvrages">
 					<button type="button" class="map-legend-title" (click)="legendCollapsed = !legendCollapsed" [attr.aria-expanded]="!legendCollapsed">
 						<span>Ouvrages</span>
-						<i class="fa map-legend-chevron" [class.fa-chevron-down]="legendCollapsed" [class.fa-chevron-up]="!legendCollapsed"></i>
+						<span class="inline-svg-icon map-legend-chevron" [innerHTML]="getInlineIcon(legendCollapsed ? 'fa fa-chevron-down' : 'fa fa-chevron-up')"></span>
 					</button>
 					@if (!legendCollapsed) {
 						<div class="map-legend-list">
 							@for (item of mapLegendItems; track item.slug) {
 								<button type="button" class="map-legend-item" [class.map-legend-item--hidden]="!item.visible" (click)="toggleOuvrageVisibility(item.slug)" [title]="item.visible ? 'Masquer' : 'Afficher'">
 									<span class="map-legend-check">
-										<i class="fa" [class.fa-eye]="item.visible" [class.fa-eye-slash]="!item.visible"></i>
+										<span class="inline-svg-icon" [innerHTML]="getInlineIcon(item.visible ? 'fa fa-eye' : 'fa fa-eye-slash')"></span>
 									</span>
 									@if (item.isLine) {
 										<span class="map-legend-symbol map-legend-line" [style.--legend-color]="item.color"></span>

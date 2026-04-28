@@ -515,6 +515,20 @@ $header-height: 56px;
 	flex-shrink: 0;
 }
 
+.trace-reseau-layer-symbol--line-cable {
+	height: 0;
+	border-radius: 0;
+	background: transparent;
+	border-top: 3px solid var(--layer-color, #6b7280);
+}
+
+.trace-reseau-layer-symbol--line-underground {
+	height: 0;
+	border-radius: 0;
+	background: transparent;
+	border-top: 3px dashed var(--layer-color, #6b7280);
+}
+
 .trace-reseau-layer-label {
 	flex: 1;
 }
@@ -842,6 +856,19 @@ $header-height: 56px;
 			border-color: #94a3b8;
 			color: #020617;
 			box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+		}
+	}
+
+	&--diagramme {
+		border-color: #bae6fd;
+		color: #0c4a6e;
+		background: linear-gradient(180deg, #ecfeff 0%, #fff 100%);
+
+		&:hover:not(:disabled) {
+			background: #cffafe;
+			border-color: #7dd3fc;
+			color: #075985;
+			box-shadow: 0 4px 14px rgba(14, 116, 144, 0.22);
 		}
 	}
 }
@@ -2168,6 +2195,56 @@ $header-height: 56px;
 	text-align: right;
 	font-variant-numeric: tabular-nums;
 	&--bold { font-weight: 700; color: #0f172a; }
+}
+.dash-table-row--muted td {
+	color: #64748b;
+}
+.dash-table-note {
+	font-style: italic;
+	color: #64748b;
+	font-size: 0.76rem;
+}
+.dash-subnetwork-table {
+	.dash-table th,
+	.dash-table td {
+		text-align: center;
+		vertical-align: middle;
+	}
+	.dash-table-num {
+		text-align: center;
+	}
+}
+.dash-poste-by-station {
+	border-top: 1px solid #e2e8f0;
+	padding-top: 1rem;
+	.dash-table th,
+	.dash-table td {
+		text-align: center;
+		vertical-align: middle;
+	}
+	.dash-table-num {
+		text-align: center;
+	}
+}
+.dash-table-reseau {
+	width: 52px;
+	text-align: center;
+}
+.dash-reseau-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 6px;
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	&--hta {
+		background: #e0f2fe;
+		color: #0369a1;
+	}
+	&--bt {
+		background: #dcfce7;
+		color: #15803d;
+	}
 }
 
 // ─ Liste paginée ─────────────────────────────────────────────────────────────

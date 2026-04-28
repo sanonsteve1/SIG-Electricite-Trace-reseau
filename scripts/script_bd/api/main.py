@@ -2737,7 +2737,13 @@ def _trace_line_endpoints_gids_from_pairs(cur, line_pairs: list[tuple[str, str]]
     return out
 
 
-def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str, direction: str) -> set[str]:
+def _trace_visited_nodes_for_schema_unifilaire(
+    cur,
+    trace_type: str,
+    ref_id: str,
+    direction: str,
+    ref_slug: str = "",
+) -> set[str]:
     """
     Même logique de parcours que GET /gis/trace : HTA amont (poste cabine), extension BT aval,
     postes cabine, fallback spatial, etc. — pour que le schéma unifilaire filtre les mêmes nœuds
@@ -2746,6 +2752,10 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     direction = (direction or "tous").strip().lower()
     if direction not in ("amont", "aval", "tous"):
         direction = "tous"
+    # Exigence métier schéma unifilaire:
+    # toujours inclure la source d'alimentation + tous les éléments connectés.
+    # On force donc le calcul en réseau connecté complet.
+    schema_direction = "tous"
     trace_type = (trace_type or "ouvrage").strip().lower()
     if trace_type not in ("poste_source", "poste_transformation", "abonne", "ouvrage"):
         trace_type = "ouvrage"
@@ -2765,7 +2775,8 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     effective_direction = direction
     if direction == "tous" and from_point_raccordement:
         effective_direction = "amont"
-    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id, ref_slug="")
+    ref_slug_norm = (ref_slug or "").strip().lower()
+    start_nodes = _trace_resolve_start_nodes(cur, trace_type, ref_id, ref_slug=ref_slug_norm)
     if not start_nodes:
         return set()
     restrict_to_bt = (
@@ -2851,9 +2862,8 @@ def _trace_visited_nodes_for_schema_unifilaire(cur, trace_type: str, ref_id: str
     # Si le graphe directionnel n'a rien renvoyé, on tente une recherche spatiale (utile
     # avec les imports rx_* qui ne remplissent pas forcément les champs id_depart_*/id_poteau_*).
     if not pairs:
-        ref_slug_norm_local = ""
-        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120, ref_slug=ref_slug_norm_local)
-        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150, ref_slug=ref_slug_norm_local)
+        pairs = _trace_nearby_lines_fallback(cur, trace_type, ref_id, radius_m=120, ref_slug=ref_slug_norm)
+        point_pairs = _trace_nearby_points_fallback(cur, trace_type, ref_id, radius_m=150, ref_slug=ref_slug_norm)
         equip_pairs = _trace_postes_transfos_from_node_ids(cur, visited_nodes)
         raccord_pairs = _trace_points_raccordement_from_lines(cur, pairs)
         visited_nodes |= _trace_line_endpoints_gids_from_pairs(cur, pairs)
@@ -2899,7 +2909,7 @@ def get_schema_unifilaire(
     type_ouvrage: str = Query("ouvrage", description="Type d'ouvrage : poste_source | poste_transformation | abonne | ouvrage"),
     direction: str = Query("tous", description="Direction du tracé : amont | aval | tous (réseau connecté)"),
     ref_slug: str = Query("", description="Slug de la couche source (optionnel, recommandé pour RX)"),
-    mode: str = Query("complet", description="Mode de rendu : complet | compact"),
+    mode: str = Query("compact", description="Mode de rendu : compact | complet"),
 ):
     """
     Schéma unifilaire du réseau **par ouvrage** : graphe topologique des nœuds et arêtes connectés
@@ -2927,6 +2937,8 @@ def get_schema_unifilaire(
     direction = (direction or "tous").strip().lower()
     if direction not in ("amont", "aval", "tous"):
         direction = "tous"
+    # Exigence métier du schéma unifilaire: toujours réseau connecté complet.
+    schema_direction = "tous"
     mode = (mode or "complet").strip().lower()
     if mode not in ("complet", "compact"):
         mode = "complet"
@@ -2937,29 +2949,75 @@ def get_schema_unifilaire(
                 if type_ouvrage == "ouvrage" and has_rx_topology(cur):
                     rx_result = None
                     if ref_slug_norm and is_rx_topology_slug(ref_slug_norm):
-                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug=ref_slug_norm, direction=direction, mode=mode)
+                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug=ref_slug_norm, direction=schema_direction, mode=mode)
                     elif not ref_slug_norm:
-                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug="", direction=direction, mode=mode)
+                        rx_result = get_rx_schema_result(cur, ref_id, ref_slug="", direction=schema_direction, mode=mode)
                     if rx_result and (rx_result.get("nodes") or rx_result.get("edges")):
                         for node in rx_result.get("nodes", []):
                             node["symbol"] = _slug_to_symbol(str(node.get("type") or ""))
+                        # Même règle que le pipeline standard: masquer les nœuds orphelins.
+                        rx_edges = rx_result.get("edges") or []
+                        if rx_edges and rx_result.get("nodes"):
+                            connected_ids = {e.get("source") for e in rx_edges} | {e.get("target") for e in rx_edges}
+                            rx_result["nodes"] = [
+                                n for n in (rx_result.get("nodes") or [])
+                                if str(n.get("id", "")) in connected_ids
+                            ]
                         return rx_result
 
                 # 1) Même ensemble de nœuds que le tracé carte (/gis/trace) pour ref_id + type + direction
-                visited = _trace_visited_nodes_for_schema_unifilaire(cur, type_ouvrage, ref_id, direction)
+                visited = _trace_visited_nodes_for_schema_unifilaire(
+                    cur,
+                    type_ouvrage,
+                    ref_id,
+                    schema_direction,
+                    ref_slug=ref_slug_norm,
+                )
                 if not visited:
                     return {
                         "nodes": [],
                         "edges": [],
                         "message": "Ouvrage introuvable ou aucun nœud connecté (vérifiez la codification, le type et la même direction que sur la carte).",
                     }
-                start_ids = _trace_resolve_start_nodes(cur, type_ouvrage, ref_id) or set()
+                start_ids = _trace_resolve_start_nodes(cur, type_ouvrage, ref_id, ref_slug=ref_slug_norm) or set()
+                # Référence unique du schéma: reprendre exactement les ouvrages du tracé initial.
+                # Le schéma ne doit pas introduire d'objets hors "ouvrage_ids" du /gis/trace.
+                trace_payload = trace_ouvrages(
+                    type=type_ouvrage,
+                    ref_id=ref_id,
+                    ref_slug=ref_slug_norm,
+                    direction=schema_direction,
+                )
+                raw_trace_items = trace_payload.get("ouvrage_ids", []) if isinstance(trace_payload, dict) else []
+                trace_pairs: list[tuple[str, str]] = []
+                for it in raw_trace_items:
+                    try:
+                        slug_norm = _resolve_slug(str(it.get("slug", "")).strip().lower())
+                        gid_norm = _canon_id(str(it.get("id", "")))
+                        if slug_norm and gid_norm:
+                            trace_pairs.append((slug_norm, gid_norm))
+                    except Exception:
+                        continue
+                trace_pair_set = set(trace_pairs)
+                trace_line_slugs = {"ligne-hta", "ligne-bt", "ligne-brcht"}
+                trace_line_pair_set = {(s, g) for s, g in trace_pair_set if s in trace_line_slugs}
+                trace_allowed_gids = {g for _s, g in trace_pair_set}
+                trace_non_line_pairs = [(s, g) for s, g in trace_pairs if s not in trace_line_slugs]
+                trace_node_ids_by_gid: dict[str, list[str]] = {}
+                trace_non_line_node_ids = {f"{s}:{g}" for s, g in trace_non_line_pairs}
+                for s, g in trace_non_line_pairs:
+                    trace_node_ids_by_gid.setdefault(g, []).append(f"{s}:{g}")
+                strict_from_trace = bool(trace_pair_set)
                 # 3) Extraire toutes les arêtes puis garder seulement celles dont les deux extrémités sont dans visited
                 edges_raw, all_gids = _schema_unifilaire_extract_edges_and_node_gids(cur)
                 gid_to_slug: dict[str, str] = {}
                 for s_slug, s_gid, t_slug, t_gid, _line_slug, _line_gid in edges_raw:
-                    gid_to_slug[s_gid] = s_slug
-                    gid_to_slug[t_gid] = t_slug
+                    # Préserver le 1er slug rencontré pour un gid afin d'éviter les écrasements
+                    # inter-couches (cas IDs numériques réutilisés entre tables).
+                    if s_gid not in gid_to_slug:
+                        gid_to_slug[s_gid] = s_slug
+                    if t_gid not in gid_to_slug:
+                        gid_to_slug[t_gid] = t_slug
                 # Canoniser le type réel de chaque gid via les tables de points.
                 # Evite les doublons du style "poteau-hta:<gid>" + "poste-cabine:<gid>"
                 # quand ligne_hta.id_poteau_hta référence en réalité un poste cabine.
@@ -2967,16 +3025,27 @@ def get_schema_unifilaire(
                     gids_for_resolution = set(gid_to_slug.keys()) | {g for g in visited if _canon_id(g)}
                     resolved_slug = _schema_unifilaire_resolve_gid_to_slug(cur, gids_for_resolution)
                     if resolved_slug:
-                        gid_to_slug.update(resolved_slug)
+                        for g, s in resolved_slug.items():
+                            current = gid_to_slug.get(g, "")
+                            # Ne pas écraser un slug RX explicite par une résolution "canonique"
+                            # potentiellement ambiguë basée uniquement sur le gid.
+                            if current.startswith("rx-") and not str(s).startswith("rx-"):
+                                continue
+                            if not current:
+                                gid_to_slug[g] = s
                 except Exception:
                     pass
-                gid_to_node_id = {gid_str: f"{slug}:{gid_str}" for gid_str, slug in gid_to_slug.items()}
-                allowed_node_ids = {gid_to_node_id[g] for g in visited if g in gid_to_node_id}
+                allowed_gids = trace_allowed_gids if trace_allowed_gids else {g for g in visited if _canon_id(g)}
                 edges_for_nx: list[tuple[str, str, str, str]] = []
                 for s_slug, s_gid, t_slug, t_gid, line_slug, line_gid in edges_raw:
-                    sid = gid_to_node_id.get(s_gid) or f"{s_slug}:{s_gid}"
-                    tid = gid_to_node_id.get(t_gid) or f"{t_slug}:{t_gid}"
-                    if sid in allowed_node_ids and tid in allowed_node_ids:
+                    line_pair = (_resolve_slug(line_slug), _canon_id(line_gid))
+                    if trace_line_pair_set and line_pair not in trace_line_pair_set:
+                        continue
+                    # En mode strict, projeter les endpoints vers les nœuds réellement présents
+                    # dans le tracé initial (même gid, slug du tracé prioritaire).
+                    sid = (trace_node_ids_by_gid.get(s_gid) or [f"{s_slug}:{s_gid}"])[0]
+                    tid = (trace_node_ids_by_gid.get(t_gid) or [f"{t_slug}:{t_gid}"])[0]
+                    if s_gid in allowed_gids and t_gid in allowed_gids:
                         edges_for_nx.append((sid, tid, line_slug, line_gid))
                 if not edges_for_nx:
                     return {
@@ -2989,14 +3058,31 @@ def get_schema_unifilaire(
                 for s, t, _ls, _lg in edges_for_nx:
                     node_set.add(s)
                     node_set.add(t)
+                # Conserver aussi les nœuds non-linéaires présents dans le tracé initial,
+                # même s'ils n'ont pas d'arête explicite dans le graphe extrait.
+                for slug_norm, gid_norm in trace_non_line_pairs:
+                    node_set.add(f"{slug_norm}:{gid_norm}")
+                    # Priorité aux types provenant du tracé initial.
+                    gid_to_slug[gid_norm] = slug_norm
+                if strict_from_trace and trace_non_line_node_ids:
+                    node_set = {n for n in node_set if n in trace_non_line_node_ids}
                 gid_to_slug = {
                     gid_str: slug
                     for gid_str, slug in gid_to_slug.items()
-                    if gid_to_node_id.get(gid_str) in node_set
+                    if any(n.endswith(f":{gid_str}") for n in node_set)
                 }
+                gid_to_node_id = {}
+                for nid in node_set:
+                    if ":" not in nid:
+                        continue
+                    n_slug, n_gid = nid.split(":", 1)
+                    if n_gid not in gid_to_node_id:
+                        gid_to_node_id[n_gid] = nid
+                    if n_gid not in gid_to_slug:
+                        gid_to_slug[n_gid] = n_slug
                 # Nœuds racine : poste source (transfo de puissance) en tête pour chaque départ HTA
                 dep_meta = TABLE_BY_SLUG.get("depart", (None, {}))[1] or {}
-                if _table_has_column(dep_meta, "gid") and _table_has_column(dep_meta, "id_poste_source"):
+                if (not strict_from_trace) and _table_has_column(dep_meta, "gid") and _table_has_column(dep_meta, "id_poste_source"):
                     depart_node_ids = [n for n in node_set if n.startswith("depart:") and "depart-bt" not in n]
                     depart_gids = [_canon_id(n.split(":", 1)[-1]) for n in depart_node_ids if ":" in n]
                     if depart_gids:
@@ -3029,7 +3115,7 @@ def get_schema_unifilaire(
                 ]
                 depart_bt_node_ids = [n for n in node_set if n.startswith("depart-bt:")]
                 depart_bt_gids = [_canon_id(n.split(":", 1)[-1]) for n in depart_bt_node_ids if ":" in n]
-                if dep_bt_table and depart_bt_gids and dep_bt_fk_cols:
+                if (not strict_from_trace) and dep_bt_table and depart_bt_gids and dep_bt_fk_cols:
                     try:
                         placeholders = ", ".join(["%s"] * len(depart_bt_gids))
                         select_cols = ["gid"] + dep_bt_fk_cols
@@ -3075,7 +3161,7 @@ def get_schema_unifilaire(
                     (g, s) for g, s in gid_to_slug.items()
                     if ("poste-cabine" in (s or "")) or ("transfo-ht-bt" in (s or ""))
                 ]
-                if cabine_like:
+                if (not strict_from_trace) and cabine_like:
                     try:
                         existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
                         for cab_gid, cab_slug in cabine_like:
@@ -3119,69 +3205,70 @@ def get_schema_unifilaire(
                         pass
                 # Liaisons métier BT aval: ligne de branchement -> point de raccordement -> branchement
                 # afin d'afficher correctement les extrémités clients dans le schéma unifilaire.
-                try:
-                    existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
-                    line_brcht_anchor: dict[str, str] = {}
-                    line_brcht_gids: set[str] = set()
-                    for s_slug, s_gid, t_slug, t_gid, line_slug, line_gid in edges_raw:
-                        if line_slug != "ligne-brcht":
-                            continue
-                        lg = _canon_id(line_gid)
-                        if not lg:
-                            continue
-                        line_brcht_gids.add(lg)
-                        s_node = gid_to_node_id.get(s_gid) or f"{s_slug}:{s_gid}"
-                        t_node = gid_to_node_id.get(t_gid) or f"{t_slug}:{t_gid}"
-                        # Priorité de rattachement visuel: poteau BT > depart BT > autre
-                        cand = None
-                        for n in (s_node, t_node):
-                            if n.startswith("poteau-bt:"):
-                                cand = n
-                                break
-                        if not cand:
+                if not strict_from_trace:
+                    try:
+                        existing_edges = {(s, t, ls, lg) for s, t, ls, lg in edges_for_nx}
+                        line_brcht_anchor: dict[str, str] = {}
+                        line_brcht_gids: set[str] = set()
+                        for s_slug, s_gid, t_slug, t_gid, line_slug, line_gid in edges_raw:
+                            if line_slug != "ligne-brcht":
+                                continue
+                            lg = _canon_id(line_gid)
+                            if not lg:
+                                continue
+                            line_brcht_gids.add(lg)
+                            s_node = gid_to_node_id.get(s_gid) or f"{s_slug}:{s_gid}"
+                            t_node = gid_to_node_id.get(t_gid) or f"{t_slug}:{t_gid}"
+                            # Priorité de rattachement visuel: poteau BT > depart BT > autre
+                            cand = None
                             for n in (s_node, t_node):
-                                if n.startswith("depart-bt:"):
+                                if n.startswith("poteau-bt:"):
                                     cand = n
                                     break
-                        if not cand:
-                            cand = s_node
-                        if lg not in line_brcht_anchor and cand:
-                            line_brcht_anchor[lg] = cand
+                            if not cand:
+                                for n in (s_node, t_node):
+                                    if n.startswith("depart-bt:"):
+                                        cand = n
+                                        break
+                            if not cand:
+                                cand = s_node
+                            if lg not in line_brcht_anchor and cand:
+                                line_brcht_anchor[lg] = cand
 
-                    if line_brcht_gids:
-                        placeholders = ", ".join(["%s"] * len(line_brcht_gids))
-                        candidate_pr_slugs = [s for s in sorted(TABLE_BY_SLUG.keys()) if ("point" in s and "raccord" in s)]
-                        pr_node_by_gid: dict[str, str] = {}
-                        pr_gids: set[str] = set()
-                        for pr_slug in candidate_pr_slugs:
-                            pr_table, pr_meta = TABLE_BY_SLUG.get(pr_slug, (None, {}))
-                            if not pr_table or not (_table_has_column(pr_meta, "gid") and _table_has_column(pr_meta, "id_ligne_brcht")):
-                                continue
-                            try:
-                                cur.execute(
-                                    f"SELECT gid, id_ligne_brcht FROM {quote_ident(pr_table)} "
-                                    f"WHERE {_canon_sql_expr('id_ligne_brcht')} IN ({placeholders})",
-                                    tuple(line_brcht_gids),
-                                )
-                                for row in cur.fetchall() or []:
-                                    pr_gid = _canon_id(row.get("gid"))
-                                    l_gid = _canon_id(row.get("id_ligne_brcht"))
-                                    if not pr_gid or not l_gid:
-                                        continue
-                                    anchor = line_brcht_anchor.get(l_gid)
-                                    if not anchor:
-                                        continue
-                                    pr_node = f"{pr_slug}:{pr_gid}"
-                                    node_set.add(pr_node)
-                                    gid_to_slug[pr_gid] = pr_slug
-                                    pr_node_by_gid[pr_gid] = pr_node
-                                    pr_gids.add(pr_gid)
-                                    rec = (anchor, pr_node, "ligne-brcht", l_gid)
-                                    if rec not in existing_edges:
-                                        edges_for_nx.append(rec)
-                                        existing_edges.add(rec)
-                            except Exception:
-                                continue
+                        if line_brcht_gids:
+                            placeholders = ", ".join(["%s"] * len(line_brcht_gids))
+                            candidate_pr_slugs = [s for s in sorted(TABLE_BY_SLUG.keys()) if ("point" in s and "raccord" in s)]
+                            pr_node_by_gid: dict[str, str] = {}
+                            pr_gids: set[str] = set()
+                            for pr_slug in candidate_pr_slugs:
+                                pr_table, pr_meta = TABLE_BY_SLUG.get(pr_slug, (None, {}))
+                                if not pr_table or not (_table_has_column(pr_meta, "gid") and _table_has_column(pr_meta, "id_ligne_brcht")):
+                                    continue
+                                try:
+                                    cur.execute(
+                                        f"SELECT gid, id_ligne_brcht FROM {quote_ident(pr_table)} "
+                                        f"WHERE {_canon_sql_expr('id_ligne_brcht')} IN ({placeholders})",
+                                        tuple(line_brcht_gids),
+                                    )
+                                    for row in cur.fetchall() or []:
+                                        pr_gid = _canon_id(row.get("gid"))
+                                        l_gid = _canon_id(row.get("id_ligne_brcht"))
+                                        if not pr_gid or not l_gid:
+                                            continue
+                                        anchor = line_brcht_anchor.get(l_gid)
+                                        if not anchor:
+                                            continue
+                                        pr_node = f"{pr_slug}:{pr_gid}"
+                                        node_set.add(pr_node)
+                                        gid_to_slug[pr_gid] = pr_slug
+                                        pr_node_by_gid[pr_gid] = pr_node
+                                        pr_gids.add(pr_gid)
+                                        rec = (anchor, pr_node, "ligne-brcht", l_gid)
+                                        if rec not in existing_edges:
+                                            edges_for_nx.append(rec)
+                                            existing_edges.add(rec)
+                                except Exception:
+                                    continue
 
                         # Branchements client relies au point de raccordement
                         if pr_gids:
@@ -3214,8 +3301,8 @@ def get_schema_unifilaire(
                                             existing_edges.add(rec)
                                 except Exception:
                                     continue
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
                 if mode == "compact":
                     # 5) Simplification topologique (tronçons / poteaux) puis arbre logique depuis la racine métier
                     edges_simple, nodes_simple = _schema_unifilaire_simplify_graph(edges_for_nx)
@@ -3246,8 +3333,7 @@ def get_schema_unifilaire(
                     node_list = sorted(reachable)
                     G = nx.DiGraph()
                     for n in node_list:
-                        gid_part = _schema_unifilaire_node_gid_part(n)
-                        slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
+                        slug_attr = _schema_unifilaire_node_slug(n)
                         G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
                     for s, t, line_slug, line_gid in tree_edges:
                         G.add_edge(s, t, line_slug=line_slug, line_gid=line_gid)
@@ -3255,7 +3341,8 @@ def get_schema_unifilaire(
                     edge_records = tree_edges
                     edge_records = _schema_unifilaire_orient_edges_from_root(edge_records, tree_root)
                 else:
-                    # Mode complet: conserver les objets connectés sans simplification ni réduction en arbre.
+                    # Mode complet: conserver les objets du sous-réseau sans simplification d'équipement,
+                    # mais en restant sur la composante électriquement connectée à la source.
                     visited_gids = {_canon_id(g) for g in visited if _canon_id(g)}
                     unresolved = {g for g in visited_gids if g not in gid_to_slug}
                     if unresolved:
@@ -3271,8 +3358,7 @@ def get_schema_unifilaire(
                     all_nodes = sorted(node_set_full)
                     G = nx.DiGraph()
                     for n in all_nodes:
-                        gid_part = _schema_unifilaire_node_gid_part(n)
-                        slug_attr = gid_to_slug.get(gid_part) or _schema_unifilaire_node_slug(n)
+                        slug_attr = _schema_unifilaire_node_slug(n)
                         G.add_node(n, slug=slug_attr, label=node_labels.get(n, n))
                     seen_edges: set[tuple[str, str, str, str]] = set()
                     all_edge_records: list[tuple[str, str, str, str]] = []
@@ -3289,8 +3375,6 @@ def get_schema_unifilaire(
                     UG.add_nodes_from(all_nodes)
                     UG.add_edges_from([(s, t) for s, t, _ls, _lg in all_edge_records])
 
-                    # Garder uniquement la composante connectée à la racine métier, pour rester cohérent
-                    # avec le tracé carte (évite les nœuds/segments isolés visuellement).
                     root_full = _schema_unifilaire_pick_tree_root(set(all_nodes), start_ids, gid_to_node_id)
                     if root_full and root_full in UG:
                         keep_nodes = set(nx.node_connected_component(UG, root_full))
@@ -3330,6 +3414,10 @@ def get_schema_unifilaire(
                 # pas être visualisées comme liaison électrique métier dans le schéma unifilaire.
                 filtered_edge_records: list[tuple[str, str, str, str]] = []
                 for s, t, line_slug, line_gid in edge_records:
+                    if trace_line_pair_set:
+                        lp = (_resolve_slug(line_slug), _canon_id(line_gid))
+                        if lp not in trace_line_pair_set:
+                            continue
                     if line_slug == "ligne-brcht":
                         s_slug = (_schema_unifilaire_node_slug(s) or "").lower()
                         t_slug = (_schema_unifilaire_node_slug(t) or "").lower()
@@ -3338,10 +3426,13 @@ def get_schema_unifilaire(
                     filtered_edge_records.append((s, t, line_slug, line_gid))
                 edge_records = filtered_edge_records
 
-                # Après filtrage métier, conserver les nœuds réellement connectés.
+                # Le schéma unifilaire représente une chaîne de puissance connectée:
+                # retirer les objets isolés (sans arête) dans tous les modes.
                 if edge_records:
                     connected_nodes = {s for s, _t, _ls, _lg in edge_records} | {t for _s, t, _ls, _lg in edge_records}
                     node_list = [n for n in node_list if n in connected_nodes]
+                elif trace_allowed_gids:
+                    node_list = [n for n in node_list if _schema_unifilaire_node_gid_part(n) in trace_allowed_gids]
 
                 node_extra = _schema_unifilaire_node_extra(cur, gid_to_slug)
                 # Sortie JSON : nodes avec x, y, type (slug), label ; optionnel : state, tension, courant, puissance
@@ -3367,6 +3458,10 @@ def get_schema_unifilaire(
                     {"source": s, "target": t, "line_type": line_slug, "line_gid": line_gid}
                     for s, t, line_slug, line_gid in edge_records
                 ]
+                # Verrou final: ne jamais afficher de nœud orphelin (sans liaison).
+                if edges_out and nodes_out:
+                    connected_ids = {e["source"] for e in edges_out} | {e["target"] for e in edges_out}
+                    nodes_out = [n for n in nodes_out if str(n.get("id", "")) in connected_ids]
                 return {"nodes": nodes_out, "edges": edges_out}
     except Exception as e:
         _log.exception("Schema unifilaire: %s", e)
@@ -3466,7 +3561,7 @@ def _slug_to_symbol(slug: str) -> str:
     s = (slug or "").lower()
     if "poste-source" in s or "limite-poste" in s or "arrivee" in s or "transformateur-ps" in s:
         return "sym-poste-source"
-    if "poste-cabine" in s:
+    if "poste-cabine" in s or "poste-hta-bt" in s or "poste-h59" in s:
         return "sym-poste-cabine"
     if "transfo" in s:
         return "sym-transfo-bt"
@@ -4030,6 +4125,29 @@ def _is_branchement_line_table(slug: str) -> bool:
 def _is_bt_branchement_line_table(slug: str) -> bool:
     """True si le slug correspond à une ligne de branchement BT (basse tension)."""
     return _is_branchement_line_table(slug) and "bt" in slug.lower()
+
+def _is_bt_line_table(slug: str) -> bool:
+    """True si le slug correspond à une ligne BT (incluant branchement BT)."""
+    s = slug.lower()
+    return _is_line_table(s) and ("bt" in s or "brcht" in s or "branchement" in s)
+
+
+def _is_hta_line_table(slug: str) -> bool:
+    """True si le slug correspond à une ligne HTA."""
+    s = slug.lower()
+    return _is_line_table(s) and ("hta" in s or "mediumvoltage" in s)
+
+
+def _is_bt_pole_table(slug: str) -> bool:
+    """True si la couche cible correspond à un poteau BT (slug variable)."""
+    s = slug.lower()
+    return ("poteau" in s or "pole" in s) and ("bt" in s or "lowvoltage" in s)
+
+
+def _is_hta_pole_table(slug: str) -> bool:
+    """True si la couche cible correspond à un poteau HTA (slug variable)."""
+    s = slug.lower()
+    return ("poteau" in s or "pole" in s) and ("hta" in s or "mediumvoltage" in s)
 
 
 def _get_branchement_table_for_counting(table_slug: str) -> tuple[str, str, str] | None:
@@ -5002,6 +5120,13 @@ def suggest_placement(
             (slug, t, m) for slug, t, m in line_tables
             if _is_bt_branchement_line_table(slug)
         ]
+    # Règles métier explicites :
+    # - poteau-bt -> proposer uniquement des lignes BT / branchement BT
+    # - poteau-hta -> proposer uniquement des lignes HTA
+    elif _is_bt_pole_table(table_slug):
+        line_tables = [(slug, t, m) for slug, t, m in line_tables if _is_bt_line_table(slug)]
+    elif _is_hta_pole_table(table_slug):
+        line_tables = [(slug, t, m) for slug, t, m in line_tables if _is_hta_line_table(slug)]
     point_tables = [
         (slug, TABLE_BY_SLUG[slug][0], TABLE_BY_SLUG[slug][1])
         for slug in TABLE_BY_SLUG
